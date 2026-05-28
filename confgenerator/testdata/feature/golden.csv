@@ -21,12 +21,9 @@ App,Field,Override,
 *confgenerator.LoggingReceiverSyslog,ListenPort,
 *confgenerator.LoggingReceiverSyslog,confgenerator.ConfigComponent.Type,
 *confgenerator.LoggingReceiverSystemd,confgenerator.ConfigComponent.Type,
-*confgenerator.LoggingReceiverTCP,ListenPort,
-*confgenerator.LoggingReceiverTCP,confgenerator.ConfigComponent.Type,
 *confgenerator.LoggingReceiverWindowsEventLog,ReceiverVersion,
 *confgenerator.LoggingReceiverWindowsEventLog,RenderAsXML,
 *confgenerator.LoggingReceiverWindowsEventLog,confgenerator.ConfigComponent.Type,
-*confgenerator.ParseMultiline,confgenerator.ConfigComponent.Type,
 *confgenerator.PrometheusMetrics,confgenerator.ConfigComponent.Type
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.body_size_limit
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.honor_timestamps

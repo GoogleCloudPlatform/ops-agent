@@ -37,6 +37,35 @@ import (
 	"gotest.tools/v3/golden"
 )
 
+var disabledGoldenTests = map[string]string{
+	// Multiline tests
+	"invalid-logging-processor_parse_multiline_empty_languages":                            "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-processor_parse_multiline_missing_required_language_field":            "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-processor_parse_multiline_missing_required_match_any_field":           "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-processor_parse_multiline_more_than_three_languages":                  "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-processor_parse_multiline_not_choose_from_allowable_languages":        "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-processor_parse_multiline_only_unique_language_allowed_per_processor": "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-processor_parse_multiline":                                                    "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-processor_parse_multiline_journald_receiver":                                  "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-processor_parse_multiline_not_first":                                          "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-processor_parse_multiline_processor_not_in_use":                               "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-processor_parse_multiline_three_languages":                                    "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-processor_parse_multiline_three_processors_same_language":                     "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-processor_parse_multiline_two_languages":                                      "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-processor_parse_multiline_two_processors":                                     "parse_multiline is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+
+	// TCP tests
+	"invalid-logging-receiver_duplicated_tcp_receiver":                              "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-receiver_tcp_type_invalid_parameter_format_not_json":           "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-receiver_tcp_type_invalid_parameter_listen_host_is_not_an_ip":  "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-receiver_tcp_type_invalid_parameter_listen_port_is_not_an_int": "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-receiver_tcp_type_missing_required_parameter_format":           "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"invalid-logging-receiver_tcp_type_unsupported_parameter_random":                "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-receiver_tcp":                              "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-receiver_tcp_duplicated_port_but_not_used": "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+	"logging-receiver_tcp_omitting_optional_parameters": "tcp receiver is decommissioned from Fluent Bit and OTel support is not implemented yet.",
+}
+
 const (
 	builtinTestdataDirName = "builtin"
 	goldenDir              = "golden"
@@ -157,6 +186,9 @@ func TestGoldens(t *testing.T) {
 		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		testName := testName
 		t.Run(testName, func(t *testing.T) {
+			if reason, ok := disabledGoldenTests[testName]; ok {
+				t.Skip(reason)
+			}
 			t.Parallel()
 			for _, pc := range testPlatforms {
 				pc := pc
