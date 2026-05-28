@@ -58,7 +58,7 @@ $FilesToInclude = @(
 
     "opentelemetry-java-contrib-jmx-metrics.jar",
     "google-cloud-metrics-agent_windows_${GoArch}.exe",
-    "google-cloud-ops-agent-wrapper.exe"
+
     "ops_agent.exe"
     "THIRD_PARTY_LICENSES"
     "OPS_AGENT_VERSION"

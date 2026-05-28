@@ -136,11 +136,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM centos8-build-golang-base AS centos8-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM centos8-build-golang-base AS centos8-build
@@ -157,7 +152,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=centos8-build-otel /work/cache /work/cache
 
 COPY --from=centos8-build-systemd /work/cache /work/cache
-COPY --from=centos8-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -236,11 +231,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM rockylinux9-build-golang-base AS rockylinux9-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM rockylinux9-build-golang-base AS rockylinux9-build
@@ -257,7 +247,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=rockylinux9-build-otel /work/cache /work/cache
 
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
-COPY --from=rockylinux9-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -338,11 +328,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM rockylinux10-build-golang-base AS rockylinux10-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM rockylinux10-build-golang-base AS rockylinux10-build
@@ -359,7 +344,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=rockylinux10-build-otel /work/cache /work/cache
 
 COPY --from=rockylinux10-build-systemd /work/cache /work/cache
-COPY --from=rockylinux10-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -433,11 +418,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM bookworm-build-golang-base AS bookworm-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM bookworm-build-golang-base AS bookworm-build
@@ -454,7 +434,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=bookworm-build-otel /work/cache /work/cache
 
 COPY --from=bookworm-build-systemd /work/cache /work/cache
-COPY --from=bookworm-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -531,11 +511,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM bullseye-build-golang-base AS bullseye-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM bullseye-build-golang-base AS bullseye-build
@@ -552,7 +527,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=bullseye-build-otel /work/cache /work/cache
 
 COPY --from=bullseye-build-systemd /work/cache /work/cache
-COPY --from=bullseye-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -628,11 +603,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM trixie-build-golang-base AS trixie-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM trixie-build-golang-base AS trixie-build
@@ -649,7 +619,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=trixie-build-otel /work/cache /work/cache
 
 COPY --from=trixie-build-systemd /work/cache /work/cache
-COPY --from=trixie-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -746,11 +716,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM sles12-build-golang-base AS sles12-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM sles12-build-golang-base AS sles12-build
@@ -767,7 +732,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=sles12-build-otel /work/cache /work/cache
 
 COPY --from=sles12-build-systemd /work/cache /work/cache
-COPY --from=sles12-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -846,11 +811,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM sles15-build-golang-base AS sles15-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM sles15-build-golang-base AS sles15-build
@@ -867,7 +827,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=sles15-build-otel /work/cache /work/cache
 
 COPY --from=sles15-build-systemd /work/cache /work/cache
-COPY --from=sles15-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -946,11 +906,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM sles16-build-golang-base AS sles16-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM sles16-build-golang-base AS sles16-build
@@ -967,7 +922,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=sles16-build-otel /work/cache /work/cache
 
 COPY --from=sles16-build-systemd /work/cache /work/cache
-COPY --from=sles16-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -1041,11 +996,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM jammy-build-golang-base AS jammy-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM jammy-build-golang-base AS jammy-build
@@ -1062,7 +1012,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=jammy-build-otel /work/cache /work/cache
 
 COPY --from=jammy-build-systemd /work/cache /work/cache
-COPY --from=jammy-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -1136,11 +1086,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM noble-build-golang-base AS noble-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM noble-build-golang-base AS noble-build
@@ -1157,7 +1102,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=noble-build-otel /work/cache /work/cache
 
 COPY --from=noble-build-systemd /work/cache /work/cache
-COPY --from=noble-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
@@ -1231,11 +1176,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM questing-build-golang-base AS questing-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM questing-build-golang-base AS questing-build
@@ -1252,7 +1192,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=questing-build-otel /work/cache /work/cache
 
 COPY --from=questing-build-systemd /work/cache /work/cache
-COPY --from=questing-build-wrapper /work/cache /work/cache
+
 RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
