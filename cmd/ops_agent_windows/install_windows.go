@@ -87,14 +87,13 @@ func install() error {
 	if diagnosticError != nil {
 		return diagnosticError
 	}
-
 	fluentBitError := cleanupFluentBit(m)
 	if fluentBitError != nil {
 		return fluentBitError
 	}
 
-	handles := make([]*mgr.Service, len(services))
-	for i, s := range services {
+	handles := make([]*mgr.Service, 2)
+	for i, s := range []serviceDescription{mainServiceDescription, otelServiceDescription} {
 		// Registering with the event log is required to suppress the "The description for Event ID 1 from source Google Cloud Ops Agent cannot be found" message in the logs.
 		if err := eventlog.InstallAsEventCreate(s.name, eventlog.Error|eventlog.Warning|eventlog.Info); err != nil {
 			// Ignore error since it likely means the event log already exists.
@@ -102,7 +101,7 @@ func install() error {
 		deps := []string{"rpcss"}
 		if i > 0 {
 			// All services depend on the config generation service.
-			deps = append(deps, services[0].name)
+			deps = append(deps, mainServiceDescription.name)
 		}
 		serviceHandle, err := m.OpenService(s.name)
 		if err == nil {
@@ -145,9 +144,11 @@ func install() error {
 	}
 
 	// Automatically (re)start the Ops Agent service.
-	for i := len(services) - 1; i >= 0; i-- {
-		if err := stopService(handles[i], 30*time.Second); err != nil {
-			return fmt.Errorf("failed to stop service: %v, error: %v", services[i].name, err)
+	for i, s := range []serviceDescription{otelServiceDescription, mainServiceDescription} {
+		// Stop OTel first (index 0 in reverse), then Main (index 1).
+		handleIndex := 1 - i // maps i=0 -> handles[1] (otel), i=1 -> handles[0] (main)
+		if err := stopService(handles[handleIndex], 30*time.Second); err != nil {
+			return fmt.Errorf("failed to stop service: %v, error: %v", s.name, err)
 		}
 	}
 	return handles[0].Start()
@@ -161,9 +162,8 @@ func uninstall() error {
 	defer m.Disconnect()
 	var errs error
 
-	// Have to remove the services in reverse order.
-	for i := len(services) - 1; i >= 0; i-- {
-		s := services[i]
+	// Have to remove the services in reverse order (otel first, then main).
+	for _, s := range []serviceDescription{otelServiceDescription, mainServiceDescription} {
 		serviceHandle, err := m.OpenService(s.name)
 		if err != nil {
 			// Service does not exist, so nothing to delete.

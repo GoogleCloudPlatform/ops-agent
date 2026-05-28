@@ -74,12 +74,17 @@ func main() {
 	}
 }
 
-var services []struct {
+type serviceDescription struct {
 	name        string
 	displayName string
 	exepath     string
 	args        []string
 }
+
+var (
+	mainServiceDescription serviceDescription
+	otelServiceDescription serviceDescription
+)
 
 func init() {
 	if err := initServices(); err != nil {
@@ -113,30 +118,22 @@ func initServices() error {
 	}
 
 	// TODO: Write meaningful descriptions for these services
-	services = []struct {
-		name        string
-		displayName string
-		exepath     string
-		args        []string
-	}{
-		{
-			serviceName,
-			serviceDisplayName,
-			self,
-			[]string{
-				"-in", filepath.Join(base, "../config/config.yaml"),
-				"-out", configOutDir,
-			},
+	mainServiceDescription = serviceDescription{
+		name:        serviceName,
+		displayName: serviceDisplayName,
+		exepath:     self,
+		args: []string{
+			"-in", filepath.Join(base, "../config/config.yaml"),
+			"-out", configOutDir,
 		},
-		{
-			fmt.Sprintf("%s-opentelemetry-collector", serviceName),
-			fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
-			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
-			[]string{
-				"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
-			},
+	}
+	otelServiceDescription = serviceDescription{
+		name:        fmt.Sprintf("%s-opentelemetry-collector", serviceName),
+		displayName: fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
+		exepath:     filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
+		args: []string{
+			"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
 		},
-
 	}
 	return nil
 }
