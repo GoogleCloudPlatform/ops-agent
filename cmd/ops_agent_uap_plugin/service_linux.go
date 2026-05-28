@@ -31,9 +31,9 @@ import (
 	"sync"
 	"syscall"
 
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
 const (
@@ -261,4 +261,3 @@ func (nopCloser) Close() error { return nil }
 func createLogger() (io.Closer, error) {
 	return nopCloser{}, nil
 }
-
