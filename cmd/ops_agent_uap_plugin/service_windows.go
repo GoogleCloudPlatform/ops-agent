@@ -121,8 +121,10 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Trigger Healthchecks asynchronously.
-	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-	go runHealthChecks(healthCheckFileLogger)
+	go func() {
+		healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
+		runHealthChecks(healthCheckFileLogger)
+	}()
 
 	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
 	_, err = createWindowsJobHandle()

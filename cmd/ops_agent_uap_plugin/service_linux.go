@@ -31,6 +31,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
@@ -103,14 +104,16 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Ops Agent config validation
-	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
+	if err := validateOpsAgentConfig(pContext, OpsAgentConfigLocationLinux); err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to validate the custom Ops Agent config: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
 
 	// Trigger Healthchecks asynchronously.
-	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-	go runHealthChecks(healthCheckFileLogger)
+	go func() {
+		healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
+		runHealthChecks(healthCheckFileLogger)
+	}()
 
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
@@ -198,17 +201,9 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 	return string(out), err
 }
 
-func validateOpsAgentConfig(ctx context.Context, pluginInstallDirectory string, pluginStateDirectory string, runCommand RunCommandFunc) error {
-	configValidationCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, ConfGeneratorBinary),
-		"-in", OpsAgentConfigLocationLinux,
-		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
-		"-run-healthchecks=false",
-	)
-	if output, err := runCommand(configValidationCmd); err != nil {
-		return fmt.Errorf("failed to validate the Ops Agent config:\ncommand output: %s\ncommand error: %s", output, err)
-	}
-	return nil
+func validateOpsAgentConfig(ctx context.Context, opsAgentConfigLocation string) error {
+	_, err := confgenerator.MergeConfFiles(ctx, opsAgentConfigLocation)
+	return err
 }
 
 func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
