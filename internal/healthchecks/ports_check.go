@@ -53,7 +53,7 @@ func (c PortsCheck) RunCheck(logger logs.StructuredLogger) error {
 }
 
 func runOtelCollectorCheck(logger logs.StructuredLogger) error {
-	ocActive, err := isSubagentActive("google-cloud-ops-agent-opentelemetry-collector")
+	ocActive, err := isSubagentActive("google-cloud-ops-agent")
 	if err != nil {
 		return err
 	}

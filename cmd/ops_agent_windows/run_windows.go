@@ -171,20 +171,13 @@ func (s *service) generateConfigs(ctx context.Context) error {
 	// TODO: Add flag for passing in log/run path?
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	stateDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run")
-	for _, subagent := range []string{
-		"otel",
-		"fluentbit",
-	} {
-		outDir := filepath.Join(s.outDirectory, subagent)
-		if subagent == "otel" {
-			// The generated otlp metric json files are used only by the otel service.
-			if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, s.userConf, outDir); err != nil {
-				return err
-			}
-		}
-		if err := uc.GenerateFilesFromConfig(ctx, subagent, logsDir, stateDir, outDir); err != nil {
-			return err
-		}
+	outDir := filepath.Join(s.outDirectory, "otel")
+	// The generated otlp metric json files are used only by the otel service.
+	if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, s.userConf, outDir); err != nil {
+		return err
+	}
+	if err := uc.GenerateFilesFromConfig(ctx, logsDir, stateDir, outDir); err != nil {
+		return err
 	}
 	return nil
 }

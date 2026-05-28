@@ -5327,7 +5327,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 		}, ";")
 		return cmd
 	}
-	return "sudo systemctl status google-cloud-ops-agent"
+	return "sudo journalctl -u google-cloud-ops-agent.service --no-pager -n 50"
 }
 
 func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
@@ -6142,7 +6142,7 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 			}
 
 			// Set up systemd overrides for OTel Collector
-			otelOverrideDir := "/etc/systemd/system/google-cloud-ops-agent-opentelemetry-collector.service.d"
+			otelOverrideDir := "/etc/systemd/system/google-cloud-ops-agent.service.d"
 			otelOverrideFile := otelOverrideDir + "/override.conf"
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo mkdir -p %s", otelOverrideDir)); err != nil {
 				t.Fatal(err)

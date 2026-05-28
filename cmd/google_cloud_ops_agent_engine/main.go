@@ -28,7 +28,6 @@ import (
 )
 
 var (
-	service      = flag.String("service", "", "service to generate config for")
 	outDir       = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
 	input        = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 	logsDir      = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
@@ -66,20 +65,18 @@ func run() error {
 	log.Printf("Built-in config:\n%s", confgenerator.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
-	switch *service {
-	case "":
-		runHealthChecks()
-		log.Println("Startup checks finished")
-		if *healthChecks {
-			// If healthchecks is set, stop here
-			return nil
-		}
-	case "otel":
-		// The generated otlp metric json files are used only by the otel service.
-		err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *outDir)
-		if err != nil {
-			return err
-		}
+	runHealthChecks()
+	log.Println("Startup checks finished")
+	if *healthChecks {
+		// If healthchecks is set, stop here
+		return nil
 	}
-	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
+
+	// The generated otlp metric json files are used only by the otel service.
+	err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *outDir)
+	if err != nil {
+		return err
+	}
+
+	return uc.GenerateFilesFromConfig(ctx, *logsDir, *stateDir, *outDir)
 }
