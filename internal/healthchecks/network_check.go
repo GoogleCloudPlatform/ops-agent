@@ -83,7 +83,7 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	bf := backoff.NewExponentialBackOff()
 	expTicker := backoff.NewTicker(backoff.WithMaxRetries(bf, MaxNetworkRequestRetries))
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 10 * time.Second,
 	}
 
 	for range expTicker.C {
