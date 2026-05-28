@@ -26,7 +26,9 @@ import (
 	"github.com/cenkalti/backoff/v4"
 )
 
-const MaxRequestElapsedTime = 15 * time.Second
+const (
+	MaxNetworkRequestRetries = 1
+)
 
 type networkRequest struct {
 	name             string
@@ -79,8 +81,7 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	var response *http.Response
 	var err error
 	bf := backoff.NewExponentialBackOff()
-	bf.MaxElapsedTime = MaxRequestElapsedTime
-	expTicker := backoff.NewTicker(bf)
+	expTicker := backoff.NewTicker(backoff.WithMaxRetries(bf, MaxNetworkRequestRetries))
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}

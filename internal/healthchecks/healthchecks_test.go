@@ -147,7 +147,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 	var expected string
 	var result string
 	var level string
-	for idx, r := range allCheckResults {
+	for _, r := range allCheckResults {
 		switch r.Name {
 		case "Error Check":
 			result = "ERROR"
@@ -164,8 +164,16 @@ func TestRunAllHealthChecks(t *testing.T) {
 		}
 		expected = generateExpectedResultMessage(r.Name, result)
 
-		assert.Check(t, strings.Contains(observedLogs.All()[idx].Entry.Message, expected))
-		assert.Equal(t, observedLogs.All()[idx].Entry.Level.String(), level)
+		var found bool
+		for _, entry := range observedLogs.All() {
+			if strings.Contains(entry.Entry.Message, "["+r.Name+"]") {
+				assert.Check(t, strings.Contains(entry.Entry.Message, expected))
+				assert.Equal(t, entry.Entry.Level.String(), level)
+				found = true
+				break
+			}
+		}
+		assert.Check(t, found, "log entry for %s was not found", r.Name)
 	}
 }
 

@@ -15,10 +15,12 @@
 package healthchecks
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -40,7 +42,10 @@ func (c PortsCheck) Name() string {
 // checkIfPortAvailable listens in the provided socket and local provided network (tcp4, tcp6, ...)
 // and handles the errors if the port is already being used by another process.
 func checkIfPortAvailable(host string, port string, network string) (bool, error) {
-	lsnr, err := net.Listen(network, net.JoinHostPort(host, port))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var lc net.ListenConfig
+	lsnr, err := lc.Listen(ctx, network, net.JoinHostPort(host, port))
 	if err != nil {
 		if isPortUnavailableError(err) {
 			return false, nil
