@@ -53,6 +53,7 @@ func (r MetricsReceiverZookeeper) Pipelines(ctx context.Context) ([]otel.Receive
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),

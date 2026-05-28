@@ -121,9 +121,7 @@ processors:
         - vault.core.leader.duration
   interval/loggingmetrics_8:
     interval: 1m
-  metric_start_time/googlecloud/otel_metrics_0:
-    strategy: subtract_initial_point
-  metric_start_time/googlecloud_metrics_0:
+  metric_start_time/vault_3:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -654,7 +652,7 @@ processors:
       include: vault.core.request.count
       operations:
       - action: toggle_scalar_data_type
-  metricstransform/vault_3:
+  metricstransform/vault_4:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -1372,7 +1370,7 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/vault")
       - set(version, "1.0")
-  transform/vault_4:
+  transform/vault_5:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -1469,7 +1467,6 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -1480,7 +1477,6 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -1499,7 +1495,6 @@ service:
       - interval/loggingmetrics_8
       - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -1508,7 +1503,6 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -1521,7 +1515,6 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/vault_vault:
@@ -1531,10 +1524,10 @@ service:
       - transform/vault_0
       - filter/vault_1
       - metricstransform/vault_2
-      - metricstransform/vault_3
-      - transform/vault_4
+      - metric_start_time/vault_3
+      - metricstransform/vault_4
+      - transform/vault_5
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - prometheus/vault
   telemetry:
