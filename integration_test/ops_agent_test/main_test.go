@@ -5460,8 +5460,6 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		time.Sleep(2 * time.Minute)
-
 		cmdOut, err = getHealthCheckResultsForImage(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)

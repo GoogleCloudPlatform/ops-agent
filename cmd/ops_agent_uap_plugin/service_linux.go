@@ -108,11 +108,9 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return &pb.StartResponse{}, nil
 	}
 
-	// Trigger Healthchecks asynchronously.
-	go func() {
-		healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-		runHealthChecks(healthCheckFileLogger)
-	}()
+	// Trigger Healthchecks.
+	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
+	runHealthChecks(healthCheckFileLogger)
 
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
