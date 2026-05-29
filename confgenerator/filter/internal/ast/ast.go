@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"go.uber.org/multierr"
 )
@@ -110,39 +109,14 @@ func (m Target) ottlPath() ([]string, error) {
 	return otel, nil
 }
 
-func (m Target) fluentBitPath() ([]string, error) {
-	unquoted, err := m.Unquote()
-	if err != nil {
-		return nil, err
-	}
-	var fluentBit []string
-	if len(unquoted) == 1 {
-		if v, ok := logEntryRootValueMapToFluentBit[unquoted[0]]; ok {
-			fluentBit = []string{v}
-		}
-	}
-	if len(unquoted) >= 1 {
-		if v, ok := logEntryRootStructMapToFluentBit[unquoted[0]]; ok {
-			fluentBit = prepend(v, unquoted[1:])
-		} else if unquoted[0] == "jsonPayload" && len(unquoted) > 1 {
-			// Special case for jsonPayload, where the root "jsonPayload" must be omitted
-			fluentBit = unquoted[1:]
-		}
-	}
-	if fluentBit == nil {
-		return nil, fmt.Errorf("field %q not found", strings.Join(m, "."))
-	}
-	return fluentBit, nil
-}
-
 // Equals checks if two valid targets are equal.
 // Invalid targets are never equal.
 func (m Target) Equals(m2 Target) bool {
-	s1, err := m.fluentBitPath()
+	s1, err := m.ottlPath()
 	if err != nil {
 		return false
 	}
-	s2, err := m2.fluentBitPath()
+	s2, err := m2.ottlPath()
 	if err != nil {
 		return false
 	}
@@ -157,39 +131,6 @@ func (m Target) Equals(m2 Target) bool {
 	return true
 }
 
-func (m Target) checkValidCharacters() error {
-	unquoted, err := m.Unquote()
-	if err != nil {
-		return err
-	}
-	for _, part := range unquoted {
-		// Disallowed characters because they cannot be encoded in a fluent-bit Record Accessor.
-		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
-		// (interestingly, \f and \v work fine...)
-		// TODO: Remove when fluent-bit is no longer supported
-		if strings.ContainsAny(part, "\n\r\", ") {
-			return fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %q", part)
-		}
-	}
-	return nil
-}
-
-// RecordAccessor returns a string that can be used as a key in a FluentBit config
-func (m Target) RecordAccessor() (string, error) {
-	fluentBit, err := m.fluentBitPath()
-	if err != nil {
-		return "", err
-	}
-	if err := m.checkValidCharacters(); err != nil {
-		return "", err
-	}
-	recordAccessor := "$record"
-	for _, part := range fluentBit {
-		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(part, `'`, `''`))
-	}
-	return recordAccessor, nil
-}
-
 // OTTLAccessor returns a string that can be used to refer to the field in OTTL
 func (m Target) OTTLAccessor() (ottl.LValue, error) {
 	otel, err := m.ottlPath()
@@ -197,49 +138,6 @@ func (m Target) OTTLAccessor() (ottl.LValue, error) {
 		return nil, err
 	}
 	return ottl.LValue(otel), nil
-}
-
-// LuaAccessor returns the value of the target (with write=false) or a function that takes one argument to set the target (with write=true).
-func (m Target) LuaAccessor(write bool) (string, error) {
-	fluentBit, err := m.fluentBitPath()
-	if err != nil {
-		return "", err
-	}
-	// Make a copy so we don't mutate m
-	fluentBit = append([]string{}, fluentBit...)
-	for i := range fluentBit {
-		fluentBit[i] = LuaQuote(fluentBit[i])
-	}
-	var out strings.Builder
-	if write {
-		out.WriteString(`(function(value)
-`)
-	} else {
-		out.WriteString(`(function()
-`)
-	}
-	for i := 0; i < len(fluentBit)-1; i++ {
-		p := strings.Join(fluentBit[:i+1], "][")
-		fmt.Fprintf(&out, `if record[%s] == nil
-then
-`, p)
-		if write {
-			fmt.Fprintf(&out, `record[%s] = {}
-`, p)
-		} else {
-			fmt.Fprintf(&out, "return nil\n")
-		}
-		fmt.Fprintf(&out, "end\n")
-	}
-	p := strings.Join(fluentBit, "][")
-	if write {
-		fmt.Fprintf(&out, `record[%s] = value
-end)`, p)
-	} else {
-		fmt.Fprintf(&out, `return record[%s]
-end)()`, p)
-	}
-	return out.String(), nil
 }
 
 const (
@@ -339,18 +237,9 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 	}
 	switch lhs := lhs.(type) {
 	case Target:
-		// Eager validation
-		if err := lhs.checkValidCharacters(); err != nil {
-			// TODO: Unnecessary, but preserved until we drop fluent-bit.
+		// Eager validation for OTel OTTL compatibility
+		if _, err := lhs.OTTLAccessor(); err != nil {
 			return nil, err
-		}
-
-		_, err := lhs.RecordAccessor()
-		if err != nil {
-			_, err := lhs.OTTLAccessor()
-			if err != nil {
-				return nil, err
-			}
 		}
 		r.LHS = lhs
 	default:
@@ -400,81 +289,6 @@ func (r Restriction) String() string {
 	return fmt.Sprintf(`%s %s %s`, r.LHS, r.Operator, escapeFilterString(r.RHS))
 }
 
-func modify(tag, key string) fluentbit.Component {
-	return fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":  "modify",
-			"Match": tag,
-			"Set":   fmt.Sprintf("%s 1", key),
-		},
-	}
-}
-
-func cond(ctype string, values ...string) string {
-	return fmt.Sprintf("%s %s", ctype, strings.Join(values, " "))
-}
-
-func escapeWhitespaceFluentBit(s string) string {
-	s = strings.ReplaceAll(s, "\a", `\a`)
-	s = strings.ReplaceAll(s, "\b", `\x08`)
-	s = strings.ReplaceAll(s, "\f", `\f`)
-	s = strings.ReplaceAll(s, "\n", `\n`)
-	s = strings.ReplaceAll(s, "\r", `\r`)
-	s = strings.ReplaceAll(s, "\t", `\t`)
-	s = strings.ReplaceAll(s, "\v", `\v`)
-	s = strings.ReplaceAll(s, " ", `\x20`)
-	return s
-}
-
-func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
-	lhs, _ := r.LHS.LuaAccessor(false)
-	rhsQuoted := LuaQuote(r.RHS)
-	rhsRegex := escapeWhitespaceFluentBit(r.RHS)
-
-	// TODO: Add support for numeric comparisons
-
-	var expr string
-
-	switch r.Operator {
-	case "GLOBAL", "<", "<=", ">", ">=":
-		panic(fmt.Errorf("unimplemented operator: %s", r.Operator))
-	case ":":
-		// substring match, case insensitive
-		expr = fmt.Sprintf(`(string.find(string.lower(tostring(v)), string.lower(%s), 1, false) ~= nil)`, rhsQuoted)
-	case "=~", "!~":
-		// regex match, case sensitive
-
-		// TODO: Re-implement using Lua once regex is supported. Lua has been shown to perform better
-		// than the next/modify/lift pattern used here, but we are unable to use Lua for now since
-		// it does not yet support regex.
-
-		c := modify(tag, key)
-		lhsRA, err := r.LHS.RecordAccessor()
-		if err != nil {
-			panic(fmt.Errorf("LHS %v couldn't parse: %w", r.LHS, err))
-		}
-		if r.Operator == "=~" {
-			c.Config["Condition"] = cond("Key_value_matches", lhsRA, rhsRegex)
-		} else {
-			c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhsRA, rhsRegex)})
-		}
-		return []fluentbit.Component{c}, fmt.Sprintf(`(record[%s] ~= nil)`, LuaQuote(key))
-	case "=":
-		// equality, case insensitive
-		expr = fmt.Sprintf(`(string.lower(tostring(v)) == string.lower(%s))`, rhsQuoted)
-	case "!=":
-		// inequality, case insensitive
-		expr = fmt.Sprintf(`(string.lower(tostring(v)) ~= string.lower(%s))`, rhsQuoted)
-	}
-	if expr != "" {
-		// All comparisons involving a missing field are false
-		return nil, fmt.Sprintf(`(function(v) if v == nil then return false end return %s end)(%s)`, expr, lhs)
-	}
-	// This is all the supported operators.
-	panic(fmt.Errorf("unknown operator: %s", r.Operator))
-}
-
 func (r Restriction) OTTLExpression() (ottl.Value, error) {
 	lhs, _ := r.LHS.OTTLAccessor()
 
@@ -519,9 +333,6 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 type Expression interface {
 	// Simplify returns a logically equivalent Expression.
 	Simplify() Expression
-
-	// FluentConfig returns an optional sequence of fluentbit operations and a Lua expression that can be evaluated to determine if the expression matches the record.
-	FluentConfig(tag, key string) ([]fluentbit.Component, string)
 
 	// OTTLExpression returns an OTTL value that can be used to evaluate the expression.
 	OTTLExpression() (ottl.Value, error)
@@ -572,18 +383,6 @@ func (c Conjunction) Append(a Attrib) (Conjunction, error) {
 
 type exprSlice []Expression
 
-func (s exprSlice) FluentConfig(tag, key, operator string) ([]fluentbit.Component, string) {
-	var components []fluentbit.Component
-	var exprs []string
-	for i, e := range s {
-		subkey := fmt.Sprintf("%s_%d", key, i)
-		exprComponents, expr := e.FluentConfig(tag, subkey)
-		components = append(components, exprComponents...)
-		exprs = append(exprs, expr)
-	}
-	return components, fmt.Sprintf(`(%s)`, strings.Join(exprs, operator))
-}
-
 func (s exprSlice) OTTLExpression(operator func(...ottl.Value) ottl.Value) (ottl.Value, error) {
 	var values []ottl.Value
 	var err error
@@ -601,10 +400,6 @@ func (s exprSlice) String(operator string) string {
 		out = append(out, e.String())
 	}
 	return fmt.Sprintf("(%s)", strings.Join(out, ") "+operator+" ("))
-}
-
-func (c Conjunction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
-	return exprSlice(c).FluentConfig(tag, key, " and ")
 }
 
 func (c Conjunction) OTTLExpression() (ottl.Value, error) {
@@ -642,10 +437,6 @@ func (d Disjunction) Append(a Attrib) (Disjunction, error) {
 	return nil, fmt.Errorf("expected expression: %v", a)
 }
 
-func (d Disjunction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
-	return exprSlice(d).FluentConfig(tag, key, " or ")
-}
-
 func (d Disjunction) OTTLExpression() (ottl.Value, error) {
 	return exprSlice(d).OTTLExpression(ottl.Or)
 }
@@ -660,11 +451,6 @@ type Negation struct {
 
 func (n Negation) Simplify() Expression {
 	return Negation{n.Expression.Simplify()}
-}
-
-func (n Negation) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
-	c, expr := n.Expression.FluentConfig(tag, key)
-	return c, fmt.Sprintf("(not %s)", expr)
 }
 
 func (n Negation) OTTLExpression() (ottl.Value, error) {

@@ -621,23 +621,7 @@ func (p LoggingProcessorExcludeLogs) filters() ([]*filter.Filter, error) {
 }
 
 func (p LoggingProcessorExcludeLogs) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	filters, err := p.filters()
-	if err != nil {
-		panic(err)
-	}
-	components, lua := filter.AllFluentConfig(tag, map[string]*filter.Filter{
-		"match": filter.MatchesAny(filters),
-	})
-	components = append(components, fluentbit.LuaFilterComponents(
-		tag, "process", fmt.Sprintf(`
-function process(tag, timestamp, record)
-%s
-  if match then
-    return -1, 0, 0
-  end
-  return 2, 0, record
-end`, lua))...)
-	return components
+	return nil
 }
 
 func (p LoggingProcessorExcludeLogs) Processors(ctx context.Context) ([]otel.Component, error) {
