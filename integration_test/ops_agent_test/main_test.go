@@ -5425,7 +5425,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !isHealthCheckTestImage(imageSpec) {
 			t.SkipNow()
@@ -5433,7 +5433,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 

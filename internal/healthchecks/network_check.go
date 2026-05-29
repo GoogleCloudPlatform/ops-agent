@@ -23,12 +23,9 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
-	"github.com/cenkalti/backoff/v4"
 )
 
-const (
-	MaxNetworkRequestRetries = 1
-)
+
 
 type networkRequest struct {
 	name             string
@@ -78,27 +75,18 @@ var (
 )
 
 func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
-	var response *http.Response
-	var err error
-	bf := backoff.NewExponentialBackOff()
-	expTicker := backoff.NewTicker(backoff.WithMaxRetries(bf, MaxNetworkRequestRetries))
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	for range expTicker.C {
-		response, err = client.Get(r.url)
-		if err == nil && response.StatusCode == http.StatusOK {
-			expTicker.Stop()
-			break
-		}
-	}
+	response, err := client.Get(r.url)
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
 			return r.healthCheckError
 		}
 		return err
 	}
+	defer response.Body.Close()
 	logger.Infof("%s response status: %s", r.name, response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
