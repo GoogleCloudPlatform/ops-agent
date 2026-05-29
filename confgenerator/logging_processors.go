@@ -105,8 +105,8 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 }
 
 // Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
-func (p ParserShared) FluentBitSpecialFieldsStatements(ctx context.Context) ottl.Statements {
-	fields := filter.FluentBitSpecialFields()
+func (p ParserShared) SpecialFieldsStatements(ctx context.Context) ottl.Statements {
+	fields := filter.SpecialFields()
 	var names []string
 	for f := range fields {
 		if fields[f] == "labels" {
@@ -191,7 +191,7 @@ func (p LoggingProcessorParseJson) Processors(ctx context.Context) ([]otel.Compo
 	}
 	statements = statements.Append(ts)
 
-	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
+	statements = statements.Append(p.SpecialFieldsStatements(ctx))
 
 	return []otel.Component{otel.Transform(
 		"log", "log",
@@ -267,7 +267,7 @@ func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Comp
 	}
 	statements = statements.Append(ts)
 
-	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
+	statements = statements.Append(p.SpecialFieldsStatements(ctx))
 
 	return []otel.Component{otel.Transform(
 		"log", "log",

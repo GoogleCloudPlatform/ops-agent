@@ -65,35 +65,24 @@ var logEntryRootStructMapToOTel = map[string][]string{
 	"httpRequest":    {"attributes", "gcp.http_request"},
 }
 
-var logEntryRootValueMapToFluentBit = map[string]string{
-	"severity": "logging.googleapis.com/severity",
-	"logName":  "logging.googleapis.com/logName",
-	"trace":    "logging.googleapis.com/trace",
-	"spanId":   "logging.googleapis.com/spanId",
+var specialFieldsMap = map[string]string{
+	"logging.googleapis.com/severity":       "severity",
+	"logging.googleapis.com/logName":        "logName",
+	"logging.googleapis.com/trace":          "trace",
+	"logging.googleapis.com/spanId":         "spanId",
+	"logging.googleapis.com/labels":         "labels",
+	"logging.googleapis.com/operation":      "operation",
+	"logging.googleapis.com/sourceLocation": "sourceLocation",
+	"logging.googleapis.com/httpRequest":    "httpRequest",
 }
 
-var logEntryRootStructMapToFluentBit = map[string]string{
-	"labels":         "logging.googleapis.com/labels",
-	"operation":      "logging.googleapis.com/operation",
-	"sourceLocation": "logging.googleapis.com/sourceLocation",
-	// TODO: This needs to be the same as confgenerator.HttpRequestKey. Importing
-	// that package here results in a circular import. That should move somewhere
-	// better, and once it does we can use that here.
-	"httpRequest": "logging.googleapis.com/httpRequest",
-}
-
-func FluentBitSpecialFields() map[string]string {
+func SpecialFields() map[string]string {
 	out := map[string]string{}
-	for _, m := range []map[string]string{
-		logEntryRootValueMapToFluentBit,
-		logEntryRootStructMapToFluentBit,
-	} {
-		for k, v := range m {
-			if _, ok := logEntryRootValueMapToOTel[k]; ok {
-				out[v] = k
-			} else if _, ok := logEntryRootStructMapToOTel[k]; ok {
-				out[v] = k
-			}
+	for k, v := range specialFieldsMap {
+		if _, ok := logEntryRootValueMapToOTel[v]; ok {
+			out[k] = v
+		} else if _, ok := logEntryRootStructMapToOTel[v]; ok {
+			out[k] = v
 		}
 	}
 	return out
