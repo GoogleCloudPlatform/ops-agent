@@ -5389,7 +5389,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			if gce.IsCentOS(vm.ImageSpec) || gce.IsRHEL(vm.ImageSpec) {
 				packages = []string{"nc"}
 			} else {
-				packages = []string{"netcat"}
+				packages = []string{"netcat-traditional"}
 			}
 			err := agents.InstallPackages(ctx, logger, vm, packages)
 			if err != nil {
