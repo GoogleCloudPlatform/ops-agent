@@ -30,8 +30,6 @@ import (
 // Therefore, it does not need to implement any interfaces.
 type AgentSelfMetrics struct {
 	MetricsVersionLabel string
-	LoggingVersionLabel string
-	FluentBitPort       int
 	OtelPort            int
 	OtelRuntimeDir      string
 }
@@ -95,12 +93,6 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 		Processors:           r.OtelPipelineProcessors(ctx),
 	}
 
-	pipelines["fluentbit"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "agent_prometheus",
-		Processors:           r.FluentBitPipelineProcessors(),
-	}
-
 	pipelines["loggingmetrics"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "agent_prometheus",
@@ -121,15 +113,7 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.Re
 			Config: map[string]interface{}{
 				"config": map[string]interface{}{
 					"scrape_configs": []map[string]interface{}{
-						{
-							"job_name":        "logging-collector",
-							"scrape_interval": "1m",
-							"metrics_path":    "/metrics",
-							"static_configs": []map[string]interface{}{{
-								// TODO(b/196990135): Customization for the port number
-								"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.FluentBitPort)},
-							}},
-						},
+
 						{
 							"job_name":        "otel-collector",
 							"scrape_interval": "1m",
@@ -257,25 +241,6 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 	}
 }
 
-func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
-	return []otel.Component{
-		otel.MetricsFilter(
-			"include",
-			"strict",
-			"fluentbit_uptime",
-		),
-		otel.MetricsTransform(
-			otel.RenameMetric("fluentbit_uptime", "agent/uptime",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.AddLabel("version", r.LoggingVersionLabel),
-				// remove service.version label
-				otel.AggregateLabels("sum", "version"),
-			),
-			otel.AddPrefix("agent.googleapis.com"),
-		),
-	}
-}
 
 func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) []otel.Component {
 	durationMetric := "grpc.client.attempt.duration"
@@ -319,40 +284,19 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 		otel.MetricsFilter(
 			"include",
 			"strict",
-			"fluentbit_stackdriver_requests_total",
-			"fluentbit_stackdriver_proc_records_total",
-			"fluentbit_stackdriver_retried_records_total",
 			"otelcol_exporter_sent_log_records",
 			"otelcol_exporter_send_failed_log_records",
 			durationCountMetric,
 		),
-		// Format fluentbit and otel logging metrics before aggregation.
+		// Format otel logging metrics before aggregation.
 		otel.MetricsTransform(
-			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "fluentbit_log_entry_retry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
 			otel.DuplicateMetric("otelcol_exporter_send_failed_log_records", "otel_log_entry_retry_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,
 				otel.AddLabel("response_code", "400"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
-			otel.RenameMetric("fluentbit_stackdriver_requests_total", "fluentbit_request_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
 			otelRequestCount,
-			otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "fluentbit_log_entry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
 			otel.RenameMetric("otelcol_exporter_sent_log_records", "otel_log_entry_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,
@@ -373,7 +317,6 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 		// calculate next point values as difference with the "first point" value.
 		otel.CumulativeToDeltaWithInitialValue("drop",
 			"otel_log_entry_count", "otel_log_entry_retry_count", "otel_request_count",
-			"fluentbit_log_entry_count", "fluentbit_log_entry_retry_count", "fluentbit_request_count",
 		),
 		otel.TransformationMetrics(
 			// Set "start_time_unix_nano = 0" and "time = Now()" so "deltatocumulative" can sum all points
@@ -393,9 +336,6 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 				Statement: `set(unit, "1")`,
 			},
 			// Rename metrics for aggregation by "deltatocumulative".
-			otel.SetName("fluentbit_log_entry_count", "agent/log_entry_count"),
-			otel.SetName("fluentbit_log_entry_retry_count", "agent/log_entry_retry_count"),
-			otel.SetName("fluentbit_request_count", "agent/request_count"),
 			otel.SetName("otel_log_entry_count", "agent/log_entry_count"),
 			otel.SetName("otel_log_entry_retry_count", "agent/log_entry_retry_count"),
 			otel.SetName("otel_request_count", "agent/request_count"),
