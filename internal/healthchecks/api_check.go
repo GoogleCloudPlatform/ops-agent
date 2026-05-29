@@ -28,7 +28,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
-	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
 	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
@@ -51,7 +50,6 @@ const (
 	ServiceDisabled              = "SERVICE_DISABLED"
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
-	MaxMonitoringPingRetries     = 1
 )
 
 func createMonitoringPingRequest(resource resourcedetector.Resource) *monitoringpb.CreateTimeSeriesRequest {
@@ -180,13 +178,7 @@ func createTelemetryLogsRequest(resource resourcedetector.Resource) *collogspb.E
 // time series point with empty values to an Ops Agent specific metric.
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, resource resourcedetector.Resource) error {
-	// Points written to a time series must be at least 5 seconds apart. Because `monitoringPing` might
-	// be called multiple times in quick succession, the first attempted request to `CreateTimeSeries`
-	// may fail. We can retry the request >5 seconds later in such cases.
-	// https://cloud.google.com/monitoring/quotas
-	pingBackoff := backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), MaxMonitoringPingRetries), ctx)
-	pingOperation := func() error { return client.CreateTimeSeries(ctx, createMonitoringPingRequest(resource)) }
-	return backoff.Retry(pingOperation, pingBackoff)
+	return client.CreateTimeSeries(ctx, createMonitoringPingRequest(resource))
 }
 
 func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
