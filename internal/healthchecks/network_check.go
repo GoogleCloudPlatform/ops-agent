@@ -25,8 +25,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-
-
 type networkRequest struct {
 	name             string
 	url              string
