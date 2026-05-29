@@ -763,7 +763,7 @@ func TestCustomLogFile(t *testing.T) {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message =~ "7654321"`); err != nil {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
