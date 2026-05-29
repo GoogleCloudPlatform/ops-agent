@@ -23,8 +23,8 @@ RuntimeDirectory=google-cloud-ops-agent
 StateDirectory=google-cloud-ops-agent
 LogsDirectory=google-cloud-ops-agent
 # Validate config, run health checks, and generate configurations.
-ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml -logs ${LOGS_DIRECTORY} -state ${STATE_DIRECTORY}
-ExecStart=@PREFIX@/subagents/opentelemetry-collector/otelopscol --config=${RUNTIME_DIRECTORY}/otel.yaml
+ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml -logs /var/log/google-cloud-ops-agent -state /var/lib/google-cloud-ops-agent -out /run/google-cloud-ops-agent
+ExecStart=@PREFIX@/subagents/opentelemetry-collector/otelopscol --config=/run/google-cloud-ops-agent/otel.yaml
 Restart=always
 # For debugging:
 RuntimeDirectoryPreserve=yes

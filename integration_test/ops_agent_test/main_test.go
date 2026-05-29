@@ -5363,6 +5363,7 @@ func listenToPortForImage(vm *gce.VM) string {
 }
 
 func TestPortsAndAPIHealthChecks(t *testing.T) {
+	t.Skip("Fluent Bit is removed. OTel self logs collection is not yet implemented (tracked in b/517541093).")
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -5471,6 +5472,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 }
 
 func TestParsingFailureCheck(t *testing.T) {
+	t.Skip("Fluent Bit is removed. OTel self logs collection is not yet implemented (tracked in b/517541093).")
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
