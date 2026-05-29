@@ -1090,7 +1090,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	}
 
 	if gce.IsWindows(vm.ImageSpec) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin -Force"); err != nil {
 			return err
 		}
 
@@ -1189,7 +1189,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
 func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Path %s", windowsAgentGCSDownloadPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Path %s -Force", windowsAgentGCSDownloadPath)); err != nil {
 		return err
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo %s", gcsPath, windowsAgentGCSDownloadPath)); err != nil {
