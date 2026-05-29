@@ -34,7 +34,6 @@ import (
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -50,15 +49,11 @@ import (
 )
 
 const (
-	flbMainConf          = "fluent_bit_main.conf"
-	flbParserConf        = "fluent_bit_parser.conf"
-	transformationInput  = "input.log"
-	transformationOutput = "output_fluentbit.yaml"
-	flbTag               = "transformation_test"
+	transformationInput = "input.log"
+	flbTag              = "transformation_test"
 )
 
 var (
-	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 
 	multilineTestPatterns = newTestMatchPatterns([]string{
@@ -124,10 +119,7 @@ func TestTransformationTests(t *testing.T) {
 			if err != nil {
 				t.Fatal("failed to unmarshal config:", err)
 			}
-			t.Run("fluent-bit", func(t *testing.T) {
-				t.Parallel()
-				transformationConfig.runFluentBitTest(t, dir.Name())
-			})
+
 			t.Run("otel", func(t *testing.T) {
 				t.Parallel()
 				transformationConfig.runOTelTest(t, dir.Name())
@@ -138,92 +130,6 @@ func TestTransformationTests(t *testing.T) {
 			})
 		})
 	}
-}
-
-func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
-	ctx, cancel := context.WithCancel(testContext())
-	defer cancel()
-
-	if isMultilineTest(name) {
-		ctx = contextWithFlbMultilineTest(ctx)
-	}
-
-	// Generate config files
-	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
-	if err != nil {
-		t.Fatalf("failed to generate config files: %v", err)
-	}
-
-	if len(*flbPath) == 0 {
-		t.Skip("--flb not supplied")
-	}
-
-	// Write config files in temp directory
-	tempPath := t.TempDir()
-	for k, v := range genFiles {
-		err := confgenerator.WriteConfigFile([]byte(v), filepath.Join(tempPath, k))
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("generated file %q\n%s", k, v)
-	}
-
-	testStartTime := time.Now()
-
-	// Start Fluent-bit
-	cmd := exec.Command(
-		*flbPath,
-		"-v",
-		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
-		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
-
-	// unmarshal output
-	data := []map[string]any{}
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		t.Log(stderr.String())
-		t.Log("Failed to run command:", err)
-		data = append(data, map[string]any{"exit_error": err.Error()})
-		sanitizedStderr := sanitizeFluentBitStderr(t, stderr.String())
-		data = append(data, map[string]any{"collector_errors": map[string]any{"stderr": sanitizedStderr}})
-	}
-	t.Logf("stderr: %s\n", stderr.Bytes())
-
-	dec := json.NewDecoder(strings.NewReader(stdout.String()))
-	for {
-		var req map[string]any
-		// decode an array value (Message)
-		if err := dec.Decode(&req); err == io.EOF {
-			break
-		} else if err != nil {
-			t.Fatal(err)
-		}
-		data = append(data, req)
-	}
-
-	// transform timestamp of actual results
-	for _, req := range data {
-		// Only search for entries if stdout is not null
-		if val, ok := req["entries"].([]any); ok {
-			for _, e := range val {
-				entry := e.(map[string]interface{})
-				date := entry["timestamp"].(string)
-				timestamp, err := time.Parse(time.RFC3339Nano, date)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if timestamp.After(testStartTime) {
-					entry["timestamp"] = "now"
-				}
-			}
-		}
-	}
-
-	checkOutput(t, filepath.Join(name, transformationOutput), data)
 }
 
 func checkOutput(t *testing.T, name string, got []map[string]any) {
@@ -299,74 +205,6 @@ func (t transformationTest) pipelineInstance(path string) confgenerator.Pipeline
 		}},
 		Processors: processors,
 	}
-}
-
-func generateFluentBitConfigs(ctx context.Context, name string, transformationTest transformationTest) (map[string]string, error) {
-	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
-	if err != nil {
-		return nil, err
-	}
-
-	components := []fluentbit.Component{}
-
-	if contextHasFlbMulttilineTest(ctx) {
-		service := fluentbit.Component{
-			Kind: "SERVICE",
-			Config: map[string]string{
-				// The combination of Exit_On_Eof on a tail receiver with a multiline parser causes
-				// the last log in a file to be dropped. See :
-				// - https://github.com/fluent/fluent-bit/issues/8623
-				// - https://github.com/fluent/fluent-bit/issues/8353
-				// - https://github.com/fluent/fluent-bit/issues/3926
-				// Some attempts of a solution have been implemented :
-				// - https://github.com/fluent/fluent-bit/pull/8545
-				// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
-				// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
-
-				// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
-				// Set the "Flush" time to 10s, which fixes a race condition in multiline tests that
-				// would sometimes perform a final flush and cause the last line to appear.
-				// (Started in Fluent Bit 4.0.13)
-				//
-				// These settings in combination forces the last log line from any multiline parser
-				// to always be dropped.
-				"Grace": "0",
-				"Flush": "10",
-			},
-		}
-
-		components = append(components, service)
-	}
-
-	pi := transformationTest.pipelineInstance(abs)
-	fbSource, err := pi.FluentBitComponents(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	output := fluentbit.Component{
-		Kind: "OUTPUT",
-		Config: map[string]string{
-			"Match":                         "*",
-			"Name":                          "stackdriver",
-			"Retry_Limit":                   "3",
-			"http_request_key":              "logging.googleapis.com/httpRequest",
-			"net.connect_timeout_log_error": "False",
-			"resource":                      "gce_instance",
-			"stackdriver_agent":             "Google-Cloud-Ops-Agent-Logging/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)",
-			"storage.total_limit_size":      "2G",
-			"tls":                           "On",
-			"tls.verify":                    "Off",
-			"workers":                       "8",
-			"test_log_entry_format":         "true",
-			"export_to_project_id":          "my-project",
-		},
-	}
-	components = append(components, fbSource.Components...)
-	components = append(components, output)
-	return fluentbit.ModularConfig{
-		Components: components,
-	}.Generate()
 }
 
 func testContext() context.Context {
@@ -688,17 +526,6 @@ func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesReques
 		}
 	}
 	return req
-}
-
-func sanitizeFluentBitStderr(t *testing.T, input string) string {
-	// We need to remove non-deterministic information from fluent-bit stderr so the goldens don't keep changing.
-	// Only keep "[error]" lines.
-	result := strings.Join(regexp.MustCompile(`(?m)^.*\[error\].*$`).FindAllString(input, -1), "\n")
-	// Remove timestamps
-	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}(?:.\d+)?`).ReplaceAllString(result, "YYYY/MM/DD HH:MM:SS")
-
-	result = strings.ReplaceAll(result, "\t", "  ")
-	return result
 }
 
 func sanitizeOtelStacktrace(t *testing.T, input string) string {

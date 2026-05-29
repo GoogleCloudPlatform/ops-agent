@@ -109,13 +109,7 @@ func AgentServices(t *testing.T, imageSpec string, pkgs []AgentPackage) []AgentS
 				// This service doesn't currently have an uptime metric.
 				UptimeMetricName: "",
 			},
-			{
-				ServiceName: "google-cloud-ops-agent-fluent-bit",
-				PackageName: "google-cloud-ops-agent-fluent-bit",
-				// TODO(b/170138116): Enable this metric once it is being uploaded for
-				// Fluent-Bit.
-				UptimeMetricName: "",
-			},
+
 			{
 				ServiceName:      "google-cloud-ops-agent-opentelemetry-collector",
 				PackageName:      "google-cloud-ops-agent-opentelemetry-collector",
@@ -144,13 +138,7 @@ func AgentServices(t *testing.T, imageSpec string, pkgs []AgentPackage) []AgentS
 			)
 		case OpsAgentType:
 			services = append(services,
-				AgentService{
-					ServiceName: "google-cloud-ops-agent-fluent-bit",
-					PackageName: "google-cloud-ops-agent",
-					// TODO(b/170138116): Enable this check once the uptime metric is
-					// being uploaded for Fluent-Bit.
-					UptimeMetricName: "",
-				},
+
 				AgentService{
 					ServiceName:      "google-cloud-ops-agent-opentelemetry-collector",
 					PackageName:      "google-cloud-ops-agent",
@@ -200,8 +188,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	// hang, so give them a shorter timeout to avoid hanging the whole test.
 	metricsCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	fbPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-fluent-bit -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20202; fi; curl -s localhost:$PORT/metrics'`, confgenerator.ExperimentalFluentBitMetricsPortEnv)
-	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, fbPortCmd)
+
 
 	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-opentelemetry-collector -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, confgenerator.ExperimentalOtelMetricsPortEnv)
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, otelPortCmd)
@@ -231,11 +218,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 			"~/uap_plugin_ps.log",
 			"~/uap_plugin_ports.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/nvidia-installer.log",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
@@ -245,11 +229,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		gce.SyslogLocation(imageSpec),
 		OpsAgentConfigPath(imageSpec),
 		"/var/log/google-cloud-ops-agent/health-checks.log",
-		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
 		"/var/log/nvidia-installer.log",
-		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
-		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
