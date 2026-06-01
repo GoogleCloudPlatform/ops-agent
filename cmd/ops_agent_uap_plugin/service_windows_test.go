@@ -338,6 +338,11 @@ func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
 		return runCommand(cmd)
 	}
 
+	go func() {
+		time.Sleep(2 * time.Second)
+		cancel()
+	}()
+
 	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommand)
 
 	if ctx.Err() != context.Canceled {

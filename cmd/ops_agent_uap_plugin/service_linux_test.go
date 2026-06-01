@@ -337,9 +337,17 @@ func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
 
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand)
-	time.Sleep(3 * time.Second)
-	cancel()
+	mockRunCommand := func(cmd *exec.Cmd) (string, error) {
+		time.Sleep(10 * time.Second)
+		return runCommand(cmd)
+	}
+
+	go func() {
+		time.Sleep(2 * time.Second)
+		cancel()
+	}()
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommand)
 
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")
