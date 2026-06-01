@@ -191,7 +191,6 @@ func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, plu
 	confGeneratorBinaryFullPath := path.Join(pluginInstallDirectory, ConfGeneratorBinary)
 	otelConfigGenerationCmd := exec.CommandContext(ctx,
 		confGeneratorBinaryFullPath,
-		"-service", "otel",
 		"-in", OpsAgentConfigLocationLinux,
 		"-out", path.Join(pluginStateDirectory, OtelRuntimeDirectory),
 		"-logs", path.Join(pluginStateDirectory, LogsDirectory),

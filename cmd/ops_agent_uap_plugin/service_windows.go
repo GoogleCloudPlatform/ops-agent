@@ -221,7 +221,6 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 
 	if err := uc.GenerateFilesFromConfig(
 		ctx,
-		"otel",
 		filepath.Join(pluginStateDir, LogsDirectory),
 		filepath.Join(pluginStateDir, RuntimeDirectory),
 		filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {

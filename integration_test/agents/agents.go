@@ -140,7 +140,7 @@ func AgentServices(t *testing.T, imageSpec string, pkgs []AgentPackage) []AgentS
 			services = append(services,
 
 				AgentService{
-					ServiceName:      "google-cloud-ops-agent-opentelemetry-collector",
+					ServiceName:      "google-cloud-ops-agent",
 					PackageName:      "google-cloud-ops-agent",
 					UptimeMetricName: "google-cloud-ops-agent-metrics",
 				},
@@ -190,7 +190,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	defer cancel()
 
 
-	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-opentelemetry-collector -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, confgenerator.ExperimentalOtelMetricsPortEnv)
+	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, confgenerator.ExperimentalOtelMetricsPortEnv)
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, otelPortCmd)
 
 	isUAPPlugin := gce.IsOpsAgentUAPPlugin()
@@ -231,9 +231,9 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		"/var/log/google-cloud-ops-agent/health-checks.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
 		"/var/log/nvidia-installer.log",
-		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
-		"/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
-		"/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
+		"/run/google-cloud-ops-agent/otel.yaml",
+		"/run/google-cloud-ops-agent/feature_tracking_otlp.json",
+		"/run/google-cloud-ops-agent/enabled_receivers_otlp.json",
 	}
 }
 
@@ -1221,7 +1221,7 @@ func GetOtelConfigPath(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
 	}
-	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+	return "/var/run/google-cloud-ops-agent/otel.yaml"
 }
 
 const (

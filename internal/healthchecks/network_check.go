@@ -81,8 +81,11 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	bf.MaxElapsedTime = MaxRequestElapsedTime
 	expTicker := backoff.NewTicker(bf)
 
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
 	for range expTicker.C {
-		response, err = http.Get(r.url)
+		response, err = client.Get(r.url)
 		if err == nil && response.StatusCode == http.StatusOK {
 			expTicker.Stop()
 			break
