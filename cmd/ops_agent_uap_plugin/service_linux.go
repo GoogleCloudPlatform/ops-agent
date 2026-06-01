@@ -39,7 +39,6 @@ import (
 const (
 	OpsAgentConfigLocationLinux = "/etc/google-cloud-ops-agent/config.yaml"
 	ConfGeneratorBinary         = "libexec/google_cloud_ops_agent_engine"
-	AgentWrapperBinary          = "libexec/google_cloud_ops_agent_wrapper"
 	OtelBinary                  = "subagents/opentelemetry-collector/otelopscol"
 
 	LogsDirectory               = "log/google-cloud-ops-agent"
