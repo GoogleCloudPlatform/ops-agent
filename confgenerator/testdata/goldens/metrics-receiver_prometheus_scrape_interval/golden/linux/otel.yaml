@@ -74,8 +74,6 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_5:
     interval: 1m
-  metric_start_time/googlecloud_metrics_0:
-    strategy: subtract_initial_point
   metricstransform/hostmetrics_2:
     transforms:
     - action: update
@@ -741,7 +739,6 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/loggingmetrics:
@@ -757,7 +754,6 @@ service:
       - interval/loggingmetrics_5
       - metricstransform/loggingmetrics_6
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -766,7 +762,6 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -779,7 +774,6 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:

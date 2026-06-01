@@ -88,9 +88,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_5:
     interval: 1m
-  metric_start_time/googlecloud/otel_metrics_0:
-    strategy: subtract_initial_point
-  metric_start_time/googlecloud_metrics_0:
+  metric_start_time/iis_2:
     strategy: subtract_initial_point
   metricstransform/hostmetrics_2:
     transforms:
@@ -557,6 +555,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  normalizesums/mssql_3: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -576,7 +575,7 @@ processors:
       - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/network/transferred_bytes_count"
       - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/new_connection_count"
       - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/request_count"
-  transform/iis_2:
+  transform/iis_3:
     metric_statements:
     - context: scope
       statements:
@@ -1106,7 +1105,6 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
@@ -1115,10 +1113,10 @@ service:
       processors:
       - metricstransform/iis_0
       - transform/iis_1
-      - transform/iis_2
+      - metric_start_time/iis_2
+      - transform/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
@@ -1128,9 +1126,9 @@ service:
       - metricstransform/mssql_0
       - transform/mssql_1
       - transform/mssql_2
+      - normalizesums/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - sqlserver/mssql
     metrics/loggingmetrics:
@@ -1146,7 +1144,6 @@ service:
       - interval/loggingmetrics_5
       - metricstransform/loggingmetrics_6
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/mssql_mssql:
@@ -1156,8 +1153,8 @@ service:
       - metricstransform/mssql_0
       - transform/mssql_1
       - transform/mssql_2
+      - normalizesums/mssql_3
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - sqlserver/mssql
     metrics/opsagent:
@@ -1166,7 +1163,6 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -1179,7 +1175,6 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
   telemetry:

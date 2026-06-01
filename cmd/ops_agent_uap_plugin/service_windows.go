@@ -32,7 +32,6 @@ import (
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows"
@@ -227,15 +226,6 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 		return err
 	}
 	return nil
-}
-
-func runHealthChecks(healthCheckFileLogger logs.StructuredLogger) {
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-
-	// Log health check results to health-checks.log log file.
-	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
-
-	log.Println("Health checks completed")
 }
 
 func createWindowsJobHandle() (windows.Handle, error) {

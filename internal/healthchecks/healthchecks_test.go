@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 )
 
@@ -144,10 +145,20 @@ func TestRunAllHealthChecks(t *testing.T) {
 
 	allCheckResults := allHealthChecks.RunAllHealthChecks(testLogger)
 
+	logsByCheck := make(map[string]observer.LoggedEntry)
+	for _, entry := range observedLogs.All() {
+		start := strings.Index(entry.Entry.Message, "[")
+		end := strings.Index(entry.Entry.Message, "]")
+		if start != -1 && end != -1 && start < end {
+			name := entry.Entry.Message[start+1 : end]
+			logsByCheck[name] = entry
+		}
+	}
+
 	var expected string
 	var result string
 	var level string
-	for idx, r := range allCheckResults {
+	for _, r := range allCheckResults {
 		switch r.Name {
 		case "Error Check":
 			result = "ERROR"
@@ -164,8 +175,10 @@ func TestRunAllHealthChecks(t *testing.T) {
 		}
 		expected = generateExpectedResultMessage(r.Name, result)
 
-		assert.Check(t, strings.Contains(observedLogs.All()[idx].Entry.Message, expected))
-		assert.Equal(t, observedLogs.All()[idx].Entry.Level.String(), level)
+		entry, found := logsByCheck[r.Name]
+		assert.Check(t, found, "log entry for %s was not found", r.Name)
+		assert.Check(t, strings.Contains(entry.Entry.Message, expected))
+		assert.Equal(t, entry.Entry.Level.String(), level)
 	}
 }
 

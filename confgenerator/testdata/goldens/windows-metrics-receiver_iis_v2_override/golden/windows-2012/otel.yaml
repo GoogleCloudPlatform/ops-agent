@@ -89,9 +89,7 @@ processors:
   groupbyattrs/iis_3: {}
   interval/loggingmetrics_5:
     interval: 1m
-  metric_start_time/googlecloud/otel_metrics_0:
-    strategy: subtract_initial_point
-  metric_start_time/googlecloud_metrics_0:
+  metric_start_time/iis_5:
     strategy: subtract_initial_point
   metricstransform/hostmetrics_2:
     transforms:
@@ -1095,7 +1093,6 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
@@ -1107,9 +1104,9 @@ service:
       - transform/iis_2
       - groupbyattrs/iis_3
       - metricstransform/iis_4
+      - metric_start_time/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - iis/iis
     metrics/default__pipeline_mssql:
@@ -1120,7 +1117,6 @@ service:
       - transform/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - windowsperfcounters/mssql
     metrics/iispipeline_iis:
@@ -1132,8 +1128,8 @@ service:
       - transform/iis_2
       - groupbyattrs/iis_3
       - metricstransform/iis_4
+      - metric_start_time/iis_5
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - iis/iis
     metrics/loggingmetrics:
@@ -1149,7 +1145,6 @@ service:
       - interval/loggingmetrics_5
       - metricstransform/loggingmetrics_6
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -1158,7 +1153,6 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -1171,7 +1165,6 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
   telemetry:

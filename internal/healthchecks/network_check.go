@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
@@ -82,7 +83,7 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	expTicker := backoff.NewTicker(bf)
 
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 10 * time.Second,
 	}
 	for range expTicker.C {
 		response, err = client.Get(r.url)
@@ -97,6 +98,7 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 		}
 		return err
 	}
+	defer response.Body.Close()
 	logger.Infof("%s response status: %s", r.name, response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
@@ -114,17 +116,25 @@ func (c NetworkCheck) Name() string {
 }
 
 func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
-	var networkErrors []error
 	ctx := context.TODO()
 	p := platform.FromContext(ctx)
-	for _, r := range commonRequests {
-		networkErrors = append(networkErrors, r.SendRequest(logger))
-	}
+	var requests []networkRequest
+	requests = append(requests, commonRequests...)
 	if p.ResourceOverride == nil || p.ResourceOverride.MonitoredResource().Type == "gce_instance" {
-		for _, r := range gceRequests {
-			networkErrors = append(networkErrors, r.SendRequest(logger))
-		}
+		requests = append(requests, gceRequests...)
 	}
 
+	networkErrors := make([]error, len(requests))
+	var wg sync.WaitGroup
+
+	for i, r := range requests {
+		wg.Add(1)
+		go func(index int, req networkRequest) {
+			defer wg.Done()
+			networkErrors[index] = req.SendRequest(logger)
+		}(i, r)
+	}
+
+	wg.Wait()
 	return errors.Join(networkErrors...)
 }
