@@ -22,6 +22,7 @@ type Component struct {
 }
 
 const MetricsPort = 20202
+const ExperimentalMetricsPortEnv = "EXPERIMENTAL_METRICS_PORT"
 
 type Service struct {
 	LogLevel string
