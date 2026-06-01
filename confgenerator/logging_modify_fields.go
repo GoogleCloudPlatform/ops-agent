@@ -17,12 +17,13 @@ package confgenerator
 import (
 	"context"
 	"fmt"
+	"slices"
+	"sort"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
-	"slices"
-	"sort"
 )
 
 type ModifyField struct {
