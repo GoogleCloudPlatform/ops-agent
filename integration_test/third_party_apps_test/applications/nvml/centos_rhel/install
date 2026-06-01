@@ -48,6 +48,14 @@ EOF
 
     sudo yum install -y $KERNEL_PACKAGE
 
+    # Workaround for nvidia_drm: Unknown symbol drm_client_setup (err -2)
+    # Only try to load drm_client_lib if it is available in the kernel.
+    if [[ $ID == rocky && "$MAJOR_VERSION_ID" == 9 ]]; then
+        if modinfo drm_client_lib >/dev/null 2>&1; then
+            sudo modprobe drm_client_lib
+        fi
+    fi
+
     # Installing latest version of NVIDIA CUDA and driver
     local CUDA_VERSION=12.9.0
     local CUDA_BUNDLED_DRIVER_VERSION=575.51.03
@@ -68,6 +76,13 @@ setup_repo() {
 
 install_cuda_from_package_manager() {
     setup_repo
+    # Workaround for nvidia_drm: Unknown symbol drm_client_setup (err -2)
+    # Only try to load drm_client_lib if it is available in the kernel.
+    if [[ $ID == rocky && "$MAJOR_VERSION_ID" == 9 ]]; then
+        if modinfo drm_client_lib >/dev/null 2>&1; then
+            sudo modprobe drm_client_lib
+        fi
+    fi
     install_driver_package
     # TODO(b/377558109): remove the temporary fix once the repo is updated
     sudo yum -y install cuda-toolkit-12-9 cuda-demo*
