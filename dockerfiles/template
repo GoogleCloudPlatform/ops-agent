@@ -54,11 +54,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM {target_name}-build-golang-base AS {target_name}-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
 
 
 FROM {target_name}-build-golang-base AS {target_name}-build
@@ -75,7 +70,7 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from={target_name}-build-otel /work/cache /work/cache
 
 COPY --from={target_name}-build-systemd /work/cache /work/cache
-COPY --from={target_name}-build-wrapper /work/cache /work/cache
+
 {package_build}
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin

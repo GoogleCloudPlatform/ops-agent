@@ -48,7 +48,6 @@ const (
 	OpsAgentUAPPluginEventID  uint32 = 8
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
-	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
 	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
 )
 

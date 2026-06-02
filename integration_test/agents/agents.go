@@ -189,7 +189,6 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	metricsCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-
 	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, otel.ExperimentalMetricsPortEnv)
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, otelPortCmd)
 
@@ -1036,6 +1035,13 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	}
 	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
+	if !gce.IsWindows(vm.ImageSpec) {
+		// Disable snap auto-refresh to prevent gcloud disappearing during tests.
+		// Only try if snap is available.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "which snap && sudo snap set system refresh.hold=$(date --date='tomorrow' +%Y-%m-%dT%H:%M:%S%:z)"); err != nil {
+			logger.ToMainLog().Printf("Warning: failed to hold snap refresh: %v", err)
+		}
+	}
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
@@ -1085,56 +1091,61 @@ func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.V
 //
 // gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
 func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
-		return err
+	tryInstall := func() error {
+		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
+			return err
+		}
+
+		if gce.IsWindows(vm.ImageSpec) {
+			if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin -Force"); err != nil {
+				return err
+			}
+
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gcloud storage cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
+				return fmt.Errorf("error copying down agent package from GCS: %v", err)
+			}
+
+			if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
+				return err
+			}
+			if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "C:\agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 -Expand FullName | ForEach-Object { if ($_){ & tar -xzf $_ -C "C:\"} }`); err != nil {
+				return err
+			}
+			// Print the contents of the home dir into the logs.
+			if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin; ls C:\\"); err != nil {
+				return err
+			}
+
+		} else {
+			if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentPlugin"); err != nil {
+				return err
+			}
+
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+				return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
+			}
+
+			// Print the contents of /tmp/agentPlugin into the logs.
+			if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
+				return err
+			}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo find /tmp/agentPlugin -maxdepth 1 -name \"google-cloud-ops-agent-plugin*.tar.gz\" -print0 | xargs -0 -I {} sudo tar -xzf {} --no-overwrite-dir -C ~/ && ls -la"); err != nil {
+				return err
+			}
+			// Print the contents of the home dir into the logs.
+			if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
+				return err
+			}
+		}
+
+		if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
+			return err
+		}
+		return StartOpsAgentPluginServer(ctx, logger, vm, OpsAgentPluginServerPort)
 	}
 
-	if gce.IsWindows(vm.ImageSpec) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin -Force"); err != nil {
-			return err
-		}
-
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gcloud storage cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
-			return fmt.Errorf("error copying down agent package from GCS: %v", err)
-		}
-
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
-			return err
-		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "C:\agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 -Expand FullName | ForEach-Object { if ($_){ & tar -xzf $_ -C "C:\"} }`); err != nil {
-			return err
-		}
-		// Print the contents of the home dir into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin; ls C:\\"); err != nil {
-			return err
-		}
-
-	} else {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentPlugin"); err != nil {
-			return err
-		}
-
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
-			return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
-		}
-
-		// Print the contents of /tmp/agentPlugin into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
-			return err
-		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo find /tmp/agentPlugin -maxdepth 1 -name \"google-cloud-ops-agent-plugin*.tar.gz\" -print0 | xargs -0 -I {} sudo tar -xzf {} --no-overwrite-dir -C ~/ && ls -la"); err != nil {
-			return err
-		}
-		// Print the contents of the home dir into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
-			return err
-		}
-	}
-
-	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
-		return err
-	}
-	return StartOpsAgentPluginServer(ctx, logger, vm, OpsAgentPluginServerPort)
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 3), ctx)
+	return backoff.Retry(tryInstall, backoffPolicy)
 }
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
