@@ -65,7 +65,6 @@ import (
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
@@ -5423,7 +5422,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !isHealthCheckTestImage(imageSpec) {
 			t.SkipNow()
@@ -6130,14 +6129,14 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 		if gce.IsWindows(imageSpec) {
 			// Set environment variables via PowerShell
 			setEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", "40001", "Machine")`,
-				confgenerator.ExperimentalOtelMetricsPortEnv)
+				otel.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, setEnvCmd); err != nil {
 				t.Fatal(err)
 			}
 			// Cleanup env vars at the end of the test
 			t.Cleanup(func() {
 				unsetEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", $null, "Machine")`,
-					confgenerator.ExperimentalOtelMetricsPortEnv)
+					otel.ExperimentalMetricsPortEnv)
 				gce.RunRemotely(ctx, logger, vm, unsetEnvCmd)
 			})
 			// Restart agent
@@ -6158,7 +6157,7 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 			}
 			otelOverrideContent := fmt.Sprintf(`[Service]
 Environment="%s=40001"
-`, confgenerator.ExperimentalOtelMetricsPortEnv)
+`, otel.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", otelOverrideContent, otelOverrideFile)); err != nil {
 				t.Fatal(err)
 			}

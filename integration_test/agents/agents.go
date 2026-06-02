@@ -39,7 +39,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 
 	"github.com/blang/semver"
@@ -191,7 +190,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	defer cancel()
 
 
-	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, confgenerator.ExperimentalOtelMetricsPortEnv)
+	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, otel.ExperimentalMetricsPortEnv)
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, otelPortCmd)
 
 	isUAPPlugin := gce.IsOpsAgentUAPPlugin()
@@ -1252,7 +1251,7 @@ func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *g
 
 func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !IsRPMBased(vm.ImageSpec) {
-		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not RPM based", vm.ImageSpec))
+		return fmt.Errorf("VM spec: %s, is not RPM based", vm.ImageSpec)
 	}
 
 	if location.packagesInGCS != "" {
@@ -1277,7 +1276,7 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 
 func verifyWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !gce.IsWindows(vm.ImageSpec) {
-		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not windows based", vm.ImageSpec))
+		return fmt.Errorf("VM spec: %s, is not windows based", vm.ImageSpec)
 	}
 	if location.packagesInGCS != "" {
 		return verifyWindowsBinaryIsSigned(ctx, logger, vm, fmt.Sprintf("%s\\*.goo", windowsAgentGCSDownloadPath))
@@ -1377,6 +1376,6 @@ func VerifyOpsAgentSigned(ctx context.Context, logger *log.Logger, vm *gce.VM) e
 	} else if gce.IsWindows(vm.ImageSpec) {
 		return verifyWindowsBinarySigned(ctx, logger, vm, location)
 	} else {
-		return fmt.Errorf(fmt.Sprintf("VM image: %s, is not suported for signing", vm.ImageSpec))
+		return fmt.Errorf("VM image: %s, is not suported for signing", vm.ImageSpec)
 	}
 }
