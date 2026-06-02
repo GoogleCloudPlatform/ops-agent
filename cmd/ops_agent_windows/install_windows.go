@@ -16,10 +16,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
@@ -50,6 +53,29 @@ func uninstallDiagnosticService(m *mgr.Mgr) error {
 	return nil
 }
 
+func cleanupFluentBit(m *mgr.Mgr) error {
+	fluentBitServiceHandle, err := m.OpenService("google-cloud-ops-agent-fluent-bit")
+	if err == nil {
+		defer fluentBitServiceHandle.Close()
+		if err := stopService(fluentBitServiceHandle, 30*time.Second); err != nil {
+			return fmt.Errorf("failed to stop the fluent-bit Windows service: %w", err)
+		}
+		if err := fluentBitServiceHandle.Delete(); err != nil {
+			return fmt.Errorf("failed to delete the fluent-bit Windows service: %w", err)
+		}
+	}
+
+	base, err := osext.ExecutableFolder()
+	if err != nil {
+		return fmt.Errorf("could not determine binary path: %w", err)
+	}
+	fluentBitDir := filepath.Join(base, "../subagents/fluent-bit")
+	if err := os.RemoveAll(fluentBitDir); err != nil {
+		return fmt.Errorf("failed to remove fluent-bit directory: %w", err)
+	}
+	return nil
+}
+
 func install() error {
 	m, err := mgr.Connect()
 	if err != nil {
@@ -60,6 +86,11 @@ func install() error {
 	diagnosticError := uninstallDiagnosticService(m)
 	if diagnosticError != nil {
 		return diagnosticError
+	}
+
+	fluentBitError := cleanupFluentBit(m)
+	if fluentBitError != nil {
+		return fluentBitError
 	}
 
 	handles := make([]*mgr.Service, len(services))
@@ -152,6 +183,11 @@ func uninstall() error {
 	diagnosticError := uninstallDiagnosticService(m)
 	if diagnosticError != nil {
 		errs = multierror.Append(errs, diagnosticError)
+	}
+
+	fluentBitError := cleanupFluentBit(m)
+	if fluentBitError != nil {
+		errs = multierror.Append(errs, fluentBitError)
 	}
 	return errs
 }
