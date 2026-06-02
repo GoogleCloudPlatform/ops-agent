@@ -70,6 +70,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/api/distribution"
@@ -4114,13 +4115,16 @@ type mockPrometheusCheck struct {
 func uploadFiles(ctx context.Context, logger *log.Logger, vm *gce.VM, fs embed.FS, files []fileToUpload) error {
 	for _, upload := range files {
 		err := func() error {
-			f, err := fs.Open(upload.local)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			err = gce.UploadContent(ctx, logger, vm, f, upload.remote)
-			return err
+			// Retry UploadContent because of potential temporary disruptions (e.g. snapd reload, ssh flakes)
+			backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx)
+			return backoff.Retry(func() error {
+				f, err := fs.Open(upload.local)
+				if err != nil {
+					return backoff.Permanent(err)
+				}
+				defer f.Close()
+				return gce.UploadContent(ctx, logger, vm, f, upload.remote)
+			}, backoffPolicy)
 		}()
 		if err != nil {
 			return err

@@ -1035,6 +1035,13 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	}
 	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
+	if !gce.IsWindows(vm.ImageSpec) {
+		// Disable snap auto-refresh to prevent gcloud disappearing during tests.
+		// Only try if snap is available.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "which snap && sudo snap set system refresh.hold=$(date --date='tomorrow' +%Y-%m-%dT%H:%M:%S%:z)"); err != nil {
+			logger.ToMainLog().Printf("Warning: failed to hold snap refresh: %v", err)
+		}
+	}
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
