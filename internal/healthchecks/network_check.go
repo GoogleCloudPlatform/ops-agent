@@ -23,10 +23,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
-	"github.com/cenkalti/backoff/v4"
 )
-
-const MaxRequestElapsedTime = 30 * time.Second
 
 type networkRequest struct {
 	name             string
@@ -78,20 +75,11 @@ var (
 func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	var response *http.Response
 	var err error
-	bf := backoff.NewExponentialBackOff()
-	bf.MaxElapsedTime = MaxRequestElapsedTime
-	expTicker := backoff.NewTicker(bf)
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
-	for range expTicker.C {
-		response, err = client.Get(r.url)
-		if err == nil && response.StatusCode == http.StatusOK {
-			expTicker.Stop()
-			break
-		}
-	}
+	response, err = client.Get(r.url)
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
 			return r.healthCheckError
