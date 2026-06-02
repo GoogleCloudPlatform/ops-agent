@@ -26,10 +26,8 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
@@ -68,10 +66,6 @@ func (uc *UnifiedConfig) HasTraces() bool {
 
 func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
-}
-
-func (uc *UnifiedConfig) GetFluentBitMetricsPort() uint16 {
-	return portutil.GetPortFromEnv(fluentbit.ExperimentalMetricsPortEnv, fluentbit.MetricsPort)
 }
 
 func (uc *UnifiedConfig) GetOtelMetricsPort() uint16 {
@@ -542,14 +536,7 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
-	InternalLoggingReceiver
-}
-
-// InternalLoggingReceiver implements all the methods required to describe a logging receiver pipeline.
-type InternalLoggingReceiver interface {
-	// Components returns fluentbit components that implement this receiver.
-	// tag is the log tag that is assigned to the collected logs.
-	Components(ctx context.Context, tag string) []fluentbit.Component
+	OTelReceiver
 }
 
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
@@ -579,14 +566,7 @@ func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
 
 type LoggingProcessor interface {
 	Component
-	InternalLoggingProcessor
-}
-
-// InternalLoggingProcessor implements the methods required to define a logging processor pipeline.
-type InternalLoggingProcessor interface {
-	// Components returns fluentbit components that implement this processor.
-	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
-	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
+	OTelProcessor
 }
 
 var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
@@ -635,12 +615,6 @@ type MetricsProcessorMerger interface {
 	// It returns the new receiver; and true if the processor has been merged
 	// into the receiver completely
 	MergeMetricsProcessor(p MetricsProcessor) (MetricsReceiver, bool)
-}
-
-type InternalLoggingProcessorMerger interface {
-	// MergeInternalLoggingProcessor attempts to merge p into the current receiver.
-	// It returns the new receiver; and a potentially modified processor or nil.
-	MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, InternalLoggingProcessor)
 }
 
 type MetricsReceiver interface {
@@ -998,7 +972,6 @@ type pipelineBackend int
 
 const (
 	BackendOTel pipelineBackend = iota
-	BackendFluentBit
 )
 
 type PipelineInstance struct {
@@ -1102,8 +1075,6 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	if err != nil {
 		return nil, err
 	}
-	exp_otlp := experiments.FromContext(ctx)["otlp_logging"]
-	force_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
@@ -1132,40 +1103,11 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 			}
 			instance := PipelineInstance{
 				PipelineType: "logs",
-				Backend:      BackendFluentBit,
+				Backend:      BackendOTel,
 				PID:          pID,
 				RID:          rID,
 				Receiver:     receiver,
 				Processors:   processors,
-			}
-			pipelineSupportsOTel := false
-			if _, ok := receiver.(OTelReceiver); ok {
-				pipelineSupportsOTel = true
-				if macro, ok := receiver.(LoggingReceiverMacro); ok {
-					expandedReceiver, expandedProcessors := macro.Expand(ctx)
-					if _, ok := expandedReceiver.(InternalOTelReceiver); !ok {
-						pipelineSupportsOTel = false
-					}
-					for _, pr := range expandedProcessors {
-						if _, ok := pr.(InternalOTelProcessor); !ok {
-							pipelineSupportsOTel = false
-							break
-						}
-					}
-				}
-				if pipelineSupportsOTel {
-					for _, pr := range processors {
-						if _, ok := pr.Component.(OTelProcessor); !ok {
-							pipelineSupportsOTel = false
-							break
-						}
-					}
-				}
-			}
-			if (force_otel == nil && pipelineSupportsOTel) || // OTel by default if supported
-				(force_otel != nil && *force_otel) || // Explicitly enabled
-				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
-				instance.Backend = BackendOTel
 			}
 			out = append(out, instance)
 		}

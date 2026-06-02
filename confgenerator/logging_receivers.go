@@ -18,12 +18,9 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -59,12 +56,8 @@ func (r LoggingReceiverFiles) mixin() LoggingReceiverFilesMixin {
 	}
 }
 
-func (r LoggingReceiverFiles) Expand(_ context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor) {
+func (r LoggingReceiverFiles) Expand(_ context.Context) (InternalOTelReceiver, []InternalOTelProcessor) {
 	return r.mixin(), nil
-}
-
-func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
-	return r.mixin().Components(ctx, tag)
 }
 
 func (r LoggingReceiverFiles) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
@@ -72,129 +65,13 @@ func (r LoggingReceiverFiles) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 }
 
 type LoggingReceiverFilesMixin struct {
-	IncludePaths            []string        `yaml:"include_paths,omitempty"`
-	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
-	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
-	MultilineRules          []MultilineRule `yaml:"-"`
-	BufferInMemory          bool            `yaml:"-"`
-	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
+	IncludePaths            []string       `yaml:"include_paths,omitempty"`
+	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
+	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	BufferInMemory          bool           `yaml:"-"`
+	RecordLogFilePath       *bool          `yaml:"record_log_file_path,omitempty"`
 	// In transformation test mode, the file is read exactly once from the beginning, and then the process exits.
 	TransformationTest bool `yaml:"-" tracking:"-"`
-}
-
-const stripNewlineCode = `
-local function trim_newline(s)
-    -- Check for a Windows-style carriage return and newline (\r\n)
-    if string.sub(s, -2) == "\r\n" then
-        return string.sub(s, 1, -3)
-    -- Check for a Unix/Linux-style newline (\n)
-    elseif string.sub(s, -1) == "\n" then
-        return string.sub(s, 1, -2)
-    end
-    -- If no trailing newline is found, return the original string
-    return s
-end
-function strip_newline(tag, timestamp, record)
-  record["message"] = trim_newline(record["message"])
-  return 2, timestamp, record
-end
-`
-
-func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		// No files -> no input.
-		return nil
-	}
-	config := map[string]string{
-		// https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
-		"Name": "tail",
-		"Tag":  tag,
-		// TODO: Escaping?
-		"Path":           strings.Join(r.IncludePaths, ","),
-		"Read_from_Head": "True",
-		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
-		"Buffer_Chunk_Size": "512k",
-		// Set the max size a bit larger to accommodate for long log lines.
-		"Buffer_Max_Size": "2M",
-		// When a message is unstructured (no parser applied), append it under a key named "message".
-		"Key": "message",
-		// Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
-		"Skip_Long_Lines": "On",
-	}
-	if r.TransformationTest {
-		// Transformation tests exit as soon as the log is fully processed.
-		config["Exit_On_Eof"] = "True"
-	}
-	if !r.TransformationTest {
-		config["DB"] = DBPath(tag)
-		// DB.locking specifies that the database will be accessed only by Fluent Bit.
-		// Enabling this feature helps to increase performance when accessing the database
-		// but it restrict any external tool to query the content.
-		config["DB.locking"] = "true"
-		// Increase this to 30 seconds so log rotations are handled more gracefully.
-		config["Rotate_Wait"] = "30"
-		// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-		// Buffer in disk to improve reliability.
-		config["storage.type"] = "filesystem"
-
-		// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
-		// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
-		// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
-		// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
-		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-		config["Mem_Buf_Limit"] = "10M"
-	}
-	if len(r.ExcludePaths) > 0 {
-		// TODO: Escaping?
-		config["Exclude_Path"] = strings.Join(r.ExcludePaths, ",")
-	}
-	if r.WildcardRefreshInterval != nil {
-		refreshIntervalSeconds := int(r.WildcardRefreshInterval.Seconds())
-		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
-	}
-
-	if r.RecordLogFilePath != nil && *r.RecordLogFilePath == true {
-		config["Path_Key"] = "agent.googleapis.com/log_file_path"
-	}
-
-	if r.BufferInMemory {
-		config["storage.type"] = "memory"
-	}
-
-	c := []fluentbit.Component{}
-
-	if len(r.MultilineRules) > 0 {
-		// Configure multiline in the input component;
-		// This is necessary, since using the multiline filter will not work
-		// if a multiline message spans between two chunks.
-		parserName := fmt.Sprintf("multiline.%s", tag)
-
-		c = append(c,
-			fluentbit.ParseMultilineComponent(parserName, r.MultilineRules),
-		)
-		// See https://docs.fluentbit.io/manual/pipeline/inputs/tail#multiline-core-v1.8
-		config["multiline.parser"] = parserName
-
-		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
-		c = append(c, modify.NewRenameOptions("log", "message").Component(tag))
-		// N.B. multiline parsers generate a trailing newline when used with tail that they *don't* generate when used as a filter
-		// https://github.com/fluent/fluent-bit/issues/4227
-		// https://github.com/fluent/fluent-bit/issues/8914
-		// https://github.com/fluent/fluent-bit/issues/9660
-		// Using a regex to remove the newline segfaults fluent-bit (sigh)
-		c = append(c, fluentbit.LuaFilterComponents(
-			tag,
-			"strip_newline",
-			stripNewlineCode,
-		)...)
-	}
-
-	c = append(c, fluentbit.Component{
-		Kind:   "INPUT",
-		Config: config,
-	})
-
-	return c
 }
 
 func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
@@ -215,9 +92,6 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 	}
 	if i := r.WildcardRefreshInterval; i != nil {
 		receiver_config["poll_interval"] = i.String()
-	}
-	if len(r.MultilineRules) > 0 {
-		return nil, fmt.Errorf("setting multiline rules in otel file_log receiver is not supported")
 	}
 	// TODO: Support BufferInMemory
 	// OTel parses the log to `body` by default; put it in a `message` field to match fluent-bit's behavior.
@@ -252,23 +126,6 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 	}, ctx, false, false)}, nil
 }
 
-func (r LoggingReceiverFilesMixin) MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, InternalLoggingProcessor) {
-	if len(r.MultilineRules) > 0 {
-		// Only allow merging once.
-		return r, p
-	}
-	if ep, ok := p.(LoggingProcessorParseMultilineRegex); ok {
-		r.MultilineRules = ep.Rules
-		ep.Rules = nil
-		if len(ep.LoggingProcessorParseRegexComplex.Parsers) == 0 {
-			return r, nil
-		}
-		return r, ep.LoggingProcessorParseRegexComplex
-	}
-
-	return r, p
-}
-
 func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverFiles{} })
 }
@@ -288,39 +145,6 @@ func (r LoggingReceiverSyslog) Type() string {
 
 func (r LoggingReceiverSyslog) GetListenPort() uint16 {
 	return r.ListenPort
-}
-
-func (r LoggingReceiverSyslog) Components(ctx context.Context, tag string) []fluentbit.Component {
-	return []fluentbit.Component{{
-		Kind: "INPUT",
-		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/inputs/syslog
-			"Name":   "syslog",
-			"Tag":    tag,
-			"Mode":   r.TransportProtocol,
-			"Listen": r.ListenHost,
-			"Port":   fmt.Sprintf("%d", r.GetListenPort()),
-			"Parser": tag,
-			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-			// Buffer in disk to improve reliability.
-			"storage.type": "filesystem",
-
-			// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
-			// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
-			// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
-			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
-			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-			"Mem_Buf_Limit": "10M",
-		},
-	}, {
-		// FIXME: This is not new, but we shouldn't be disabling syslog protocol parsing by passing a custom Parser - Fluentbit includes builtin syslog protocol support, and we should enable/expose that.
-		Kind: "PARSER",
-		Config: map[string]string{
-			"Name":   tag,
-			"Format": "regex",
-			"Regex":  `^(?<message>.*)$`,
-		},
-	}}
 }
 
 func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
@@ -395,33 +219,6 @@ func (r LoggingReceiverFluentForward) GetListenPort() uint16 {
 		r.ListenPort = 24224
 	}
 	return r.ListenPort
-}
-
-func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if r.ListenHost == "" {
-		r.ListenHost = "127.0.0.1"
-	}
-
-	return []fluentbit.Component{{
-		Kind: "INPUT",
-		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/inputs/forward
-			"Name":       "forward",
-			"Tag_Prefix": tag + ".",
-			"Listen":     r.ListenHost,
-			"Port":       fmt.Sprintf("%d", r.GetListenPort()),
-			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-			// Buffer in disk to improve reliability.
-			"storage.type": "filesystem",
-
-			// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
-			// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
-			// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
-			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
-			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-			"Mem_Buf_Limit": "10M",
-		},
-	}}
 }
 
 func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
@@ -504,87 +301,6 @@ func (r LoggingReceiverWindowsEventLog) IsDefaultVersion() bool {
 	return r.ReceiverVersion == "" || r.ReceiverVersion == "1"
 }
 
-func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverVersion) == 0 {
-		r.ReceiverVersion = "1"
-	}
-
-	inputName := "winlog"
-	timeKey := "TimeGenerated"
-
-	if !r.IsDefaultVersion() {
-		inputName = "winevtlog"
-		timeKey = "TimeCreated"
-	}
-
-	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-	input := []fluentbit.Component{{
-		Kind: "INPUT",
-		Config: map[string]string{
-			"Name": inputName,
-			"Tag":  tag,
-			// TODO(@braydonk): Remove this upon the next Fluent Bit update. See https://github.com/fluent/fluent-bit/issues/8854
-			"String_Inserts": "true",
-			"Channels":       strings.Join(r.Channels, ","),
-			"Interval_Sec":   "1",
-			"DB":             DBPath(tag),
-		},
-	}}
-
-	// On Windows Server 2012/2016, there is a known problem where most log fields end
-	// up blank. The Use_ANSI configuration is provided to work around this; however,
-	// this also strips Unicode characters away, so we only use it on affected
-	// platforms. This only affects the newer API.
-	p := platform.FromContext(ctx)
-	if !r.IsDefaultVersion() && (p.Is2012() || p.Is2016()) {
-		input[0].Config["Use_ANSI"] = "True"
-	}
-
-	if r.RenderAsXML {
-		input[0].Config["Render_Event_As_XML"] = "True"
-		// By default, fluent-bit puts the rendered XML into a field named "System"
-		// (this is a constant field name and has no relation to the "System" channel).
-		// Rename it to "raw_xml" because it's a more descriptive name than "System".
-		input = append(input, modify.NewRenameOptions("System", "raw_xml").Component(tag))
-	}
-
-	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp.
-	timestampParserName := fmt.Sprintf("%s.timestamp_parser", tag)
-	timestampParser := fluentbit.Component{
-		Kind: "PARSER",
-		Config: map[string]string{
-			"Name":        timestampParserName,
-			"Format":      "regex",
-			"Time_Format": "%Y-%m-%d %H:%M:%S %z",
-			"Time_Key":    "timestamp",
-			"Regex":       `(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4})`,
-		},
-	}
-
-	timestampParserFilters := fluentbit.ParserFilterComponents(tag, timeKey, []string{timestampParserName}, true)
-	input = append(input, timestampParser)
-	input = append(input, timestampParserFilters...)
-
-	var filters []fluentbit.Component
-	if r.IsDefaultVersion() {
-		filters = fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"Error", "ERROR"},
-				{"Information", "INFO"},
-				{"Warning", "WARNING"},
-				{"SuccessAudit", "NOTICE"},
-				{"FailureAudit", "NOTICE"},
-			})
-	} else {
-		// Ordinarily we use fluentbit.TranslationComponents to populate severity,
-		// which uses 'modify' filters, except 'modify' filters only work on string
-		// values and Level is an int. So we need to use Lua.
-		filters = fluentbit.LuaFilterComponents(tag, "process", eventLogV2SeverityParserLua)
-	}
-
-	return append(input, filters...)
-}
-
 func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	var out []otel.ReceiverPipeline
 	for _, c := range r.Channels {
@@ -637,11 +353,6 @@ type LoggingProcessorWindowsEventLogV1 struct {
 
 func (r LoggingProcessorWindowsEventLogV1) Type() string {
 	return "windows_event_log_v1"
-}
-
-func (p LoggingProcessorWindowsEventLogV1) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	// This processor is only intended for otel logging since fluent-bit "winlog" receiver generates a specific log structure.
-	return noFluentBitImplementation(ctx, tag, uid)
 }
 
 func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]otel.Component, error) {
@@ -751,11 +462,6 @@ func (r LoggingProcessorWindowsEventLogV2) Type() string {
 	return "windows_event_log_v2"
 }
 
-func (p LoggingProcessorWindowsEventLogV2) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	// This processor is only intended for otel logging since fluent-bit "winevtlog" receiver generates a specific log structure.
-	return noFluentBitImplementation(ctx, tag, uid)
-}
-
 func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]otel.Component, error) {
 	return windowsEventLogV2Processors(ctx)
 }
@@ -826,11 +532,6 @@ func (r LoggingProcessorWindowsEventLogRawXML) Type() string {
 	return "windows_event_log_raw_xml"
 }
 
-func (p LoggingProcessorWindowsEventLogRawXML) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	// This processor is only intended for otel logging since fluent-bit "winlog" receiver generates a specific log structure.
-	return noFluentBitImplementation(ctx, tag, uid)
-}
-
 func (p LoggingProcessorWindowsEventLogRawXML) Processors(ctx context.Context) ([]otel.Component, error) {
 	return windowsEventLogRawXMLProcessors(ctx)
 }
@@ -871,33 +572,6 @@ func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, err
 	return processors, nil
 }
 
-func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit.Component {
-	// Clear jsonPayload.* fields and set static message.
-	defaultMessage := "This processor is only used for testing otel."
-	return LoggingProcessorModifyFields{
-		Fields: map[string]*ModifyField{
-			"jsonPayload.channel":          {OmitIf: `jsonPayload.channel =~ ".*"`},
-			"jsonPayload.computer":         {OmitIf: `jsonPayload.computer =~ ".*"`},
-			"jsonPayload.correlation":      {OmitIf: `jsonPayload.correlation != nil`},
-			"jsonPayload.details":          {OmitIf: `jsonPayload.details != nil`},
-			"jsonPayload.event_data":       {OmitIf: `jsonPayload.event_data != nil`},
-			"jsonPayload.event_id":         {OmitIf: `jsonPayload.event_id != nil`},
-			"jsonPayload.execution":        {OmitIf: `jsonPayload.execution != nil`},
-			"jsonPayload.keywords":         {OmitIf: `jsonPayload.keywords != nil`},
-			"jsonPayload.level":            {OmitIf: `jsonPayload.level =~ ".*"`},
-			"jsonPayload.message":          {StaticValue: &defaultMessage},
-			"jsonPayload.opcode":           {OmitIf: `jsonPayload.opcode =~ ".*"`},
-			"jsonPayload.provider":         {OmitIf: `jsonPayload.provider != nil`},
-			"jsonPayload.record_id":        {OmitIf: `jsonPayload.record_id != nil`},
-			"jsonPayload.security":         {OmitIf: `jsonPayload.security != nil`},
-			"jsonPayload.system_time":      {OmitIf: `jsonPayload.system_time =~ ".*"`},
-			"jsonPayload.task":             {OmitIf: `jsonPayload.task =~ ".*"`},
-			"jsonPayload.version":          {OmitIf: `jsonPayload.version != nil`},
-			`labels."log.record.original"`: {OmitIf: `labels."log.record.original" =~ ".*"`},
-		},
-	}.Components(ctx, tag, uid)
-}
-
 func formatSystemTime(v ottl.LValue) ottl.Statements {
 	return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
 }
@@ -913,69 +587,6 @@ type LoggingReceiverSystemd struct {
 
 func (r LoggingReceiverSystemd) Type() string {
 	return "systemd_journald"
-}
-
-func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fluentbit.Component {
-	input := []fluentbit.Component{{
-		Kind: "INPUT",
-		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/inputs/systemd
-			"Name": "systemd",
-			"Tag":  tag,
-			"DB":   DBPath(tag),
-		},
-	}}
-	filters := fluentbit.TranslationComponents(tag, "PRIORITY", "logging.googleapis.com/severity", false,
-		[]struct{ SrcVal, DestVal string }{
-			{"7", "DEBUG"},
-			{"6", "INFO"},
-			{"5", "NOTICE"},
-			{"4", "WARNING"},
-			{"3", "ERROR"},
-			{"2", "CRITICAL"},
-			{"1", "ALERT"},
-			{"0", "EMERGENCY"},
-		})
-	input = append(input, filters...)
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":      "modify",
-			"Match":     tag,
-			"Condition": fmt.Sprintf("Key_exists %s", "CODE_FILE"),
-			"Copy":      fmt.Sprintf("CODE_FILE %s", "logging.googleapis.com/sourceLocation/file"),
-		},
-	})
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":      "modify",
-			"Match":     tag,
-			"Condition": fmt.Sprintf("Key_exists %s", "CODE_FUNC"),
-			"Copy":      fmt.Sprintf("CODE_FUNC %s", "logging.googleapis.com/sourceLocation/function"),
-		},
-	})
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":      "modify",
-			"Match":     tag,
-			"Condition": fmt.Sprintf("Key_exists %s", "CODE_LINE"),
-			"Copy":      fmt.Sprintf("CODE_LINE %s", "logging.googleapis.com/sourceLocation/line"),
-		},
-	})
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "logging.googleapis.com/sourceLocation/*",
-			"Nest_under":    "logging.googleapis.com/sourceLocation",
-			"Remove_prefix": "logging.googleapis.com/sourceLocation/",
-		},
-	})
-	return input
 }
 
 func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {

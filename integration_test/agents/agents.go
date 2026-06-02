@@ -252,13 +252,11 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 		gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
 	}
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
-	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\logging-module.log`))
+	gce.RunRemotely(ctx, logger.ToFile("logging_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\logging-module.log`))
 	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\health-checks.log`))
 
 	for _, conf := range []string{
 		OpsAgentConfigPath(vm.ImageSpec),
-		stateDir + `generated_configs\fluentbit\fluent_bit_main.conf`,
-		stateDir + `generated_configs\fluentbit\fluent_bit_parser.conf`,
 		stateDir + `generated_configs\otel\otel.yaml`,
 		stateDir + `generated_configs\otel\feature_tracking_otlp.json`,
 		stateDir + `generated_configs\otel\enabled_receivers_otlp.json`,
