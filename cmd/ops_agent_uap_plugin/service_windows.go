@@ -235,7 +235,6 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 	return nil
 }
 
-
 func createWindowsJobHandle() (windows.Handle, error) {
 	jobHandle, err := windows.CreateJobObject(nil, nil)
 	if err != nil {
