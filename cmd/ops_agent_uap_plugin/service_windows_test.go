@@ -22,7 +22,6 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"sync"
 	"testing"
 	"time"
 
@@ -297,10 +296,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T)
 	pluginServer.cancel = cancel
 	cmd := exec.CommandContext(ctx, "fake-command")
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommandSuccessfully, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommandSuccessfully)
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
@@ -319,9 +315,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
 	pluginServer.cancel = cancel
 	cmd := exec.CommandContext(ctx, "fake-command")
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommandAndFailed, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommandAndFailed)
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
@@ -344,13 +338,12 @@ func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
 		return runCommand(cmd)
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
 	go func() {
 		time.Sleep(2 * time.Second)
 		cancel()
 	}()
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommand, &wg)
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommand)
 
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")

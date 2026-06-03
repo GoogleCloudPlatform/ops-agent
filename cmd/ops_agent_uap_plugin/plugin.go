@@ -50,10 +50,10 @@ var (
 // implementations.
 type RunCommandFunc func(cmd *exec.Cmd) (string, error)
 
-// RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
+// RunSubAgentCommandFunc defines a function type that starts a subagent. This abstraction is introduced
 // primarily to facilitate testing by allowing the injection of mock
 // implementations.
-type RunSubAgentCommandFunc func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
+type RunSubAgentCommandFunc func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, cmd *exec.Cmd, runCommand RunCommandFunc)
 
 // CancelContextAndSetPluginErrorFunc defines a function type that terminates the Ops Agent from running and records the latest error that occurred.
 // This abstraction is introduced primarily to facilitate testing by allowing the injection of mock implementations.
@@ -185,8 +185,7 @@ func main() {
 	log.Println("Exiting")
 }
 
-func runSubAgentCommand(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
-	defer wg.Done()
+func runSubAgentCommand(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, cmd *exec.Cmd, runCommand RunCommandFunc) {
 	if cmd == nil {
 		return
 	}

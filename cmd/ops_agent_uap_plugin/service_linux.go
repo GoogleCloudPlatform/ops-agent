@@ -28,7 +28,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"syscall"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
@@ -135,17 +134,12 @@ func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPlug
 		cancelAndSetError(&OpsAgentPluginError{Message: fmt.Sprintf("Received signal: %s, stopping the Ops Agent", s.String()), ShouldRestart: true})
 	})
 
-	var wg sync.WaitGroup
-
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, OtelRuntimeDirectory, "otel.yaml"),
 	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
-
-	wg.Wait()
+	runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand)
 }
 
 // sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the

@@ -26,7 +26,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"sync"
 	"unsafe"
 
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
@@ -272,17 +271,12 @@ func createWindowsJobHandle() (windows.Handle, error) {
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
 func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 
-	var wg sync.WaitGroup
-
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
-
-	wg.Wait()
+	runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand)
 }
 
 func runCommand(cmd *exec.Cmd) (string, error) {
