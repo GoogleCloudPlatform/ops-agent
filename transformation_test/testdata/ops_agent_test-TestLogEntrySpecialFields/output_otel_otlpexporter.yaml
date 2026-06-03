@@ -43,7 +43,7 @@
                   stringValue: function
               - key: line
                 value:
-                  stringValue: "1"
+                  intValue: "1"
         - key: label1
           value:
             stringValue: value1

@@ -1,1 +1,10 @@
-processor "simple" has invalid configuration: failed to convert operation to OTTL accessor: field "operation" not found
+[27:18] "fields[operation]": 1:10: error: field "operation" not found
+  24 |     simple:
+  25 |       type: modify_fields
+  26 |       fields:
+> 27 |         operation:
+                        ^
+  28 |           move_from: jsonPayload.operation
+  29 |   service:
+  30 |     experimental_otel_logging: true
+  31 |     
