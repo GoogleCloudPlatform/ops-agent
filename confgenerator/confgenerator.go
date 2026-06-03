@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -93,11 +92,6 @@ func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx 
 }
 
 func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
-	expOtlpExporter := experiments.FromContext(ctx)["otlp_exporter"]
-	if !expOtlpExporter {
-		return pipeline
-	}
-
 	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
 		pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
 		if isSystem {
