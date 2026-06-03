@@ -5995,13 +5995,29 @@ func TestAppHubLogLabels(t *testing.T) {
 			"--uri",
 		}
 
-		output, err := gce.RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
+		var migResourceString string
+
+		// AppHub discovery is asynchronous and can take several minutes. Retry for up to 3 minutes.
+		discoveryCtx, discoveryCancel := context.WithTimeout(ctx, 3*time.Minute)
+		defer discoveryCancel()
+
+		err := backoff.Retry(func() error {
+			out, err := gce.RunGcloud(discoveryCtx, logger, "", discoverMIGWorkloadArgs)
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(out.Stdout) == "" {
+				return fmt.Errorf("discovered workload for %s not found yet", migVM.ManagedInstanceGroupName())
+			}
+			migResourceString = strings.Replace(strings.TrimSpace(out.Stdout), "https://apphub.googleapis.com/v1/", "", 1)
+			return nil
+		}, backoff.WithContext(backoff.NewConstantBackOff(15*time.Second), discoveryCtx))
+
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("Failed to discover AppHub workload: %v", err)
 		}
 
 		// Setup Apphub #2 : Register Managed Instance Group as AppHub workload.
-		migResourceString := strings.Replace(output.Stdout, "https://apphub.googleapis.com/v1/", "", 1)
 		registerAppHubWorkloadArgs := []string{
 			"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
 			"--application=" + AppHubIntegrationTestApp,
@@ -6011,8 +6027,7 @@ func TestAppHubLogLabels(t *testing.T) {
 			"--format=json",
 		}
 
-		output, err = gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
-		if err != nil {
+		if _, err := gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs); err != nil {
 			t.Fatal(err)
 		}
 
@@ -6029,8 +6044,7 @@ func TestAppHubLogLabels(t *testing.T) {
 				"--format=json",
 			}
 
-			output, err = gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs)
-			if err != nil {
+			if _, err := gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs); err != nil {
 				t.Fatal(err)
 			}
 		})
