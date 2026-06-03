@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/logging"
@@ -27,7 +28,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
-	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
 	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
@@ -50,7 +50,6 @@ const (
 	ServiceDisabled              = "SERVICE_DISABLED"
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
-	MaxMonitoringPingRetries     = 1
 )
 
 func createMonitoringPingRequest(resource resourcedetector.Resource) *monitoringpb.CreateTimeSeriesRequest {
@@ -179,17 +178,12 @@ func createTelemetryLogsRequest(resource resourcedetector.Resource) *collogspb.E
 // time series point with empty values to an Ops Agent specific metric.
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, resource resourcedetector.Resource) error {
-	// Points written to a time series must be at least 5 seconds apart. Because `monitoringPing` might
-	// be called multiple times in quick succession, the first attempted request to `CreateTimeSeries`
-	// may fail. We can retry the request >5 seconds later in such cases.
-	// https://cloud.google.com/monitoring/quotas
-	pingBackoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6*time.Second), MaxMonitoringPingRetries)
-	pingOperation := func() error { return client.CreateTimeSeries(ctx, createMonitoringPingRequest(resource)) }
-	return backoff.Retry(pingOperation, pingBackoff)
+	return client.CreateTimeSeries(ctx, createMonitoringPingRequest(resource))
 }
 
 func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, resource.ProjectName())
@@ -233,7 +227,8 @@ func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Res
 }
 
 func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
@@ -404,16 +399,31 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 
 	var monOrTelErr error
 	var logOrTelLogsErr error
+	var wg sync.WaitGroup
 
+	wg.Add(2)
 	if experiments.FromContext(context.Background())["otlp_exporter"] {
 		logger.Infof("Running Telemetry API checks")
-		monOrTelErr = runTelemetryMetricsCheck(logger, resource)
-		logOrTelLogsErr = runTelemetryLogsCheck(logger, resource)
+		go func() {
+			defer wg.Done()
+			monOrTelErr = runTelemetryMetricsCheck(logger, resource)
+		}()
+		go func() {
+			defer wg.Done()
+			logOrTelLogsErr = runTelemetryLogsCheck(logger, resource)
+		}()
 	} else {
 		logger.Infof("Running legacy API checks")
-		monOrTelErr = runMonitoringCheck(logger, resource)
-		logOrTelLogsErr = runLoggingCheck(logger, resource)
+		go func() {
+			defer wg.Done()
+			monOrTelErr = runMonitoringCheck(logger, resource)
+		}()
+		go func() {
+			defer wg.Done()
+			logOrTelLogsErr = runLoggingCheck(logger, resource)
+		}()
 	}
+	wg.Wait()
 
 	return errors.Join(monOrTelErr, logOrTelLogsErr)
 }
