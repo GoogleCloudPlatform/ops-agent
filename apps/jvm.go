@@ -39,6 +39,7 @@ func (r MetricsReceiverJVM) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 		ConfigurePipelines(
 			"jvm",
 			[]otel.Component{
+				otel.MetricStartTime(),
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),

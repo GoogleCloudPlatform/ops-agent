@@ -78,7 +78,6 @@ targets:
           - rocky-linux-cloud:rocky-linux-8
           exhaustive:
           - rhel-cloud:rhel-8
-          - rhel-sap-cloud:rhel-8-6-sap-ha
           - rhel-sap-cloud:rhel-8-8-sap-ha
           - rhel-sap-cloud:rhel-8-10-sap-ha
           - rocky-linux-cloud:rocky-linux-8-optimized-gcp
@@ -140,7 +139,6 @@ targets:
           exhaustive:
           - rhel-cloud:rhel-9
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp
-          - rhel-sap-cloud:rhel-9-0-sap-ha
           - rhel-sap-cloud:rhel-9-2-sap-ha
           - rhel-sap-cloud:rhel-9-4-sap-ha
           - rhel-sap-cloud:rhel-9-6-sap-ha

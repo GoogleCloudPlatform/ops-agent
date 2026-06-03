@@ -19,6 +19,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
@@ -110,12 +111,18 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 }
 
 func (r HealthCheckRegistry) RunAllHealthChecks(logger logs.StructuredLogger) []HealthCheckResult {
-	var result []HealthCheckResult
+	result := make([]HealthCheckResult, len(r))
+	var wg sync.WaitGroup
 
-	for _, c := range r {
-		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
-		r.LogResult(logger)
-		result = append(result, r)
+	for i, c := range r {
+		wg.Add(1)
+		go func(index int, hc HealthCheck) {
+			defer wg.Done()
+			res := HealthCheckResult{Name: hc.Name(), Err: hc.RunCheck(logger)}
+			res.LogResult(logger)
+			result[index] = res
+		}(i, c)
 	}
+	wg.Wait()
 	return result
 }

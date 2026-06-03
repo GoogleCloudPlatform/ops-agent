@@ -173,6 +173,7 @@ func (r MetricsReceiverVault) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 					otel.ToggleScalarDataType,
 				),
 			),
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
