@@ -1,1 +1,1 @@
-metrics receiver with type "iis" is not supported. Supported metrics receiver types: [hostmetrics, prometheus].
+metrics receiver with type "iis" is not supported. Supported metrics receiver types: [dcgm, hostmetrics, prometheus].

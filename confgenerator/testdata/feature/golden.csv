@@ -1,5 +1,7 @@
 App,Field,Override,
 *apps.MetricsProcessorExcludeMetrics,confgenerator.ConfigComponent.Type,
+*apps.MetricsReceiverDcgm,confgenerator.ConfigComponent.Type,
+*apps.MetricsReceiverDcgm,confgenerator.VersionedReceivers.ReceiverVersion,
 *apps.MetricsReceiverHostmetrics,confgenerator.ConfigComponent.Type,
 *apps.MetricsReceiverIis,confgenerator.ConfigComponent.Type,
 *apps.MetricsReceiverIis,confgenerator.VersionedReceivers.ReceiverVersion,
