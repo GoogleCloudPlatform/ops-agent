@@ -76,7 +76,6 @@ var (
 	ttl     = os.Getenv("TTL")
 	distro  = os.Getenv("DISTRO")
 	vmName  = os.Getenv("VM_NAME")
-	feature = os.Getenv("FEATURE")
 )
 
 //go:embed log_generator.py
@@ -122,9 +121,6 @@ func mainErr() error {
 	}
 	if ttl == "" {
 		return errors.New("Env variable TTL cannot be empty")
-	}
-	if feature == "" {
-		feature = agents.DefaultFeatureFlag
 	}
 
 	// Create the VM.
@@ -177,7 +173,7 @@ func mainErr() error {
         - generator_debug_logs
         exporters: [google]
 `, logPath, debugLogPath)
-	if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+	if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 		return err
 	}
 
