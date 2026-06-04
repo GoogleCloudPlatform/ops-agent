@@ -28,88 +28,18 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceResourceLabels bool) otel.Component {
+func otlpExporterForTraces(userAgent string) otel.Component {
 	return otel.Component{
-		Type: "googlecloud",
+		Type: "otlp_grpc",
 		Config: map[string]interface{}{
+			"endpoint":      "telemetry.googleapis.com:443",
+			"balancer_name": "pick_first",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
 			"user_agent": userAgent,
-			"metric": map[string]interface{}{
-				// Receivers are responsible for sending fully-qualified metric names.
-				// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
-				// TODO(b/197129428): Write a test to make sure this doesn't happen.
-				"prefix": "",
-				// OT calls CreateMetricDescriptor by default. Skip because we want
-				// descriptors to be created implicitly with new time series.
-				"skip_create_descriptor": true,
-				// Omit instrumentation labels, which break agent metrics.
-				"instrumentation_library_labels": instrumentationLabels,
-				// Omit service labels, which break agent metrics.
-				"service_resource_labels": serviceResourceLabels,
-				"resource_filters":        []map[string]interface{}{},
-			},
 		},
 	}
-}
-
-func googleCloudLoggingExporter() otel.Component {
-	return otel.Component{
-		Type: "googlecloud",
-		Config: map[string]interface{}{
-			// Keep trying to send log entries for 1 hour before we drop them.
-			"timeout": "3600s",
-			"sending_queue": map[string]interface{}{
-				"enabled": true,
-				// Set queue_size to "(num_consumers + 2)*1000" to always have a new batch ready.
-				"queue_size":    12000,
-				"num_consumers": 10,
-				"sizer":         "items",
-				// Blocks the "sending_queue" on overflow to reduce log loss.
-				"block_on_overflow": true,
-				// Set batch in "sending_queue" is recommended instead of using the batch processor.
-				"batch": map[string]interface{}{
-					"flush_timeout": "200ms",
-					"min_size":      1000,
-					"max_size":      1000,
-					"sizer":         "items",
-				},
-				// Persist logs on disk to survive restarts during network outages.
-				"storage": fileStorageExtensionType,
-			},
-		},
-	}
-}
-
-func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, true, false)
-}
-
-func ConvertGCMOtelExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, false, false)
-}
-
-func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, false, true)
-}
-
-func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
-	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
-		pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
-		if isSystem {
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
-		}
-		if isPrometheus {
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-			// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
-			// This behavior is the same as the GCM/GMP exporters.
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
-		}
-	}
-
-	if _, ok := pipeline.ExporterTypes["logs"]; ok {
-		pipeline.ExporterTypes["logs"] = otel.OTLP_Logs
-	}
-	return pipeline
 }
 
 func otlpExporterForMetrics(userAgent string) otel.Component {
@@ -153,20 +83,6 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 					"sizer":         "bytes",
 				},
 				"storage": fileStorageExtensionType,
-			},
-		},
-	}
-}
-
-func googleManagedPrometheusExporter(userAgent string) otel.Component {
-	return otel.Component{
-		Type: "googlemanagedprometheus",
-		Config: map[string]interface{}{
-			"user_agent": userAgent,
-			// The exporter has the config option addMetricSuffixes with default value true. It will add Prometheus
-			// style suffixes to metric names, e.g., `_total` for a counter; set to false to collect metrics as is
-			"metric": map[string]interface{}{
-				"add_metric_suffixes": false,
 			},
 		},
 	}
@@ -222,42 +138,33 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
 		MetricsPort:       uc.GetOtelMetricsPort(),
-		Exporters: map[otel.ExporterType]otel.ExporterComponents{
-			otel.System: {
-				Exporter: googleCloudExporter(userAgent, false, false),
-			},
-			otel.OTel: {
-				Exporter: googleCloudExporter(userAgent, true, true),
-			},
-			otel.GMP: {
-				Exporter: googleManagedPrometheusExporter(userAgent),
-			},
-			otel.OTLP_Metrics: {
+		Exporters: map[string]otel.ExporterComponents{
+			"metrics": {
 				Exporter:       otlpExporterForMetrics(userAgent),
 				UsedExtensions: []string{googleClientAuthExtensionType},
-				ProcessorsByType: map[string][]otel.Component{
-					"metrics": {
-						otel.GCPProjectID(resource.ProjectName()),
-						otel.MetricStartTime(),
-						otel.BatchProcessor(200, 200, "200ms"),
-					},
+				Processors: []otel.Component{
+					otel.GCPProjectID(resource.ProjectName()),
+					otel.MetricStartTime(),
+					otel.BatchProcessor(200, 200, "200ms"),
 				},
 			},
-			otel.OTLP_Logs: {
+			"logs": {
 				Exporter:       otlpExporterForLogs(userAgent),
 				UsedExtensions: []string{fileStorageExtensionType, googleClientAuthExtensionType},
-				ProcessorsByType: map[string][]otel.Component{
-					"logs": {
-						otel.GCPProjectID(resource.ProjectName()),
-						otel.DisableOtlpRoundTrip(),
-						otel.PreserveInstrumentationScope(),
-						otel.CopyServiceResourceLabels(),
-					},
+				Processors: []otel.Component{
+					otel.GCPProjectID(resource.ProjectName()),
+					otel.DisableOtlpRoundTrip(),
+					otel.PreserveInstrumentationScope(),
+					otel.CopyServiceResourceLabels(),
 				},
 			},
-			otel.Logging: {
-				Exporter:       googleCloudLoggingExporter(),
-				UsedExtensions: []string{fileStorageExtensionType},
+			"traces": {
+				Exporter:       otlpExporterForTraces(userAgent),
+				UsedExtensions: []string{googleClientAuthExtensionType},
+				Processors: []otel.Component{
+					otel.GCPProjectID(resource.ProjectName()),
+					otel.BatchProcessor(200, 200, "200ms"),
+				},
 			},
 		},
 		Extensions: map[string]otel.Component{

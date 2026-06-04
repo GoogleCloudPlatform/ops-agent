@@ -36,7 +36,7 @@ func (MetricsReceiverMssql) Type() string {
 
 func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if m.ReceiverVersion == "2" {
-		return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
+		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
 				Type: "sqlserver",
 				Config: map[string]interface{}{
@@ -59,10 +59,10 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				otel.MetricsRemoveServiceAttributes(),
 				otel.NormalizeSums(),
 			}},
-		}, ctx)}, nil
+		}}, nil
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -84,9 +84,6 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				},
 			},
 		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
-		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
@@ -107,8 +104,10 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				otel.SetScopeName("agent.googleapis.com/"+m.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveInstrumentationLibraryLabelsAttributes(),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}}, nil
 }
 
 func init() {

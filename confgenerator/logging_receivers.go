@@ -111,7 +111,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		})
 	}
 	receiver_config["operators"] = operators
-	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "file_log",
 			Config: receiver_config,
@@ -119,11 +119,8 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		Processors: map[string][]otel.Component{
 			"logs": nil,
 		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.Logging,
-		},
 		UsedExtensions: extensions,
-	}, ctx, false, false)}, nil
+	}}, nil
 }
 
 func init() {
@@ -183,7 +180,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 		"protocol": "rfc5424",
 	}
 
-	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "syslog",
 			Config: config,
@@ -191,11 +188,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 		Processors: map[string][]otel.Component{
 			"logs": processors,
 		},
-
-		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.Logging,
-		},
-	}, ctx, false, false)}, nil
+	}}, nil
 }
 
 func init() {
@@ -245,7 +238,7 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 		),
 	}
 
-	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "fluentforward",
 			Config: map[string]any{
@@ -255,11 +248,7 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 		Processors: map[string][]otel.Component{
 			"logs": processors,
 		},
-
-		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.Logging,
-		},
-	}, ctx, false, false)}, nil
+	}}, nil
 }
 
 func init() {
@@ -311,7 +300,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			return nil, err
 		}
 
-		out = append(out, ConvertToOtlpExporter(otel.ReceiverPipeline{
+		out = append(out, otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type:   "windowseventlog",
 				Config: receiver_config,
@@ -319,11 +308,8 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			Processors: map[string][]otel.Component{
 				"logs": p,
 			},
-			ExporterTypes: map[string]otel.ExporterType{
-				"logs": otel.Logging,
-			},
 			UsedExtensions: []string{fileStorageExtensionType},
-		}, ctx, false, false))
+		})
 	}
 	return out, nil
 }
@@ -611,7 +597,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		return nil, err
 	}
 
-	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "journald",
 			Config: receiver_config,
@@ -619,13 +605,8 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		Processors: map[string][]otel.Component{
 			"logs": modify_fields_processors,
 		},
-
-		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.Logging,
-		},
-
 		UsedExtensions: []string{fileStorageExtensionType},
-	}, ctx, false, false)}, nil
+	}}, nil
 }
 
 func init() {

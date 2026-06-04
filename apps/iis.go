@@ -38,7 +38,7 @@ func (r MetricsReceiverIis) Type() string {
 
 func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.ReceiverVersion == "2" {
-		return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
+		return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "iis",
 				Config: map[string]interface{}{
@@ -72,11 +72,11 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				),
 				otel.MetricStartTime(),
 			}},
-		}, ctx)}, nil
+		}}, nil
 	}
 
 	// Return version 1 if version is anything other than 2
-	return []otel.ReceiverPipeline{confgenerator.ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -101,9 +101,6 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 					},
 				},
 			},
-		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
@@ -143,8 +140,10 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveInstrumentationLibraryLabelsAttributes(),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}}, nil
 }
 
 func init() {

@@ -1,12 +1,4 @@
 exporters:
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   otlp_grpc/otlp_logs:
     auth:
       authenticator: googleclientauth
@@ -1505,13 +1497,16 @@ service:
       - prometheus/agent_prometheus
     metrics/mssql__v2_mssql__v2:
       exporters:
-      - googlecloud/otel
+      - otlp_grpc/otlp_metrics
       processors:
       - metricstransform/mssql__v2_0
       - transform/mssql__v2_1
       - transform/mssql__v2_2
       - normalizesums/mssql__v2_3
       - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - sqlserver/mssql__v2
     metrics/opsagent:
