@@ -396,7 +396,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 
 	// If there are any files left in the existing file map, then that means the
 	// test generated new files and we're currently in an update run. We now need
-	// to clean up the existing lua files left aren't being generated anymore.
+	// to clean up the existing files left that aren't being generated anymore.
 	for file := range existingFiles {
 		if golden.FlagUpdate() {
 			err := os.Remove(filepath.Join("testdata", testDir, file))

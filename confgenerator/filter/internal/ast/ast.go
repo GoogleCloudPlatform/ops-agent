@@ -584,26 +584,3 @@ func ParseTextOrString(a Attrib) (string, error) {
 	str := string(a.(*token.Token).Lit)
 	return str, nil
 }
-
-func LuaQuote(in string) string {
-	var b strings.Builder
-	b.Grow(len(in) + 2)
-	b.WriteString(`"`)
-	for i := 0; i < len(in); i++ {
-		// N.B. slicing a string gives bytes, not runes
-		c := in[i]
-		if c == 92 {
-			b.WriteString(`\\`)
-		} else if c == 34 {
-			b.WriteString(`\"`)
-		} else if c >= 32 && c < 127 {
-			// printable character
-			b.WriteByte(c)
-		} else {
-			// N.B. Lua character escapes are always integers
-			fmt.Fprintf(&b, `\%d`, c)
-		}
-	}
-	b.WriteString(`"`)
-	return b.String()
-}
