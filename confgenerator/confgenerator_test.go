@@ -434,11 +434,3 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 
 	return nil
 }
-
-func TestMain(m *testing.M) {
-	// Hardcode the path to the JMX JAR to make tests repeatable.
-	confgenerator.FindJarPath = func() (string, error) {
-		return "/path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar", nil
-	}
-	os.Exit(m.Run())
-}

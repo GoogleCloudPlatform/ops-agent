@@ -61,14 +61,6 @@ COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 `
 
-// installJava is used on platforms where the default package manager
-// does not provide an implementation of Java of a sufficient version as
-// required by the JMX metrics gatherer build.
-// The openjdk-install layer is defined in template-header.
-const installJava = `
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/`
-
 var dockerfileArguments = []templateArguments{
 	{
 		from_image:  "rockylinux:8",
@@ -78,8 +70,8 @@ var dockerfileArguments = []templateArguments{
 		yum config-manager --set-enabled powertools && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
-		expect rpm-sign zip tzdata-java`,
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-8",
 		package_extension: "rpm",
@@ -93,10 +85,8 @@ var dockerfileArguments = []templateArguments{
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
-		expect rpm-sign zip tzdata-java
-
-		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/`,
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-9",
 		package_extension: "rpm",
@@ -111,9 +101,7 @@ var dockerfileArguments = []templateArguments{
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip tzdata-java libzstd-devel
-
-		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/` + installJava,
+		expect rpm-sign zip libzstd-devel`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-10",
 		package_extension: "rpm",
@@ -125,7 +113,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
+		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bookworm",
 		package_extension: "deb",
@@ -137,7 +125,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip` + installCMake,
+		devscripts cdbs pkg-config zip` + installCMake,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bullseye",
 		package_extension: "deb",
@@ -149,7 +137,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file systemd-dev libsystemd-dev \
-		devscripts cdbs pkg-config zip` + installJava,
+		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-trixie",
 		package_extension: "deb",
@@ -181,7 +169,7 @@ RUN set -x; \
 		# Set newer GCC as default with priority 1
 		update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
     		--slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
-		update-alternatives --set gcc /usr/bin/gcc-8` + installJava + installCMake,
+		update-alternatives --set gcc /usr/bin/gcc-8` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-12",
 		package_extension: "rpm",
@@ -193,7 +181,7 @@ RUN set -x; \
 		zypper -n update && \
 		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
 # Allow fluent-bit to find systemd
-RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
+RUN ln -fs /usr/lib/systemd /lib/systemd` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-15",
 		package_extension: "rpm",
@@ -205,7 +193,7 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		zypper -n update && \
 		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
 # Allow fluent-bit to find systemd
-RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
+RUN ln -fs /usr/lib/systemd /lib/systemd` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-16",
 		package_extension: "rpm",
@@ -217,7 +205,7 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
+		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-jammy",
 		package_extension: "deb",
@@ -229,7 +217,7 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
+		devscripts cdbs pkg-config zip debhelper`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-noble",
 		package_extension: "deb",
@@ -241,7 +229,7 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
+		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-questing",
 		package_extension: "deb",

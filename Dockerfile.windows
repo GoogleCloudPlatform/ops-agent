@@ -10,9 +10,7 @@ FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
 #
 # Basic setup
 #
-RUN setx /M PATH "%PATH%;C:\Go\bin;C:\Java\bin"
-
-RUN setx /M JAVA_HOME "C:\Java"
+RUN setx /M PATH "%PATH%;C:\Go\bin"
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
@@ -196,20 +194,6 @@ ENV GO_BIN_PATH="C:\Go\bin"
 
 
 
-###############################################################################
-# Build JMX Project here so it can be hashed for
-# a required build flag to support jmx receiver in operations-collector
-###############################################################################
-
-ADD https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.msi /local/jdk-17-windows-x64.msi
-RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-17-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
-
-COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
-
-WORKDIR /work/submodules/opentelemetry-java-contrib
-
-RUN ./gradlew --no-daemon :jmx-metrics:build; `
-    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build OT collector
@@ -219,7 +203,7 @@ COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetr
 
 WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
-RUN & ./build.ps1 -outDir /work/out/bin -jmxHash (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower()
+RUN & ./build.ps1 -outDir /work/out/bin
 
 ###############################################################################
 # Config generator/service installer

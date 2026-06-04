@@ -3,7 +3,6 @@
 # ======================================
 
 FROM {from_image} AS {target_name}-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 {install_packages}
 
@@ -24,9 +23,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \

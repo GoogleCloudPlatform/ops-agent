@@ -16,7 +16,6 @@
     "out\\bin\\vccorlib140.dll": "{{$INSTALL_DIR}}/bin/vccorlib140.dll",
     "out\\bin\\vcruntime140.dll": "{{$INSTALL_DIR}}/bin/vcruntime140.dll",
 
-    "out\\bin\\opentelemetry-java-contrib-jmx-metrics.jar": "{{$INSTALL_DIR}}/bin/opentelemetry-java-contrib-jmx-metrics.jar",
     "out\\bin\\google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
     "out\\bin\\google-cloud-ops-agent.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent.exe"
   },
@@ -35,7 +34,6 @@
         "out/bin/vcruntime140.dll",
 
         "out/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
-        "out/bin/opentelemetry-java-contrib-jmx-metrics.jar",
         "out/bin/google-cloud-ops-agent.exe",
 
         "confgenerator/default-config.yaml",
