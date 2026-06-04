@@ -57,8 +57,8 @@ RUN set -x; yum -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		yum config-manager --set-enabled powertools && \
 		yum -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		autoconf libtool libcurl-devel openssl-devel \
+		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
 		expect rpm-sign zip
 
 SHELL ["/bin/bash", "-c"]
@@ -146,8 +146,8 @@ RUN set -x; dnf -y update && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
 		dnf -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		autoconf libtool libcurl-devel openssl-devel \
+		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
 		expect rpm-sign zip
 
 SHELL ["/bin/bash", "-c"]
@@ -235,8 +235,8 @@ RUN set -x; dnf -y update && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
 		dnf -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		autoconf libtool libcurl-devel openssl-devel \
+		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
 		expect rpm-sign zip libzstd-devel
 
 SHELL ["/bin/bash", "-c"]
@@ -321,8 +321,8 @@ FROM debian:bookworm AS bookworm-build-base
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
+		autoconf libtool libcurl4-openssl-dev libssl-dev \
+		build-essential file libsystemd-dev \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
@@ -407,12 +407,9 @@ FROM debian:bullseye AS bullseye-build-base
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file libsystemd-dev \
+		autoconf libtool libcurl4-openssl-dev libssl-dev \
+		build-essential file libsystemd-dev \
 		devscripts cdbs pkg-config zip
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
 
 SHELL ["/bin/bash", "-c"]
 
@@ -496,8 +493,8 @@ FROM debian:trixie AS trixie-build-base
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file systemd-dev libsystemd-dev \
+		autoconf libtool libcurl4-openssl-dev libssl-dev \
+		build-essential file systemd-dev libsystemd-dev \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
@@ -580,32 +577,21 @@ COPY --from=trixie-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 FROM opensuse/archive:42.3 AS sles12-build-base
 
-# Add home:odassau repo to install 3.4 bison
-ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo /tmp/home:odassau.repo
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc8 gcc8-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip && \
+		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc8 gcc8-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
-		# Add home:odassau repo to install 3.4 bison
-		zypper addrepo /tmp/home:odassau.repo && \
-		zypper -n --gpg-auto-import-keys refresh && \
 		zypper -n update && \
-		# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
-		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
-		zypper -n install 'bison>3' && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd && \
 		# Set newer GCC as default with priority 1
 		update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
     		--slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
 		update-alternatives --set gcc /usr/bin/gcc-8
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
 
 SHELL ["/bin/bash", "-c"]
 
@@ -689,12 +675,9 @@ FROM opensuse/leap:15.1 AS sles15-build-base
 
 RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
+		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
 
 SHELL ["/bin/bash", "-c"]
 
@@ -778,12 +761,9 @@ FROM opensuse/leap:16.0 AS sles16-build-base
 
 RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
+		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
 
 SHELL ["/bin/bash", "-c"]
 
@@ -867,8 +847,8 @@ FROM ubuntu:jammy AS jammy-build-base
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev tzdata \
+		autoconf libtool libcurl4-openssl-dev libssl-dev \
+		build-essential file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
@@ -953,8 +933,8 @@ FROM ubuntu:noble AS noble-build-base
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev tzdata \
+		autoconf libtool libcurl4-openssl-dev libssl-dev \
+		build-essential file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip debhelper
 
 SHELL ["/bin/bash", "-c"]
@@ -1039,8 +1019,8 @@ FROM ubuntu:questing AS questing-build-base
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev tzdata \
+		autoconf libtool libcurl4-openssl-dev libssl-dev \
+		build-essential file systemd-dev debhelper libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]

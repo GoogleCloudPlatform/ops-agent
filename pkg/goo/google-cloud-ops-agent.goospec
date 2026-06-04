@@ -12,9 +12,6 @@
   "license": "http://www.apache.org/licenses/LICENSE-2.0",
   "description": "The Google Cloud Ops Agent collects metrics and logs from the system.",
   "files": {
-    "out\\bin\\msvcp140.dll": "{{$INSTALL_DIR}}/bin/msvcp140.dll",
-    "out\\bin\\vccorlib140.dll": "{{$INSTALL_DIR}}/bin/vccorlib140.dll",
-    "out\\bin\\vcruntime140.dll": "{{$INSTALL_DIR}}/bin/vcruntime140.dll",
 
     "out\\bin\\google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
     "out\\bin\\google-cloud-ops-agent.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent.exe"
@@ -29,9 +26,6 @@
   },
   "sources": [{
       "include": [
-        "out/bin/msvcp140.dll",
-        "out/bin/vccorlib140.dll",
-        "out/bin/vcruntime140.dll",
 
         "out/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
         "out/bin/google-cloud-ops-agent.exe",

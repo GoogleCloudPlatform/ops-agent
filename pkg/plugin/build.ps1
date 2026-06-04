@@ -52,9 +52,7 @@ New-Item -ItemType Directory -Path $Subfolder -Force | Out-Null
 $TarFileName = "google-cloud-ops-agent-plugin_$PkgVersion-windows-$Arch.tar.gz" # Define tar file name
 
 $FilesToInclude = @(
-    "msvcp140.dll",
-    "vccorlib140.dll",
-    "vcruntime140.dll",
+
 
     "google-cloud-metrics-agent_windows_${GoArch}.exe",
 
