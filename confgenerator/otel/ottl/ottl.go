@@ -121,6 +121,16 @@ func (a LValue) SetIf(b, condition Value) Statements {
 			statementsf(`set(%s["line"], Int(%s["line"])) where %s["line"] != nil`, a, a, a),
 		)
 	}
+	if slices.Equal(a, LValue{"attributes", "gcp.http_request"}) {
+		// HTTPRequest fields status, responseSize, requestSize, cacheFillBytes must be integers.
+		// If present, convert them to integers to prevent export failures.
+		statements = statements.Append(
+			statementsf(`set(%s["status"], Int(%s["status"])) where %s["status"] != nil`, a, a, a),
+			statementsf(`set(%s["responseSize"], Int(%s["responseSize"])) where %s["responseSize"] != nil`, a, a, a),
+			statementsf(`set(%s["requestSize"], Int(%s["requestSize"])) where %s["requestSize"] != nil`, a, a, a),
+			statementsf(`set(%s["cacheFillBytes"], Int(%s["cacheFillBytes"])) where %s["cacheFillBytes"] != nil`, a, a, a),
+		)
+	}
 	if (slices.Equal(a, LValue{"severity_text"})) {
 		// As a special case for severity_text, we need to zero out severity_number to make sure the text takes effect.
 		// TODO: Add a unit test for this.

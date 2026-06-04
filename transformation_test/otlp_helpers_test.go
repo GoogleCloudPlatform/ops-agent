@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"google.golang.org/grpc"
+	_ "google.golang.org/grpc/encoding/gzip"
 )
 
 func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
@@ -99,9 +100,9 @@ func otlpOnGRPCServer(ln net.Listener) (*mockOTLPServer, <-chan plogotlp.ExportR
 	return s, ch
 }
 
-func (transformationConfig transformationTest) runOtelOTLPExporterTest(t *testing.T, name string) {
-	got := transformationConfig.runOTelTestInner(t, name, true)
-	checkOutput(t, filepath.Join(name, "output_otel_otlpexporter.yaml"), got)
+func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
+	got := transformationConfig.runOTelTestInner(t, name)
+	checkOutput(t, filepath.Join(name, "output_otel.yaml"), got)
 }
 
 func sanitizeOTLPExportRequest(t *testing.T, r plogotlp.ExportRequest, testStartTime time.Time) map[string]any {

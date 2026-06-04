@@ -31,10 +31,8 @@ import (
 	"testing"
 	"time"
 
-	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/goccy/go-yaml"
@@ -42,9 +40,6 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	_ "google.golang.org/grpc/encoding/gzip"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gotest.tools/v3/golden"
 )
 
@@ -123,10 +118,6 @@ func TestTransformationTests(t *testing.T) {
 			t.Run("otel", func(t *testing.T) {
 				t.Parallel()
 				transformationConfig.runOTelTest(t, dir.Name())
-			})
-			t.Run("otel-otlpexporter", func(t *testing.T) {
-				t.Parallel()
-				transformationConfig.runOtelOTLPExporterTest(t, dir.Name())
 			})
 		})
 	}
@@ -227,96 +218,8 @@ func testContext() context.Context {
 
 // generateOTelConfig attempts to generate an OTel config file for the test case.
 // It calls t.Fatal if there is something wrong with the test case, or returns an error if the config is invalid.
-func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
-	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
-	if err != nil {
-		t.Fatal(err)
-	}
-	pi := transformationConfig.pipelineInstance(abs)
-	pi.RID = "my-log-name"
-	pi.Backend = confgenerator.BackendOTel
-	rps, pls, err := pi.OTelComponents(ctx)
-	if err != nil {
-		return "", err
-	}
 
-	return otel.ModularConfig{
-		DisableMetrics:    true,
-		JSONLogs:          true,
-		LogLevel:          "debug",
-		ReceiverPipelines: rps,
-		Pipelines:         pls,
-		Exporters: map[otel.ExporterType]otel.ExporterComponents{
-			otel.Logging: {
-				ProcessorsByType: map[string][]otel.Component{
-					// Batch with 1.5s timeout to group in the same log request
-					// all late entries flushed from a multiline parser after 1s.
-					"logs": {
-						otel.BatchProcessor(500, 500, "1500ms"),
-					},
-				},
-				Exporter: otel.Component{
-					Type: "googlecloud",
-					Config: map[string]any{
-						"project": "my-project",
-						"sending_queue": map[string]any{
-							"enabled": false,
-						},
-						"log": map[string]any{
-							"default_log_name": "my-log-name",
-							"endpoint":         addr,
-							"use_insecure":     true,
-						},
-					},
-				},
-			},
-		},
-	}.Generate(ctx)
-}
-
-type mockLoggingServer struct {
-	logpb.UnimplementedLoggingServiceV2Server
-	srv       *grpc.Server
-	requestCh chan<- *logpb.WriteLogEntriesRequest
-}
-
-func (s *mockLoggingServer) WriteLogEntries(
-	ctx context.Context,
-	request *logpb.WriteLogEntriesRequest,
-) (*logpb.WriteLogEntriesResponse, error) {
-	s.requestCh <- request
-	return &logpb.WriteLogEntriesResponse{}, nil
-}
-
-func (s *mockLoggingServer) GracefulStop() {
-	// Also closes the connection.
-	s.srv.GracefulStop()
-	close(s.requestCh)
-}
-
-func cloudLoggingOnGRPCServer(ln net.Listener) (*mockLoggingServer, <-chan *logpb.WriteLogEntriesRequest) {
-	ch := make(chan *logpb.WriteLogEntriesRequest)
-	s := &mockLoggingServer{
-		srv:       grpc.NewServer(),
-		requestCh: ch,
-	}
-
-	// Now run it as a gRPC server
-	logpb.RegisterLoggingServiceV2Server(s.srv, s)
-	go func() {
-		_ = s.srv.Serve(ln)
-	}()
-
-	return s, ch
-}
-
-func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
-	got := transformationConfig.runOTelTestInner(t, name, false)
-
-	checkOutput(t, filepath.Join(name, "output_otel.yaml"), got)
-}
-
-func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, name string, isOTLP bool) []map[string]any {
+func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, name string) []map[string]any {
 	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
 
@@ -326,35 +229,20 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
 	}
 
-	var s interface{ GracefulStop() }
-	var requestChWriteLogEntries <-chan *logpb.WriteLogEntriesRequest
 	var requestChOTLP <-chan plogotlp.ExportRequest
 
-	if isOTLP {
-		var mockS *mockOTLPServer
-		mockS, requestChOTLP = otlpOnGRPCServer(ln)
-		s = mockS
-	} else {
-		var mockS *mockLoggingServer
-		mockS, requestChWriteLogEntries = cloudLoggingOnGRPCServer(ln)
-		s = mockS
-	}
+	mockS, requestChOTLP := otlpOnGRPCServer(ln)
 
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		<-ctx.Done()
-		s.GracefulStop()
+		mockS.GracefulStop()
 		return nil
 	})
 
 	got := []map[string]any{}
 
-	var config string
-	if isOTLP {
-		config, err = transformationConfig.generateOTelOTLPExporterConfig(ctx, t, name, ln.Addr().String())
-	} else {
-		config, err = transformationConfig.generateOTelConfig(ctx, t, name, ln.Addr().String())
-	}
+	config, err := transformationConfig.generateOTelOTLPExporterConfig(ctx, t, name, ln.Addr().String())
 	if err != nil {
 		got = append(got, map[string]any{"config_error": err.Error()})
 		return got
@@ -471,14 +359,8 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 
 	// Read and sanitize requests.
 	eg.Go(func() error {
-		if isOTLP {
-			for r := range requestChOTLP {
-				got = append(got, sanitizeOTLPExportRequest(t, r, testStartTime))
-			}
-		} else {
-			for r := range requestChWriteLogEntries {
-				got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
-			}
+		for r := range requestChOTLP {
+			got = append(got, sanitizeOTLPExportRequest(t, r, testStartTime))
 		}
 		return nil
 	})
@@ -495,37 +377,6 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 		got = append(got, map[string]any{"collector_errors": errors})
 	}
 	return got
-}
-
-func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesRequest, testStartTime time.Time) map[string]any {
-	b, err := protojson.Marshal(r)
-	if err != nil {
-		t.Logf("failed to marshal request: %v", err)
-		return nil
-	}
-	var req map[string]any
-	if err := yaml.Unmarshal(b, &req); err != nil {
-		t.Log(string(b))
-		t.Fatal(err)
-	}
-	// Replace entries[].timestamp with a human-readable timestamp
-	if v, ok := req["entries"].([]any); ok {
-		for _, v := range v {
-			v1, _ := v.(map[string]any)
-			// Convert timestamp to "now" or a human-readable timestamp
-			if dateStr, ok := v1["timestamp"].(string); ok {
-				date, err := time.Parse(time.RFC3339Nano, dateStr)
-				if err != nil {
-					t.Logf("failed to parse %q: %v", dateStr, err)
-					return nil
-				}
-				if date.After(testStartTime) {
-					v1["timestamp"] = "now"
-				}
-			}
-		}
-	}
-	return req
 }
 
 func sanitizeOtelStacktrace(t *testing.T, input string) string {
