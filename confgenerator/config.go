@@ -667,6 +667,7 @@ func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]int
 	return tls
 }
 
+
 type MetricsReceiverSharedCluster struct {
 	CollectClusterMetrics *bool `yaml:"collect_cluster_metrics" validate:"omitempty"`
 }
