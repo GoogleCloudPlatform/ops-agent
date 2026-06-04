@@ -1233,30 +1233,6 @@ func GetOtelConfigPath(imageSpec string) string {
 	return "/var/run/google-cloud-ops-agent/otel.yaml"
 }
 
-const (
-	OTLPLoggingFeatureFlag      = "otlp_logging"
-	OtlpHttpExporterFeatureFlag = "otlp_exporter"
-	DefaultFeatureFlag          = "default"
-)
-
-// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
-func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
-	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
-}
-
-// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
-func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
-	if feature == "" || feature == DefaultFeatureFlag {
-		return SetupOpsAgent(ctx, logger, vm, config)
-	}
-
-	// Set experimental feature environment variable.
-	if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
-		return err
-	}
-
-	return SetupOpsAgent(ctx, logger, vm, config)
-}
 
 func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !IsRPMBased(vm.ImageSpec) {

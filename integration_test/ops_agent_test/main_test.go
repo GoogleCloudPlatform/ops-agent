@@ -215,25 +215,7 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
-// RunForEachImageAndFeatureFlag runs a subtest for each image and provide feature flags.
-func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody func(t *testing.T, imageSpec string, feature string)) {
-	t.Helper()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		t.Run(agents.DefaultFeatureFlag, func(t *testing.T) {
-			testBody(t, imageSpec, agents.DefaultFeatureFlag)
-		})
-		for _, feature := range features {
-			t.Run(feature, func(t *testing.T) {
-				// Feature flags currently don't work with how Ops Agent UAP Plugin runs.
-				if gce.IsOpsAgentUAPPlugin() {
-					t.SkipNow()
-				}
-				testBody(t, imageSpec, feature)
-			})
-		}
-	})
-}
+
 
 func TestParseMultilineFileJava(t *testing.T) {
 	t.Skip("Disabled until native OTel multiline parsing is implemented.")
@@ -729,7 +711,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		logPath := logPathForImage(vm.ImageSpec)
@@ -895,7 +877,7 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -923,7 +905,7 @@ func TestCustomLogFormat(t *testing.T) {
         exporters: [google]
 `, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1070,7 +1052,7 @@ func TestHTTPRequestLog(t *testing.T) {
 
 func TestLogEntrySpecialFields(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1093,7 +1075,7 @@ logging:
           - json
 `
 		config := fmt.Sprintf(configStr, file1)
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger.ToMainLog(), vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1324,7 +1306,7 @@ func TestProcessorOrder(t *testing.T) {
 
 func TestSyslogTCP(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1354,7 +1336,7 @@ func TestSyslogTCP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1389,7 +1371,7 @@ func TestSyslogTCP(t *testing.T) {
 
 func TestSyslogUDP(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1413,7 +1395,7 @@ func TestSyslogUDP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1433,7 +1415,7 @@ func TestSyslogUDP(t *testing.T) {
 
 func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1473,7 +1455,7 @@ func TestExcludeLogs(t *testing.T) {
         processors: [json, exclude2]
 `, file1, file2)
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1522,7 +1504,7 @@ func TestExcludeLogs(t *testing.T) {
 
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1572,7 +1554,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
         exporters: [google]
 `, file1, file2)
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1601,7 +1583,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 
 func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1665,7 +1647,7 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
         processors: [json, exclude_trace, modify]
 `, file1, file2, file3)
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1695,7 +1677,7 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 
 func TestModifyFields(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, nil, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1756,7 +1738,7 @@ func TestModifyFields(t *testing.T) {
         exporters: [google]
 `, file1)
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1881,7 +1863,7 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1903,7 +1885,7 @@ func TestLogFilePathLabel(t *testing.T) {
         processors: [json]
 `, file1)
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2105,7 +2087,7 @@ func TestTCPLog(t *testing.T) {
 func TestFluentForwardLog(t *testing.T) {
 	t.Skip("Fluent Bit is removed; OTel fluent forward log test is skipped.")
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -2121,7 +2103,7 @@ func TestFluentForwardLog(t *testing.T) {
       fluent_pipeline:
         receivers: [fluent_logs]
 `
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2152,7 +2134,7 @@ func TestFluentForwardLog(t *testing.T) {
 
 func TestWindowsEventLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2173,7 +2155,7 @@ func TestWindowsEventLog(t *testing.T) {
         receivers: [windows_event_log]
         exporters: [google]
 `
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2197,7 +2179,7 @@ func TestWindowsEventLog(t *testing.T) {
 
 func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2218,7 +2200,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
       default_pipeline:
         receivers: [%s]
 `, log, channel, log)
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2232,7 +2214,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 func TestWindowsEventLogV2(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2273,7 +2255,7 @@ func TestWindowsEventLogV2(t *testing.T) {
       pipeline_xml:
         receivers: [winlog2_xml]
 `
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2480,7 +2462,7 @@ func hasKeyWithValueType[V any](m map[string]any, k string) bool {
 
 func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2489,7 +2471,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
 			t.Fatal(err)
 		}
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2515,7 +2497,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2532,7 +2514,7 @@ func TestSystemdLog(t *testing.T) {
         receivers: [systemd_logs]
 `
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2567,11 +2549,11 @@ func TestSystemdLog(t *testing.T) {
 
 func TestSystemLogByDefault(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2714,10 +2696,10 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2732,7 +2714,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.Skip("Proxy test is currently only supported on windows.")
@@ -2749,7 +2731,7 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 		if err := gce.SetEnvironmentVariables(ctx, logger, vm, settings); err != nil {
 			t.Fatal(err)
 		}
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2909,7 +2891,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 }
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -2963,7 +2945,7 @@ func TestPrometheusMetrics(t *testing.T) {
           - prometheus
 `
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, promConfig, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, promConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3094,7 +3076,7 @@ func TestPrometheusMetrics(t *testing.T) {
 
 func TestPrometheusMetricsWithMetadata(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		metadataKey, metadataValue := "test", "${test:value}"
 		escapedMetadataValue := "_{test:value}"
@@ -3124,7 +3106,7 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
           - prometheus
 `, metadataKey, metadataKey)
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger.ToMainLog(), vm, promConfig, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3160,7 +3142,7 @@ func getCommonLabels(vm *gce.VM) []*metadata.MetricLabel {
 // The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		// TODO: Set up JSON exporter stuff on Windows
 		if gce.IsWindows(imageSpec) {
@@ -3264,7 +3246,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3908,7 +3890,7 @@ func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, 
 // correctly received and processed
 func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []mockPrometheusCheck) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -3959,7 +3941,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
 		}
 		// 3. Config and start the agent
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, opsAgentConfig, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, opsAgentConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4742,7 +4724,7 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 
 func TestOTLPMetricsGCM(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
@@ -4762,7 +4744,7 @@ traces:
   service:
     pipelines:
 `
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4999,8 +4981,8 @@ traces:
   service:
     pipelines:
 `
-		// Only run the test for the OTLP http exporter
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, agents.OtlpHttpExporterFeatureFlag); err != nil {
+		// Run the test with default exporter (OTLP)
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5242,11 +5224,8 @@ metrics:
 
 func TestOTLPLogsWithOtlpExporter(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OTLPLoggingOTLPExporterFeatureFlag, agents.OTLPLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if feature == agents.DefaultFeatureFlag {
-			t.Skip("This test requires otlp_logging+otlp_exporter experimental flags to be enabled")
-		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
 combined:
@@ -5267,7 +5246,7 @@ metrics:
   service:
     pipelines:
 `
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5427,7 +5406,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if !isHealthCheckTestImage(imageSpec) {
 			t.SkipNow()
@@ -5435,7 +5414,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5562,7 +5541,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 
 func TestBufferLimitSizeOpsAgent(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -5812,7 +5791,7 @@ func TestLogCompression(t *testing.T) {
 
 func TestFileOffset(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -5833,7 +5812,7 @@ func TestFileOffset(t *testing.T) {
 			t.Fatalf("Error writing dummy log lines: %v", err)
 		}
 
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -6127,7 +6106,7 @@ func TestUninstallRemovesService(t *testing.T) {
 
 func TestMetricsPortOverrideEnv(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		// Windows support added below
 		if gce.IsOpsAgentUAPPlugin() {
@@ -6136,7 +6115,7 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		// Setup agent with default config first
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
