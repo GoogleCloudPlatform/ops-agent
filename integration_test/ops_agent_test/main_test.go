@@ -5446,8 +5446,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		checkExpectedHealthCheckResult(t, cmdOut, "Network", "FAIL", "LogApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut, "Network", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "FAIL", "TelApiConnErr")
 		// TODO(b/321220138): restore this once there's a more reliable endpoint.
 		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Network", "WARNING", "DLApiConnErr")

@@ -61,22 +61,7 @@ var (
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
 	}
-	LogApiConnErr = HealthCheckError{
-		Code:         "LogApiConnErr",
-		Class:        Connection,
-		Message:      "Request to Logging API failed.",
-		Action:       "Check your internet connection and firewall rules.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
-		IsFatal:      true,
-	}
-	MonApiConnErr = HealthCheckError{
-		Code:         "MonApiConnErr",
-		Class:        Connection,
-		Message:      "Request to Monitoring API failed.",
-		Action:       "Check your internet connection and firewall rules.",
-		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
-		IsFatal:      true,
-	}
+
 	PacApiConnErr = HealthCheckError{
 		Code:         "PacApiConnErr",
 		Class:        Connection,
@@ -117,38 +102,7 @@ var (
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
-	LogApiPermissionErr = HealthCheckError{
-		Code:         "LogApiPermissionErr",
-		Class:        Permission,
-		Message:      "Service account is missing the roles/logging.logWriter role.",
-		Action:       "Add the roles/logging.logWriter role to the Google Cloud service account.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization#create-service-account",
-		IsFatal:      true,
-	}
-	MonApiPermissionErr = HealthCheckError{
-		Code:         "MonApiPermissionErr",
-		Class:        Permission,
-		Message:      "Service account is missing the roles/monitoring.metricWriter role.",
-		Action:       "Add the roles/monitoring.metricWriter role to the Google Cloud service account.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization#create-service-account",
-		IsFatal:      true,
-	}
-	LogApiDisabledErr = HealthCheckError{
-		Code:         "LogApiDisabledErr",
-		Class:        Api,
-		Message:      "The Logging API is disabled in the current Google Cloud project.",
-		Action:       "Enable Logging API in the current Google Cloud project.",
-		ResourceLink: "https://cloud.google.com/logging/docs/api/enable-api",
-		IsFatal:      true,
-	}
-	MonApiDisabledErr = HealthCheckError{
-		Code:         "MonApiDisabledErr",
-		Class:        Api,
-		Message:      "The Monitoring API is disabled in the current Google Cloud project.",
-		Action:       "Enable Monitoring API in the current Google Cloud project.",
-		ResourceLink: "https://cloud.google.com/monitoring/api/enable-api",
-		IsFatal:      true,
-	}
+
 	TelApiDisabledErr = HealthCheckError{
 		Code:         "TelApiDisabledErr",
 		Class:        Api,
