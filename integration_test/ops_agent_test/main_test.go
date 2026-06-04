@@ -5473,12 +5473,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Network", "WARNING", "DLApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
-		if strings.Contains(feature, "otlp_exporter") {
-			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "TelApiConnErr")
-		} else {
-			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
-			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
-		}
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "TelApiConnErr")
 	})
 }
 
