@@ -42,7 +42,6 @@ build:
 .PHONY: rebuild_submodules
 rebuild_submodules: clean_submodules otelopscol_local
 
-SKIP_JAVA ?= true
 .PHONY: otelopscol_local
 otelopscol_local: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
 
@@ -124,7 +123,7 @@ endif
 
 
 dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
-	SKIP_OTEL_JAVA=${SKIP_JAVA} GO_BIN=$(shell which go) bash ./builds/otel.sh $(PWD)/dist
+	GO_BIN=$(shell which go) bash ./builds/otel.sh $(PWD)/dist
 
 .PHONY: transformation_test
 transformation_test: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol

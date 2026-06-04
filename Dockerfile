@@ -21,9 +21,6 @@
 
 
 ARG CMAKE_VERSION=3.25.2
-ARG OPENJDK_MAJOR_VERSION=17
-ARG OPENJDK_FULL_VERSION=17.0.8
-ARG OPENJDK_VERSION_SUFFIX=7
 ARG GO_VERSION=1.25.0
 
 # Manually prepare a recent enough version of CMake.
@@ -47,31 +44,7 @@ FROM cmake-${TARGETARCH}-recent AS cmake-install-recent
 RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 
-# Manually prepare OpenJDK for the current architecture.
-FROM alpine:latest AS openjdk-amd64
-ARG OPENJDK_MAJOR_VERSION
-ARG OPENJDK_FULL_VERSION
-ARG OPENJDK_VERSION_SUFFIX
 
-ENV hash=aa5fc7d388fe544e5d85902e68399d5299e931f9b280d358a3cbee218d6017b0
-ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_x64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
-    /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
-
-FROM alpine:latest AS openjdk-arm64
-ARG OPENJDK_MAJOR_VERSION
-ARG OPENJDK_FULL_VERSION
-ARG OPENJDK_VERSION_SUFFIX
-
-ENV hash=c43688163cfdcb1a6e6fe202cc06a51891df746b954c55dbd01430e7d7326d00
-ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_aarch64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
-    /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
-
-FROM openjdk-${TARGETARCH} AS openjdk-install
-ARG OPENJDK_MAJOR_VERSION
-RUN set -xe; (echo "$hash  /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz" | sha256sum -c)
-RUN set -xe; \
-    mkdir -p /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk && \
-    tar -xf /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz -C /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk --strip-components=1
 
 
 # ======================================
@@ -79,15 +52,14 @@ RUN set -xe; \
 # ======================================
 
 FROM rockylinux:8 AS centos8-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; yum -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		yum config-manager --set-enabled powertools && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
-		expect rpm-sign zip tzdata-java
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -106,9 +78,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -171,7 +140,6 @@ COPY --from=centos8-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM rockylinux:9 AS rockylinux9-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
@@ -179,10 +147,8 @@ RUN set -x; dnf -y update && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
-		expect rpm-sign zip tzdata-java
-
-		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -201,9 +167,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -266,7 +229,6 @@ COPY --from=rockylinux9-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM rockylinux/rockylinux:10 AS rockylinux10-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
@@ -275,11 +237,7 @@ RUN set -x; dnf -y update && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip tzdata-java libzstd-devel
-
-		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
+		expect rpm-sign zip libzstd-devel
 
 SHELL ["/bin/bash", "-c"]
 
@@ -298,9 +256,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -363,13 +318,12 @@ COPY --from=rockylinux10-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM debian:bookworm AS bookworm-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
+		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -388,9 +342,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -453,13 +404,12 @@ COPY --from=bookworm-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM debian:bullseye AS bullseye-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
+		devscripts cdbs pkg-config zip
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -481,9 +431,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -546,15 +493,12 @@ COPY --from=bullseye-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM debian:trixie AS trixie-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file systemd-dev libsystemd-dev \
 		devscripts cdbs pkg-config zip
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 
 SHELL ["/bin/bash", "-c"]
 
@@ -573,9 +517,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -638,7 +579,6 @@ COPY --from=trixie-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM opensuse/archive:42.3 AS sles12-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 # Add home:odassau repo to install 3.4 bison
 ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo /tmp/home:odassau.repo
@@ -663,8 +603,6 @@ RUN set -x; \
 		update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
     		--slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
 		update-alternatives --set gcc /usr/bin/gcc-8
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -686,9 +624,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -751,15 +686,12 @@ COPY --from=sles12-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM opensuse/leap:15.1 AS sles15-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; zypper -n refresh && \
 		zypper -n update && \
 		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -781,9 +713,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -846,15 +775,12 @@ COPY --from=sles15-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM opensuse/leap:16.0 AS sles16-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; zypper -n refresh && \
 		zypper -n update && \
 		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -876,9 +802,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -941,13 +864,12 @@ COPY --from=sles16-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM ubuntu:jammy AS jammy-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
+		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -966,9 +888,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -1031,13 +950,12 @@ COPY --from=jammy-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM ubuntu:noble AS noble-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper
+		devscripts cdbs pkg-config zip debhelper
 
 SHELL ["/bin/bash", "-c"]
 
@@ -1056,9 +974,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
@@ -1121,13 +1036,12 @@ COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 # ======================================
 
 FROM ubuntu:questing AS questing-build-base
-ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
+		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -1146,9 +1060,6 @@ WORKDIR /work
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \

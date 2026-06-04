@@ -21,9 +21,6 @@
 
 
 ARG CMAKE_VERSION=3.25.2
-ARG OPENJDK_MAJOR_VERSION=17
-ARG OPENJDK_FULL_VERSION=17.0.8
-ARG OPENJDK_VERSION_SUFFIX=7
 ARG GO_VERSION=1.25.0
 
 # Manually prepare a recent enough version of CMake.
@@ -47,28 +44,4 @@ FROM cmake-${TARGETARCH}-recent AS cmake-install-recent
 RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 
-# Manually prepare OpenJDK for the current architecture.
-FROM alpine:latest AS openjdk-amd64
-ARG OPENJDK_MAJOR_VERSION
-ARG OPENJDK_FULL_VERSION
-ARG OPENJDK_VERSION_SUFFIX
 
-ENV hash=aa5fc7d388fe544e5d85902e68399d5299e931f9b280d358a3cbee218d6017b0
-ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_x64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
-    /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
-
-FROM alpine:latest AS openjdk-arm64
-ARG OPENJDK_MAJOR_VERSION
-ARG OPENJDK_FULL_VERSION
-ARG OPENJDK_VERSION_SUFFIX
-
-ENV hash=c43688163cfdcb1a6e6fe202cc06a51891df746b954c55dbd01430e7d7326d00
-ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_aarch64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
-    /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
-
-FROM openjdk-${TARGETARCH} AS openjdk-install
-ARG OPENJDK_MAJOR_VERSION
-RUN set -xe; (echo "$hash  /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz" | sha256sum -c)
-RUN set -xe; \
-    mkdir -p /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk && \
-    tar -xf /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz -C /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk --strip-components=1

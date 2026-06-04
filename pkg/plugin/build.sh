@@ -35,7 +35,6 @@ cp $WS/opt/google-cloud-ops-agent/ops_agent ${PLUGIN_DIR}/ops_agent
 
 
 cp $WS/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol ${PLUGIN_DIR}/subagents/opentelemetry-collector/otelopscol
-cp $WS/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar ${PLUGIN_DIR}/subagents/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar
 
 cp $WS/OPS_AGENT_VERSION ${PLUGIN_DIR}/OPS_AGENT_VERSION
 
