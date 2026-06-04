@@ -300,31 +300,9 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 	got[builtinConfigFileName] = confgenerator.BuiltInConfStructs[pc.platform.Name()].String()
 
-	pipelines, err := mergedUc.Pipelines(ctx)
+	_, err = mergedUc.Pipelines(ctx)
 	if err != nil {
 		return
-	}
-	hasFluentBit := false
-	for _, p := range pipelines {
-		if p.Backend == confgenerator.BackendFluentBit {
-			hasFluentBit = true
-			break
-		}
-	}
-
-	if hasFluentBit {
-		// Fluent Bit configs
-		var flbGeneratedConfigs map[string]string
-		flbGeneratedConfigs, err = mergedUc.GenerateFluentBitConfigs(ctx,
-			pc.defaultLogsDir,
-			pc.defaultStateDir,
-		)
-		for k, v := range flbGeneratedConfigs {
-			got[k] = v
-		}
-		if err != nil {
-			return
-		}
 	}
 
 	// Otel configs

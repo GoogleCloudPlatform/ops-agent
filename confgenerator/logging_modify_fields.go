@@ -21,7 +21,6 @@ import (
 	"sort"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
@@ -62,10 +61,6 @@ type LoggingProcessorModifyFields struct {
 
 func (p LoggingProcessorModifyFields) Type() string {
 	return "modify_fields"
-}
-
-func (p LoggingProcessorModifyFields) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	return nil
 }
 
 func (p LoggingProcessorModifyFields) Processors(ctx context.Context) ([]otel.Component, error) {
