@@ -34,9 +34,7 @@ type ModifyField struct {
 
 	// OTTL expression with copied value
 	sourceValue ottl.Value `yaml:"-"`
-	// Name of Lua variable with copied value
-	sourceVar string `yaml:"-"`
-	// Name of Lua variable with omit boolean
+	// Name of OTTL cache variable with omit boolean
 	omitVar string `yaml:"-"`
 
 	// Operations to perform
