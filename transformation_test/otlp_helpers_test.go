@@ -39,18 +39,16 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 		LogLevel:          "debug",
 		ReceiverPipelines: rps,
 		Pipelines:         pls,
-		Exporters: map[otel.ExporterType]otel.ExporterComponents{
-			otel.OTLP_Logs: {
-				ProcessorsByType: map[string][]otel.Component{
+		Exporters: map[string]otel.ExporterComponents{
+			"logs": {
+				Processors: []otel.Component{
 					// Batch with 1.5s timeout to group in the same log request
 					// all late entries flushed from a multiline parser after 1s.
-					"logs": {
-						otel.GCPProjectID("fake-project"),
-						otel.DisableOtlpRoundTrip(),
-						otel.PreserveInstrumentationScope(),
-						otel.CopyServiceResourceLabels(),
-						otel.BatchProcessor(500, 500, "1500ms"),
-					},
+					otel.GCPProjectID("fake-project"),
+					otel.DisableOtlpRoundTrip(),
+					otel.PreserveInstrumentationScope(),
+					otel.CopyServiceResourceLabels(),
+					otel.BatchProcessor(500, 500, "1500ms"),
 				},
 				Exporter: otel.Component{
 					Type: "otlp_grpc",

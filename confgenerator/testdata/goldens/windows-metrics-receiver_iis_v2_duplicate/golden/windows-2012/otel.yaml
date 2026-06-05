@@ -1,12 +1,4 @@
 exporters:
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   otlp_grpc/otlp_logs:
     auth:
       authenticator: googleclientauth
@@ -1499,7 +1491,7 @@ service:
       - windowsperfcounters/mssql
     metrics/iispipeline_iis__v2:
       exporters:
-      - googlecloud/otel
+      - otlp_grpc/otlp_metrics
       processors:
       - transform/iis__v2_0
       - transform/iis__v2_1
@@ -1508,6 +1500,9 @@ service:
       - metricstransform/iis__v2_4
       - metric_start_time/iis__v2_5
       - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - iis/iis__v2
     metrics/loggingmetrics:
