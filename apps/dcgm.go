@@ -42,13 +42,16 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 	}
 
 	if r.ReceiverVersion == "2" {
-		return []otel.ReceiverPipeline{{
+		return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "dcgm",
 				Config: map[string]interface{}{
 					"collection_interval": r.CollectionIntervalString(),
 					"endpoint":            r.Endpoint,
 				},
+			},
+			ExporterTypes: map[string]otel.ExporterType{
+				"metrics": otel.OTel,
 			},
 			Processors: map[string][]otel.Component{"metrics": {
 				otel.MetricsTransform(
@@ -92,7 +95,7 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 					otel.SetScopeVersion("2.0"),
 				),
 			}},
-		}}, nil
+		}, ctx)}, nil
 	}
 
 	disabledV1Metrics := []string{
@@ -128,7 +131,7 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 		}
 	}
 
-	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "dcgm",
 			Config: map[string]interface{}{
@@ -136,6 +139,9 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 				"endpoint":            r.Endpoint,
 				"metrics":             metricsConfig,
 			},
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.OTel,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
@@ -205,7 +211,7 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 			),
 		},
 		},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {
