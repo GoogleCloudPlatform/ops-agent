@@ -215,8 +215,6 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
-
-
 func TestParseMultilineFileJava(t *testing.T) {
 	t.Skip("Disabled until native OTel multiline parsing is implemented.")
 	t.Parallel()
@@ -5171,8 +5169,6 @@ traces:
 	})
 }
 
-
-
 func TestOTLPTraces(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -5213,7 +5209,7 @@ metrics:
 		options := gce.WaitForTraceOptions{
 			Window: time.Hour,
 			Filters: []string{
-				fmt.Sprintf("+g.co/r/gce_instance/instance_id:%d", vm.ID),
+				fmt.Sprintf("+host.id:%d", vm.ID),
 			},
 		}
 		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
