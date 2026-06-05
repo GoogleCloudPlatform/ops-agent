@@ -188,18 +188,16 @@ func (s *service) startSubagents() error {
 		return err
 	}
 	defer manager.Disconnect()
-	for _, svc := range services[1:] {
-		handle, err := manager.OpenService(svc.name)
-		if err != nil {
-			// service not found?
-			return err
-		}
-		defer handle.Close()
-		if err := handle.Start(); err != nil {
-			// TODO: Should we be ignoring failures for partial startup?
-			if !errors.Is(err, windows.ERROR_SERVICE_ALREADY_RUNNING) {
-				s.log.Error(EngineEventID, fmt.Sprintf("failed to start %q: %v", svc.name, err))
-			}
+	handle, err := manager.OpenService(otelServiceDescription.name)
+	if err != nil {
+		// service not found?
+		return err
+	}
+	defer handle.Close()
+	if err := handle.Start(); err != nil {
+		// TODO: Should we be ignoring failures for partial startup?
+		if !errors.Is(err, windows.ERROR_SERVICE_ALREADY_RUNNING) {
+			s.log.Error(EngineEventID, fmt.Sprintf("failed to start %q: %v", otelServiceDescription.name, err))
 		}
 	}
 	return nil
