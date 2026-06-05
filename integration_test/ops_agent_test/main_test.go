@@ -5307,7 +5307,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 		}, ";")
 		return cmd
 	}
-	return "sudo journalctl -u google-cloud-ops-agent.service --no-pager -n 50"
+	return "sudo journalctl -u google-cloud-ops-agent.service --no-pager -n 200"
 }
 
 func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
@@ -5400,6 +5400,34 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	})
 }
 
+func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	logger.Println("Waiting for network block to propagate...")
+	checkCmd := "curl -s -m 5 https://telemetry.googleapis.com > /dev/null"
+	if gce.IsWindows(vm.ImageSpec) {
+		checkCmd = "if ((Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded) { exit 0 } else { exit 1 }"
+	}
+
+	timeout := time.After(5 * time.Minute)
+	tick := time.NewTicker(10 * time.Second)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeout:
+			return fmt.Errorf("timeout waiting for network block to propagate")
+		case <-tick.C:
+			_, err := gce.RunRemotely(ctx, logger, vm, checkCmd)
+			if err != nil {
+				logger.Printf("Network check failed as expected (network block propagated): %v", err)
+				return nil
+			}
+			logger.Println("Network check still succeeded, waiting...")
+		}
+	}
+}
+
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -5431,7 +5459,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.AddTagToVm(ctx, logger, vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(2 * time.Minute)
+		if err := waitForNetworkBlock(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
