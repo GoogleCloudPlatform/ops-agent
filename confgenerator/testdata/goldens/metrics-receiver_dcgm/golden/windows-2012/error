@@ -1,0 +1,1 @@
+metrics receiver with type "dcgm" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql, prometheus].
