@@ -99,6 +99,9 @@ func (m Target) ottlPath() ([]string, error) {
 		}
 	}
 	if len(unquoted) >= 1 {
+		if unquoted[0] == "sourceLocation" && len(unquoted) > 1 && unquoted[1] == "function" {
+			unquoted[1] = "func"
+		}
 		if v, ok := logEntryRootStructMapToOTel[unquoted[0]]; ok {
 			otel = append(v, unquoted[1:]...)
 		}
