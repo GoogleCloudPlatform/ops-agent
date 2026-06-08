@@ -1092,13 +1092,14 @@ logging:
 
 		// Expect to see the log with the special fields to be placed to the top
 		// level of the LogEntry and the rest to jsonPayload.
-		// N.B. operation and sourceLocation.function are currently not working under OTel logging due to exporter/ingestion gaps.
+		// N.B. operation is currently not working under OTel logging due to exporter gaps.
 		// Tracked in b/517603547.
 		expectedTrace := fmt.Sprintf("projects/%s/traces/0123456789abcdef0123456789abcdef", vm.Project)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
 			fmt.Sprintf(`severity="WARNING" AND `+
 				`labels.label1="value1" AND labels.label2="value2" AND `+
 				`sourceLocation.file="file" AND sourceLocation.line="1" AND `+
+				`sourceLocation.function="function" AND `+
 				`trace=%q AND `+
 				`spanId="0f1e2d3c4b5a6f7e" AND `+
 				`jsonPayload.normal_field="value"`, expectedTrace)); err != nil {

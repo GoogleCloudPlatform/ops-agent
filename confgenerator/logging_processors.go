@@ -114,6 +114,18 @@ func (p ParserShared) SpecialFieldsStatements(ctx context.Context) ottl.Statemen
 		}
 		statements = statements.Append(s)
 	}
+
+	funcName := ottl.LValue{"attributes", "gcp.source_location", "function", "name"}
+	funcStr := ottl.LValue{"attributes", "gcp.source_location", "function"}
+	cacheFunc := ottl.LValue{"cache", "__func_name"}
+
+	statements = statements.Append(ottl.NewStatements(
+		cacheFunc.SetIf(funcStr, funcStr.IsString()),
+		funcStr.SetIf(ottl.RValue("{}"), cacheFunc.IsPresent()),
+		funcName.SetIf(cacheFunc, cacheFunc.IsPresent()),
+		cacheFunc.Delete(),
+	))
+
 	return statements
 }
 

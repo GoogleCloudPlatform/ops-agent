@@ -805,6 +805,10 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["__func_name"], attributes["gcp.source_location"]["function"]) where IsString(attributes["gcp.source_location"]["function"])
+      - set(attributes["gcp.source_location"]["function"], {}) where (cache != nil and cache["__func_name"] != nil)
+      - set(attributes["gcp.source_location"]["function"]["name"], cache["__func_name"]) where (cache != nil and cache["__func_name"] != nil)
+      - delete_key(cache, "__func_name") where (cache != nil and cache["__func_name"] != nil)
   transform/logs_pipeline2_test__syslog__source__id__udp_0:
     error_mode: ignore
     log_statements:
@@ -865,6 +869,10 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["__func_name"], attributes["gcp.source_location"]["function"]) where IsString(attributes["gcp.source_location"]["function"])
+      - set(attributes["gcp.source_location"]["function"], {}) where (cache != nil and cache["__func_name"] != nil)
+      - set(attributes["gcp.source_location"]["function"]["name"], cache["__func_name"]) where (cache != nil and cache["__func_name"] != nil)
+      - delete_key(cache, "__func_name") where (cache != nil and cache["__func_name"] != nil)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
