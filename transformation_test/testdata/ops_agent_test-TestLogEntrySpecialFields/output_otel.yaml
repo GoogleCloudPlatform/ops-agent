@@ -38,7 +38,7 @@
               - key: file
                 value:
                   stringValue: file
-              - key: function
+              - key: func
                 value:
                   stringValue: function
               - key: line

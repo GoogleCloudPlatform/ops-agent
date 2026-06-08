@@ -114,6 +114,15 @@ func (p ParserShared) SpecialFieldsStatements(ctx context.Context) ottl.Statemen
 		}
 		statements = statements.Append(s)
 	}
+
+	funcOld := ottl.LValue{"attributes", "gcp.source_location", "function"}
+	funcNew := ottl.LValue{"attributes", "gcp.source_location", "func"}
+
+	statements = statements.Append(ottl.NewStatements(
+		funcNew.SetIf(funcOld, funcOld.IsPresent()),
+		funcOld.DeleteIf(funcNew.IsPresent()),
+	))
+
 	return statements
 }
 
