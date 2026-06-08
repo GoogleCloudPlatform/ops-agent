@@ -24,6 +24,10 @@
   value: "false"
 - module: logging
   feature: processors:modify_fields
+  key: "[0].has_ruby_regex"
+  value: "true"
+- module: logging
+  feature: processors:modify_fields
   key: "[0].enabled"
   value: "true"
 - module: logging
