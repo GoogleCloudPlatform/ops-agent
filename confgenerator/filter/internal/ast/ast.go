@@ -304,7 +304,7 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 		return nil, fmt.Errorf("unimplemented operator: %s", r.Operator)
 	case ":":
 		// substring match, case insensitive
-		expr = ottl.IsMatchRubyRegex(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
+		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
 	case "=~", "!~":
 		// regex match, case sensitive
 
@@ -313,14 +313,14 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 		// if _, err := regexp.Compile(r.RHS); err != nil {
 		//	return nil, fmt.Errorf("unsupported regex %q: %w", r.RHS, err)
 		//}
-		expr = ottl.IsMatchRubyRegex(lhs, r.RHS)
+		expr = ottl.IsMatch(lhs, r.RHS)
 
 		if r.Operator == "!~" {
 			expr = ottl.Not(expr)
 		}
 	case "=", "!=":
 		// equality, case insensitive
-		expr = ottl.IsMatchRubyRegex(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
+		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
 		if r.Operator == "!=" {
 			expr = ottl.Not(expr)
 		}
