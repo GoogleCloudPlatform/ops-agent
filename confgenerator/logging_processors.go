@@ -712,6 +712,32 @@ func (p LoggingProcessorExcludeLogs) Type() string {
 	return "exclude_logs"
 }
 
+func (p LoggingProcessorExcludeLogs) ListAllFeatures() ([]string, bool) {
+	return []string{
+		"has_ruby_regex",
+	}, false
+}
+
+func (p LoggingProcessorExcludeLogs) ExtractFeatures() ([]CustomFeature, bool, error) {
+	filters, err := p.filters()
+	if err != nil {
+		return nil, false, nil
+	}
+	hasRubyRegex := false
+	for _, f := range filters {
+		if f.HasRubyRegex() {
+			hasRubyRegex = true
+			break
+		}
+	}
+	return []CustomFeature{
+		{
+			Key:   []string{"has_ruby_regex"},
+			Value: fmt.Sprintf("%v", hasRubyRegex),
+		},
+	}, false, nil
+}
+
 func (p LoggingProcessorExcludeLogs) filters() ([]*filter.Filter, error) {
 	filters := make([]*filter.Filter, 0, len(p.MatchAny))
 	for _, condition := range p.MatchAny {

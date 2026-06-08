@@ -96,6 +96,10 @@ func (f Filter) OTTLExpression() (ottl.Value, error) {
 	return f.expr.OTTLExpression()
 }
 
+func (f Filter) HasRubyRegex() bool {
+	return f.expr.HasRubyRegex()
+}
+
 func (f Filter) String() string {
 	return f.expr.String()
 }
