@@ -870,13 +870,6 @@ processors:
       - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - set(attributes["gcp.source_location"]["line"], Int(attributes["gcp.source_location"]["line"])) where attributes["gcp.source_location"]["line"] != nil
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
       - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -891,6 +884,10 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+      - set(attributes["code.file.path"], body["logging.googleapis.com/sourceLocation"]["file"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["file"] != nil)
+      - set(attributes["code.line.number"], Int(body["logging.googleapis.com/sourceLocation"]["line"])) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["line"] != nil)
+      - set(attributes["code.function.name"], body["logging.googleapis.com/sourceLocation"]["function"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["function"] != nil)
+      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
   transform/logs_pipeline1_sample__logs_1:
     error_mode: ignore
     log_statements:
@@ -926,13 +923,6 @@ processors:
       - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - set(attributes["gcp.source_location"]["line"], Int(attributes["gcp.source_location"]["line"])) where attributes["gcp.source_location"]["line"] != nil
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
       - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -947,6 +937,10 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+      - set(attributes["code.file.path"], body["logging.googleapis.com/sourceLocation"]["file"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["file"] != nil)
+      - set(attributes["code.line.number"], Int(body["logging.googleapis.com/sourceLocation"]["line"])) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["line"] != nil)
+      - set(attributes["code.function.name"], body["logging.googleapis.com/sourceLocation"]["function"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["function"] != nil)
+      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
   transform/logs_pipeline2_sample__logs_0:
     error_mode: ignore
     log_statements:
@@ -982,13 +976,6 @@ processors:
       - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - set(attributes["gcp.source_location"]["line"], Int(attributes["gcp.source_location"]["line"])) where attributes["gcp.source_location"]["line"] != nil
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
       - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1003,6 +990,10 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+      - set(attributes["code.file.path"], body["logging.googleapis.com/sourceLocation"]["file"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["file"] != nil)
+      - set(attributes["code.line.number"], Int(body["logging.googleapis.com/sourceLocation"]["line"])) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["line"] != nil)
+      - set(attributes["code.function.name"], body["logging.googleapis.com/sourceLocation"]["function"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["function"] != nil)
+      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
   transform/logs_pipeline2_sample__logs_1:
     error_mode: ignore
     log_statements:
@@ -1038,13 +1029,6 @@ processors:
       - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - set(attributes["gcp.source_location"]["line"], Int(attributes["gcp.source_location"]["line"])) where attributes["gcp.source_location"]["line"] != nil
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
       - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1059,6 +1043,10 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+      - set(attributes["code.file.path"], body["logging.googleapis.com/sourceLocation"]["file"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["file"] != nil)
+      - set(attributes["code.line.number"], Int(body["logging.googleapis.com/sourceLocation"]["line"])) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["line"] != nil)
+      - set(attributes["code.function.name"], body["logging.googleapis.com/sourceLocation"]["function"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil and body["logging.googleapis.com/sourceLocation"]["function"] != nil)
+      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
   transform/mssql_1:
     metric_statements:
     - context: scope

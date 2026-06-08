@@ -84,8 +84,20 @@ func TestValidPath(t *testing.T) {
 		{
 			Target{"sourceLocation", "line"},
 			"sourceLocation.line",
-			[]string{"attributes", "gcp.source_location", "line"},
-			`attributes["gcp.source_location"]["line"]`,
+			[]string{"attributes", "code.line.number"},
+			`attributes["code.line.number"]`,
+		},
+		{
+			Target{"sourceLocation", "file"},
+			"sourceLocation.file",
+			[]string{"attributes", "code.file.path"},
+			`attributes["code.file.path"]`,
+		},
+		{
+			Target{"sourceLocation", "function"},
+			"sourceLocation.function",
+			[]string{"attributes", "code.function.name"},
+			`attributes["code.function.name"]`,
 		},
 		{
 			Target{"labels", "custom"},

@@ -92,7 +92,7 @@ func (p ParserShared) SpecialFieldsStatements(ctx context.Context) ottl.Statemen
 	fields := filter.SpecialFields()
 	var names []string
 	for f := range fields {
-		if fields[f] == "labels" {
+		if fields[f] == "labels" || fields[f] == "sourceLocation" {
 			continue
 		}
 		names = append(names, f)
@@ -114,6 +114,23 @@ func (p ParserShared) SpecialFieldsStatements(ctx context.Context) ottl.Statemen
 		}
 		statements = statements.Append(s)
 	}
+
+	srcLoc := ottl.LValue{"body", "logging.googleapis.com/sourceLocation"}
+	srcFile := ottl.LValue{"body", "logging.googleapis.com/sourceLocation", "file"}
+	srcLine := ottl.LValue{"body", "logging.googleapis.com/sourceLocation", "line"}
+	srcFunc := ottl.LValue{"body", "logging.googleapis.com/sourceLocation", "function"}
+
+	codeFile := ottl.LValue{"attributes", "code.file.path"}
+	codeLine := ottl.LValue{"attributes", "code.line.number"}
+	codeFunc := ottl.LValue{"attributes", "code.function.name"}
+
+	statements = statements.Append(ottl.NewStatements(
+		codeFile.SetIf(srcFile, srcFile.IsPresent()),
+		codeLine.SetIf(ottl.ToInt(srcLine), srcLine.IsPresent()),
+		codeFunc.SetIf(srcFunc, srcFunc.IsPresent()),
+		srcLoc.Delete(),
+	))
+
 	return statements
 }
 

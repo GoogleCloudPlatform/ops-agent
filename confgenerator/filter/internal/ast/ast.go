@@ -60,8 +60,8 @@ var logEntryRootStructMapToOTel = map[string][]string{
 	"jsonPayload": {"body"},
 	"labels":      {"attributes"},
 	// "operation": {}, // TODO: Missing in OTel exporter
-	"sourceLocation": {"attributes", "gcp.source_location"},
-	"httpRequest":    {"attributes", "gcp.http_request"},
+	// "sourceLocation": {"attributes", "gcp.source_location"},
+	"httpRequest": {"attributes", "gcp.http_request"},
 }
 
 var specialFieldsMap = map[string]string{
@@ -82,6 +82,8 @@ func SpecialFields() map[string]string {
 			out[k] = v
 		} else if _, ok := logEntryRootStructMapToOTel[v]; ok {
 			out[k] = v
+		} else if v == "sourceLocation" {
+			out[k] = v
 		}
 	}
 	return out
@@ -99,7 +101,23 @@ func (m Target) ottlPath() ([]string, error) {
 		}
 	}
 	if len(unquoted) >= 1 {
-		if v, ok := logEntryRootStructMapToOTel[unquoted[0]]; ok {
+		if unquoted[0] == "sourceLocation" && len(unquoted) >= 2 {
+			switch unquoted[1] {
+			case "file":
+				otel = []string{"attributes", "code.file.path"}
+			case "line":
+				otel = []string{"attributes", "code.line.number"}
+			case "function":
+				otel = []string{"attributes", "code.function.name"}
+			}
+			if otel != nil && len(unquoted) > 2 {
+				if unquoted[1] == "function" && unquoted[2] == "name" {
+					otel = append(otel, unquoted[3:]...)
+				} else {
+					otel = append(otel, unquoted[2:]...)
+				}
+			}
+		} else if v, ok := logEntryRootStructMapToOTel[unquoted[0]]; ok {
 			otel = append(v, unquoted[1:]...)
 		}
 	}

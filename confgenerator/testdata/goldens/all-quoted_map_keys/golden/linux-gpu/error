@@ -1,0 +1,1 @@
+receiver "journald" has invalid configuration: failed to parse output field "sourceLocation.func": 1:20: error: field "sourceLocation.func" not found
