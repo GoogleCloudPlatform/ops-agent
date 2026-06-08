@@ -71,6 +71,7 @@ App,Field,Override,
 *confgenerator.LoggingProcessorParseJson,confgenerator.ConfigComponent.Type,
 *confgenerator.LoggingProcessorParseRegex,PreserveKey,
 *confgenerator.LoggingProcessorParseRegex,confgenerator.ConfigComponent.Type,
+*confgenerator.LoggingProcessorParseRegex,has_ruby_regex
 *confgenerator.LoggingReceiverFiles,RecordLogFilePath,
 *confgenerator.LoggingReceiverFiles,WildcardRefreshInterval,
 *confgenerator.LoggingReceiverFiles,confgenerator.ConfigComponent.Type,
