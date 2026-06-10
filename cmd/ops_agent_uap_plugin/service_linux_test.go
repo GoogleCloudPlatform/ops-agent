@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -88,38 +89,47 @@ func Test_findPreExistentAgents(t *testing.T) {
 }
 
 func Test_validateOpsAgentConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	validPath := filepath.Join(tmpDir, "valid.yaml")
+	if err := os.WriteFile(validPath, []byte("logging:\n  receivers:\n    test_receiver:\n      type: files\n      include_paths:\n        - /var/log/test.log\n"), 0644); err != nil {
+		t.Fatalf("failed to write valid.yaml: %v", err)
+	}
+
+	invalidPath := filepath.Join(tmpDir, "invalid.yaml")
+	if err := os.WriteFile(invalidPath, []byte("logging:\n  receivers:\n    test_receiver:\n      type: unknown_type\n"), 0644); err != nil {
+		t.Fatalf("failed to write invalid.yaml: %v", err)
+	}
+
 	cases := []struct {
-		name          string
-		mockCmdOutput string
-		mockCmdErr    error
-		wantSuccess   bool
+		name        string
+		path        string
+		wantSuccess bool
 	}{
 		{
-			name:          "config validation successful",
-			mockCmdOutput: "",
-			mockCmdErr:    nil,
-			wantSuccess:   true,
+			name:        "non-existent config file is valid",
+			path:        filepath.Join(tmpDir, "non_existent.yaml"),
+			wantSuccess: true,
 		},
 		{
-			name:          "config validation failed",
-			mockCmdOutput: "",
-			mockCmdErr:    fmt.Errorf("error"),
-			wantSuccess:   false,
+			name:        "valid config file is valid",
+			path:        validPath,
+			wantSuccess: true,
+		},
+		{
+			name:        "invalid config file is invalid",
+			path:        invalidPath,
+			wantSuccess: false,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock RunCommand function
-			mockRunCommand := func(cmd *exec.Cmd) (string, error) {
-				return tc.mockCmdOutput, tc.mockCmdErr
-			}
-
 			ctx := context.Background()
-			err := validateOpsAgentConfig(ctx, "", "", mockRunCommand)
+			_, err := validateOpsAgentConfig(ctx, tc.path)
 			gotSuccess := (err == nil)
 			if gotSuccess != tc.wantSuccess {
-				t.Errorf("%s: validateOpsAgentConfig() failed to valide Ops Agent config: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
+				t.Errorf("%s: validateOpsAgentConfig() got success = %v, want %v, error: %v", tc.name, gotSuccess, tc.wantSuccess, err)
 			}
 		})
 	}

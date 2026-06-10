@@ -5308,7 +5308,7 @@ metrics:
 }
 
 func isHealthCheckTestImage(imageSpec string) bool {
-	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-11")
+	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-12")
 }
 
 func healthCheckResultMessage(name string, result string, code string) string {
@@ -5388,6 +5388,8 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			var packages []string
 			if gce.IsCentOS(vm.ImageSpec) || gce.IsRHEL(vm.ImageSpec) {
 				packages = []string{"nc"}
+			} else if gce.IsDebianBased(vm.ImageSpec) {
+				packages = []string{"netcat-traditional"}
 			} else {
 				packages = []string{"netcat"}
 			}
@@ -5425,7 +5427,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !isHealthCheckTestImage(imageSpec) {
 			t.SkipNow()
@@ -5433,7 +5435,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5471,8 +5473,12 @@ func TestNetworkHealthCheck(t *testing.T) {
 		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Network", "WARNING", "DLApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
+		if strings.Contains(feature, "otlp_exporter") {
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "TelApiConnErr")
+		} else {
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
+		}
 	})
 }
 

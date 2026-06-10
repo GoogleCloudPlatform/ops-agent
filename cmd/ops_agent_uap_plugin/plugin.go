@@ -28,6 +28,9 @@ import (
 
 	"buf.build/go/protoyaml"
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -236,4 +239,13 @@ func writeCustomConfigToFile(req *pb.StartRequest, configPath string) error {
 		}
 	}
 	return nil
+}
+
+func runHealthChecks(healthCheckFileLogger logs.StructuredLogger, otlpExporterEnabled bool) {
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory(otlpExporterEnabled)
+
+	// Log health check results to health-checks.log log file.
+	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
+
+	log.Println("Health checks completed")
 }
