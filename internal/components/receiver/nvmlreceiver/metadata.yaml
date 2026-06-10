@@ -1,0 +1,94 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+type: nvml
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+
+attributes:
+  command:
+    type: string
+    description: Process command.
+
+  command_line:
+    type: string
+    description: Process command line, 1024 characters maximum.
+
+  gpu_number:
+    type: string
+    description: GPU index starting at 0.
+
+  memory_state:
+    type: string
+    description: GPU memory used or free.
+    enum: [used, free]
+
+  model:
+    type: string
+    description: GPU model
+
+  owner:
+    type: string
+    description: Process owner.
+
+  pid:
+    type: int
+    description: Process ID.
+
+  process:
+    type: string
+    description: Process name.
+
+  uuid:
+    type: string
+    description: GPU universally unique identifier
+
+metrics:
+  nvml.gpu.memory.bytes_used:
+    enabled: true
+    description: Current number of GPU memory bytes used by state. Summing the values of all states yields the total GPU memory space.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [model, gpu_number, uuid, memory_state]
+    stability: development
+
+  nvml.gpu.processes.max_bytes_used:
+    enabled: true
+    description: Maximum total GPU memory in bytes that was ever allocated by the process.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [model, gpu_number, uuid, pid, process, command, command_line, owner]
+    stability: development
+
+  nvml.gpu.processes.utilization:
+    enabled: true
+    description: Fraction of time over the process's life thus far during which one or more kernels was executing on the GPU.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [model, gpu_number, uuid, pid, process, command, command_line, owner]
+    stability: development
+
+  nvml.gpu.utilization:
+    enabled: true
+    description: Fraction of time GPU was not idle since the last sample.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [model, gpu_number, uuid]
+    stability: development

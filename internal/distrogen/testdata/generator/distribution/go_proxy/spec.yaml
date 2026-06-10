@@ -1,0 +1,53 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: basic-distro
+display_name: Basic OTel
+version: 0.121.0
+description: "A basic distribution of the OpenTelemetry Collector"
+blurb: "A basic collector distro"
+opentelemetry_version: 0.121.0
+opentelemetry_stable_version: 1.27.0
+binary_name: otelcol-basic
+collector_cgo: false
+go_version: 1.24.0
+distrogen_version: v0.130.1-0.20250724183747-261516e1bff1
+component_module_base: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/basic
+
+go_proxy: https://not-real.org,direct
+
+feature_gates:
+  - exporter.googlemanagedprometheus.intToDouble
+
+docker_repo: us-docker.pkg.dev/pretend-repo/otelcol-basic
+
+components:
+  receivers:
+    - otlp
+
+  processors:
+    - batch
+    - memorylimiter
+
+  exporters:
+    - otlp
+
+  extensions:
+    - pprof
+
+  connectors:
+    - forward
+
+  providers:
+    - yaml

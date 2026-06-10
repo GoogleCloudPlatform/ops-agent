@@ -1,0 +1,37 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+receivers:
+  dcgm:
+    gomod: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/components/otelopscol/receiver/dcgmreceiver v0.0.0
+    path: "../../internal/components/receiver/dcgmreceiver"
+  nvml:
+    gomod: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/components/otelopscol/receiver/nvmlreceiver v0.0.0
+    path: "../../internal/components/receiver/nvmlreceiver"
+  saphana:
+    gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
+
+processors:
+  agentmetrics:
+    gomod: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/components/otelopscol/processor/agentmetricsprocessor v0.0.0
+    path: "../../internal/components/processor/agentmetricsprocessor"
+  normalizesums:
+    gomod: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/components/otelopscol/processor/normalizesumsprocessor v0.0.0
+    path: "../../internal/components/processor/normalizesumsprocessor"
+  filter:
+    gomod: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/components/otelopscol/processor/filterprocessor v0.0.0
+    path: "../../internal/components/processor/filterprocessor"
+  transform:
+    gomod: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/components/otelopscol/processor/transformprocessor v0.0.0
+    path: "../../internal/components/processor/transformprocessor"

@@ -1,8 +1,10 @@
-[17:19] "receivers[lib:receiver_1]" must not start with "lib:"
+[16:12] "receivers[lib:receiver_1]" must not start with "lib:"
+  13 | # limitations under the License.
+  14 | 
   15 | metrics:
-  16 |   receivers:
-> 17 |     lib:receiver_1:
-                         ^
+> 16 |   receivers:
+                  ^
+  17 |     lib:receiver_1:
   18 |       type: hostmetrics
   19 |       collection_interval: 60s
-  20 |   service:
+  20 |   

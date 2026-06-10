@@ -1,7 +1,8 @@
-[22:21] "pipelines[lib:pipeline_1]" must not start with "lib:"
+[21:14] "pipelines[lib:pipeline_1]" must not start with "lib:"
+  18 |       type: hostmetrics
   19 |       collection_interval: 60s
   20 |   service:
-  21 |     pipelines:
-> 22 |       lib:pipeline_1:
-                           ^
+> 21 |     pipelines:
+                    ^
+  22 |       lib:pipeline_1:
   23 |         receivers: [hostmetrics]

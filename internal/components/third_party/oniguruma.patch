@@ -1,0 +1,300 @@
+diff --git a/src/config.h b/src/config.h
+new file mode 100644
+index 0000000..da845b5
+--- /dev/null
++++ b/src/config.h
+@@ -0,0 +1,68 @@
++/* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
++   systems. This function is required for `alloca.c' support on those systems.
++   */
++/* #undef CRAY_STACKSEG_END */
++
++/* Define to 1 if using `alloca.c'. */
++/* #undef C_ALLOCA */
++
++/* Define to 1 if you have `alloca', as a function or macro. */
++#define HAVE_ALLOCA  1
++
++/* Define to 1 if you have `clock_gettime', as a function or macro. */
++#define HAVE_CLOCK_GETTIME  1
++
++/* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
++   */
++#define HAVE_ALLOCA_H  1
++
++/* Define to 1 if you have the <stdint.h> header file. */
++#define HAVE_STDINT_H  1
++
++/* Define to 1 if you have the <sys/times.h> header file. */
++#define HAVE_SYS_TIMES_H  1
++
++/* Define to 1 if you have the <sys/time.h> header file. */
++#define HAVE_SYS_TIME_H  1
++
++/* Define to 1 if you have the <time.h> header file. */
++#define HAVE_TIME_H  1
++
++/* Define to 1 if you have the <sys/types.h> header file. */
++#define HAVE_SYS_TYPES_H  1
++
++/* Define to 1 if you have the <unistd.h> header file. */
++#define HAVE_UNISTD_H  1
++
++/* Define to 1 if you have the <inttypes.h> header file. */
++#define HAVE_INTTYPES_H  1
++
++/* Name of package */
++#define PACKAGE  onig
++
++/* Define to the version of this package. */
++#define PACKAGE_VERSION  6.9.10
++
++/* The size of `int', as computed by sizeof. */
++#define SIZEOF_INT  4
++
++/* The size of `intptr_t', as computed by sizeof. */
++#define SIZEOF_INTPTR_T  8
++
++/* The size of `long', as computed by sizeof. */
++#define SIZEOF_LONG  8
++
++/* The size of `long long', as computed by sizeof. */
++#define SIZEOF_LONG_LONG  8
++
++/* The size of `void*', as computed by sizeof. */
++#define SIZEOF_VOIDP  8
++
++/* The size of `time_t', as computed by sizeof. */
++#define SIZEOF_TIME_T  8
++
++/* Define if enable CR+NL as line terminator */
++/* #undef USE_CRNL_AS_LINE_TERMINATOR */
++
++/* Version number of package */
++#define VERSION  6.9.10
+diff --git a/src/config_windows.h b/src/config_windows.h
+new file mode 100644
+index 0000000..d4f73d7
+--- /dev/null
++++ b/src/config_windows.h
+@@ -0,0 +1,62 @@
++#if defined(__MINGW32__) || _MSC_VER >= 1600
++#define HAVE_STDINT_H 1
++#endif
++#if defined(__MINGW32__) || _MSC_VER >= 1800
++#define HAVE_INTTYPES_H 1
++#endif
++#define HAVE_SYS_TYPES_H 1
++#define HAVE_SYS_STAT_H 1
++#define HAVE_MEMORY_H 1
++#define HAVE_OFF_T 1
++
++#define SIZEOF_INT 4
++#define SIZEOF_LONG 4
++#define SIZEOF_LONG_LONG 8
++#define SIZEOF___INT64 8
++#define SIZEOF_OFF_T 4
++#ifdef _WIN64
++#define SIZEOF_VOIDP  8
++#define SIZEOF_SIZE_T 8
++#else
++#define SIZEOF_VOIDP  4
++#define SIZEOF_SIZE_T 4
++#endif
++#define SIZEOF_FLOAT 4
++#define SIZEOF_DOUBLE 8
++#define TOKEN_PASTE(x,y) x##y
++#ifndef NORETURN
++#if _MSC_VER > 1100
++#define NORETURN(x) __declspec(noreturn) x
++#else
++#define NORETURN(x) x
++#endif
++#endif
++#define HAVE_DECL_SYS_NERR 1
++#define HAVE_FCNTL_H 1
++#define HAVE_SYS_UTIME_H 1
++#define HAVE_MEMORY_H 1
++#define uid_t int
++#define gid_t int
++#define GETGROUPS_T int
++#define HAVE_ALLOCA 1
++#define HAVE_DUP2 1
++#define HAVE_MKDIR 1
++#define HAVE_FLOCK 1
++#define HAVE_FINITE 1
++#define HAVE_HYPOT 1
++#define HAVE_WAITPID 1
++#define HAVE_CHSIZE 1
++#define HAVE_TIMES 1
++#define HAVE_TELLDIR 1
++#define HAVE_SEEKDIR 1
++#define HAVE_EXECVE 1
++#define HAVE_DAYLIGHT 1
++#define SETPGRP_VOID 1
++#define inline __inline
++#define NEED_IO_SEEK_BETWEEN_RW 1
++#define RSHIFT(x,y) ((x)>>(int)y)
++#define FILE_COUNT _cnt
++#define FILE_READPTR _ptr
++#define DEFAULT_KCODE KCODE_NONE
++#define DLEXT ".so"
++#define DLEXT2 ".dll"
+diff --git a/src/mktable.c b/src/mktable.c
+index 1a624e7..91e1020 100644
+--- a/src/mktable.c
++++ b/src/mktable.c
+@@ -1164,25 +1164,25 @@ static int exec(FILE* fp, ENC_INFO* einfo)
+   return 0;
+ }
+ 
+-extern int main(int argc ARG_UNUSED, char* argv[] ARG_UNUSED)
+-{
+-  int r;
+-  int i;
+-  FILE* fp = stdout;
+-
+-  setlocale(LC_ALL, "C");
+-  /* setlocale(LC_ALL, "POSIX"); */
+-  /* setlocale(LC_ALL, "en_GB.iso88591"); */
+-  /* setlocale(LC_ALL, "de_BE.iso88591"); */
+-  /* setlocale(LC_ALL, "fr_FR.iso88591"); */
+-
+-  for (i = 0; i < (int )(sizeof(Info)/sizeof(ENC_INFO)); i++) {
+-    r = exec(fp, &Info[i]);
+-    if (r < 0) {
+-      fprintf(stderr, "FAIL exec(): %d\n", r);
+-      return -1;
+-    }
+-  }
+-
+-  return 0;
+-}
++// extern int main(int argc ARG_UNUSED, char* argv[] ARG_UNUSED)
++// {
++//   int r;
++//   int i;
++//   FILE* fp = stdout;
++
++//   setlocale(LC_ALL, "C");
++//   /* setlocale(LC_ALL, "POSIX"); */
++//   /* setlocale(LC_ALL, "en_GB.iso88591"); */
++//   /* setlocale(LC_ALL, "de_BE.iso88591"); */
++//   /* setlocale(LC_ALL, "fr_FR.iso88591"); */
++
++//   for (i = 0; i < (int )(sizeof(Info)/sizeof(ENC_INFO)); i++) {
++//     r = exec(fp, &Info[i]);
++//     if (r < 0) {
++//       fprintf(stderr, "FAIL exec(): %d\n", r);
++//       return -1;
++//     }
++//   }
++
++//   return 0;
++// }
+diff --git a/src/oniguruma.go b/src/oniguruma.go
+new file mode 100644
+index 0000000..87b80ce
+--- /dev/null
++++ b/src/oniguruma.go
+@@ -0,0 +1,3 @@
++package oniguruma
++
++import "C"
+diff --git a/src/regenc.h b/src/regenc.h
+index d0b447d..560cca7 100644
+--- a/src/regenc.h
++++ b/src/regenc.h
+@@ -33,7 +33,11 @@
+ #define ONIGURUMA_EXPORT
+ #endif
+ 
+-#include "config.h"
++#if defined(_WIN32) || defined(_WIN64)
++  #include "config_windows.h"
++#else
++  #include "config.h"
++#endif
+ 
+ #ifndef ONIG_NO_STANDARD_C_HEADERS
+ #include <stddef.h>
+diff --git a/src/regposerr.c b/src/regposerr.c
+index e5b7899..e6ff27d 100644
+--- a/src/regposerr.c
++++ b/src/regposerr.c
+@@ -34,7 +34,11 @@
+ #define ONIGURUMA_EXPORT
+ #endif
+ 
+-#include "config.h"
++#if defined(_WIN32) || defined(_WIN64)
++  #include "config_windows.h"
++#else
++  #include "config.h"
++#endif
+ #include "onigposix.h"
+ 
+ #undef regex_t
+diff --git a/src/unicode.c b/src/unicode.c
+index 11ce874..6288d69 100644
+--- a/src/unicode.c
++++ b/src/unicode.c
+@@ -74,7 +74,7 @@ static const unsigned short EncUNICODE_ISO_8859_1_CtypeTable[256] = {
+ 
+ #include "st.h"
+ 
+-#include "unicode_fold_data.c"
++#include "unicode_fold_data.h"
+ 
+ extern int
+ onigenc_unicode_mbc_case_fold(OnigEncoding enc, OnigCaseFoldType flag,
+@@ -585,9 +585,9 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
+ }
+ 
+ #ifdef USE_UNICODE_PROPERTIES
+-#include "unicode_property_data.c"
++#include "unicode_property_data.h"
+ #else
+-#include "unicode_property_data_posix.c"
++#include "unicode_property_data_posix.h"
+ #endif
+ 
+ 
+@@ -621,7 +621,7 @@ typedef struct {
+   enum WB_TYPE  type;
+ } WB_RANGE_TYPE;
+ 
+-#include "unicode_wb_data.c"
++#include "unicode_wb_data.h"
+ 
+ static enum WB_TYPE
+ wb_get_type(OnigCodePoint code)
+@@ -905,7 +905,7 @@ typedef struct {
+   enum EGCB_TYPE type;
+ } EGCB_RANGE_TYPE;
+ 
+-#include "unicode_egcb_data.c"
++#include "unicode_egcb_data.h"
+ 
+ static enum EGCB_TYPE
+ egcb_get_type(OnigCodePoint code)
+diff --git a/src/unicode_egcb_data.c b/src/unicode_egcb_data.h
+similarity index 100%
+rename from src/unicode_egcb_data.c
+rename to src/unicode_egcb_data.h
+diff --git a/src/unicode_fold_data.c b/src/unicode_fold_data.h
+similarity index 100%
+rename from src/unicode_fold_data.c
+rename to src/unicode_fold_data.h
+diff --git a/src/unicode_property_data.c b/src/unicode_property_data.h
+similarity index 100%
+rename from src/unicode_property_data.c
+rename to src/unicode_property_data.h
+diff --git a/src/unicode_property_data_posix.c b/src/unicode_property_data_posix.h
+similarity index 100%
+rename from src/unicode_property_data_posix.c
+rename to src/unicode_property_data_posix.h
+diff --git a/src/unicode_wb_data.c b/src/unicode_wb_data.h
+similarity index 100%
+rename from src/unicode_wb_data.c
+rename to src/unicode_wb_data.h

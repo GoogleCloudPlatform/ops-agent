@@ -1,5 +1,5 @@
 [19:21] "include_paths" is a required field
-> 19 | null
+> 19 |  null
                            ^
   20 |   service:
   21 |     pipelines:

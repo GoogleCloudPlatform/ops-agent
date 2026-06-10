@@ -1,0 +1,30 @@
+.PHONY: update-components
+update-components: export OTEL_VERSION := $(OTEL_VERSION)
+update-components: export OTEL_CONTRIB_VERSION := $(OTEL_CONTRIB_VERSION)
+update-components: update-deps tidy-components generate-components
+
+.PHONY: update-deps
+update-deps:
+	TARGET="update-components" $(MAKE) target-all-modules
+
+.PHONY: generate-components
+generate-components:
+	TARGET="generate" $(MAKE) target-all-modules
+
+.PHONY: tidy-components
+tidy-components:
+	TARGET="tidy" $(MAKE) target-all-modules
+
+.PHONY: test-components
+test-components:
+	TARGET="test" $(MAKE) target-all-modules
+
+.PHONY: target-all-modules
+target-all-modules:
+ifndef TARGET
+	@echo "No TARGET defined."
+else
+	go list -f '{{`{{ .Dir }}`}}' -m | grep ".*$(PWD).*" | grep -v ".*internal/tools.*" |\
+		GOWORK=off \
+		xargs -t -I '{}' $(MAKE) -C {} $(TARGET)
+endif

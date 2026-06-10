@@ -1,0 +1,5 @@
+# Systemd environment file for the {{ .BinaryName }} service
+
+# Command-line options for the {{ .BinaryName }} service.
+# Run `/usr/bin/{{ .BinaryName }} --help` to see all available options.
+OTELCOL_OPTIONS="--config=/etc/{{ .BinaryName }}/config.yaml"
