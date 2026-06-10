@@ -123,6 +123,12 @@ func ConvertPipelinesToOtlp(receiverPipelines map[string]otel.ReceiverPipeline) 
 				pipeline.ExporterTypes["logs"] = otel.OTLP_Logs
 			}
 		}
+
+		if _, ok := pipeline.ExporterTypes["traces"]; ok {
+			if pipeline.ExporterTypes["traces"] == otel.OTel {
+				pipeline.ExporterTypes["traces"] = otel.OTLP_Traces
+			}
+		}
 		receiverPipelines[rID] = pipeline
 	}
 }
@@ -169,6 +175,21 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 				},
 				"storage": fileStorageExtensionType,
 			},
+		},
+	}
+}
+
+func otlpExporterForTraces(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "otlp_grpc",
+		Config: map[string]interface{}{
+			"endpoint": "telemetry.googleapis.com:443",
+			// b/485538253: Use pick_first balancer until we can understand why round_robin is failing.
+			"balancer_name": "pick_first",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+			"user_agent": userAgent,
 		},
 	}
 }
@@ -276,6 +297,17 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 						otel.DisableOtlpRoundTrip(),
 						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
+					},
+				},
+			},
+			otel.OTLP_Traces: {
+				Exporter:       otlpExporterForTraces(userAgent),
+				UsedExtensions: []string{googleClientAuthExtensionType},
+				ProcessorsByType: map[string][]otel.Component{
+					"traces": {
+						// Note: resourcedetection processor is added automatically at the receiver pipeline level in otel/modular.go.
+						otel.GCPProjectID(resource.ProjectName()),
+						otel.BatchProcessor(200, 200, "200ms"),
 					},
 				},
 			},

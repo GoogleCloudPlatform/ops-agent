@@ -64,6 +64,8 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	trace "cloud.google.com/go/trace/apiv1"
+	cloudtrace "cloud.google.com/go/trace/apiv1/tracepb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -5192,7 +5194,7 @@ traces:
 	})
 }
 
-func TestOTLPTraces(t *testing.T) {
+func TestOTLPTracesLegacy(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -5237,6 +5239,111 @@ metrics:
 		}
 		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
 			t.Error(err)
+		}
+	})
+}
+
+func TestOTLPTraces(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		otlpConfig := `
+global:
+  otlp_exporter: true
+combined:
+  receivers:
+    otlp:
+      type: otlp
+traces:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+metrics:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate trace traffic with dummy app
+		traceFile, err := testdataDir.Open(path.Join("testdata", "otlp", "traces.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer traceFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, traceFile); err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify the new flow trace has arrived in GCE.
+		// We filter for "host.id" since the agent's host-level resource detection processor
+		// appends host information (like host.id, which matches vm.ID) onto the trace resource attributes.
+		options := gce.WaitForTraceOptions{
+			Window: time.Hour,
+			Filters: []string{
+				fmt.Sprintf("+host.id:%d", vm.ID),
+			},
+		}
+		traceVal, err := gce.WaitForTrace(ctx, logger, vm, options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// gce.WaitForTrace only performs a lightweight check to ensure trace arrival and returns
+		// a shell structure containing only the Project ID and Trace ID. It does not fetch full
+		// span labels or trace metadata. To retrieve complete attributes (like custom resource
+		// and span attributes) for assertions, we must instantiate a cloud trace client and
+		// request full trace details using the retrieved Trace ID.
+		client, err := trace.NewClient(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer client.Close()
+		fullTrace, err := client.GetTrace(ctx, &cloudtrace.GetTraceRequest{
+			ProjectId: vm.Project,
+			TraceId:   traceVal.TraceId,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify that none of the spans have the legacy g.co attribute.
+		// Also verify span and resource attributes.
+		var foundResourceAttr, foundSpanAttr bool
+		for _, span := range fullTrace.Spans {
+			t.Logf("Span %q labels: %v", span.Name, span.Labels)
+			if span.Labels != nil {
+				if _, ok := span.Labels["g.co/r/gce_instance/instance_id"]; ok {
+					t.Errorf("Unexpected legacy attribute g.co/r/gce_instance/instance_id found in span %q", span.Name)
+				}
+				if val, ok := span.Labels["custom.resource.attribute"]; ok {
+					if val == "my-resource-value" {
+						foundResourceAttr = true
+					} else {
+						t.Errorf("Expected custom.resource.attribute to be 'my-resource-value', got %q", val)
+					}
+				}
+				if val, ok := span.Labels["custom.span.attribute"]; ok {
+					if val == "my-span-value" {
+						foundSpanAttr = true
+					} else {
+						t.Errorf("Expected custom.span.attribute to be 'my-span-value', got %q", val)
+					}
+				}
+			}
+		}
+
+		if !foundResourceAttr {
+			t.Error("Resource attribute 'custom.resource.attribute' not found in trace spans")
+		}
+		if !foundSpanAttr {
+			t.Error("Span attribute 'custom.span.attribute' not found in trace spans")
 		}
 	})
 }
