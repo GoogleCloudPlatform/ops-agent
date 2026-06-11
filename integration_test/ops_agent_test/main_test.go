@@ -5315,35 +5315,36 @@ metrics:
 
 		// Verify that none of the spans have the legacy g.co attribute.
 		// Also verify span and resource attributes.
-		var foundResourceAttr, foundSpanAttr bool
+		var foundSpan bool
 		for _, span := range fullTrace.Spans {
 			t.Logf("Span %q labels: %v", span.Name, span.Labels)
-			if span.Labels != nil {
+			if span.Name == "test_trace" {
+				foundSpan = true
+				if span.Labels == nil {
+					t.Errorf("Span %q has no labels", span.Name)
+					continue
+				}
 				if _, ok := span.Labels["g.co/r/gce_instance/instance_id"]; ok {
 					t.Errorf("Unexpected legacy attribute g.co/r/gce_instance/instance_id found in span %q", span.Name)
 				}
 				if val, ok := span.Labels["custom.resource.attribute"]; ok {
-					if val == "my-resource-value" {
-						foundResourceAttr = true
-					} else {
+					if val != "my-resource-value" {
 						t.Errorf("Expected custom.resource.attribute to be 'my-resource-value', got %q", val)
 					}
+				} else {
+					t.Error("Resource attribute 'custom.resource.attribute' not found in span")
 				}
 				if val, ok := span.Labels["custom.span.attribute"]; ok {
-					if val == "my-span-value" {
-						foundSpanAttr = true
-					} else {
+					if val != "my-span-value" {
 						t.Errorf("Expected custom.span.attribute to be 'my-span-value', got %q", val)
 					}
+				} else {
+					t.Error("Span attribute 'custom.span.attribute' not found in span")
 				}
 			}
 		}
-
-		if !foundResourceAttr {
-			t.Error("Resource attribute 'custom.resource.attribute' not found in trace spans")
-		}
-		if !foundSpanAttr {
-			t.Error("Span attribute 'custom.span.attribute' not found in trace spans")
+		if !foundSpan {
+			t.Error("Expected span 'test_trace' not found in trace")
 		}
 	})
 }
