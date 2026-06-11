@@ -45,6 +45,69 @@ RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 
 
+# ======================================
+# Shared Go Binaries Build (SLES 12 / GLIBC 2.22)
+# ======================================
+FROM opensuse/archive:42.3 AS go-build
+
+# Install compiler tools and dependencies on SLES 12
+RUN set -x; \
+    # The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
+    zypper --no-gpg-check refresh 'OSS Update' && \
+    (echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
+    zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc8 gcc8-c++ zlib-devel expect systemd-devel unzip zip make curl && \
+    # Remove expired root certificate.
+    mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
+    update-ca-certificates && \
+    zypper -n update && \
+    # Set newer GCC as default with priority 1
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
+        --slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
+    update-alternatives --set gcc /usr/bin/gcc-8
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG TARGETARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+WORKDIR /work
+
+# 1. Download dependencies for the main repository
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 2. Download dependencies for the OTEL submodule
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+# Copy full source code
+COPY . /work
+
+# 3. Build otelopscol (CGO enabled)
+RUN \
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./builds/otel.sh /work/cache/
+
+# 4. Build ops-agent-engine (CGO disabled)
+RUN . VERSION && \
+    BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version" && \
+    BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=sles12" && \
+    BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}" && \
+    LD_FLAGS="-s -w ${BUILD_X1} ${BUILD_X2}" && \
+    CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
+      -ldflags "${LD_FLAGS}" \
+      github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
+
+# 5. Build ops_agent plugin helper (CGO disabled)
+RUN ./builds/ops_agent_plugin.sh /work/plugin-cache/
+
 
 
 # ======================================
@@ -63,29 +126,6 @@ RUN set -x; yum -y update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM centos8-build-base AS centos8-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM centos8-build-base AS centos8-build-systemd
@@ -95,38 +135,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM centos8-build-base AS centos8-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM centos8-build-golang-base AS centos8-build
+FROM centos8-build-base AS centos8-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=centos8-build-otel /work/cache /work/cache
 
 COPY --from=centos8-build-systemd /work/cache /work/cache
 
 RUN ./pkg/rpm/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache centos8
 
 
@@ -152,29 +179,6 @@ RUN set -x; dnf -y update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM rockylinux9-build-base AS rockylinux9-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM rockylinux9-build-base AS rockylinux9-build-systemd
@@ -184,38 +188,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM rockylinux9-build-base AS rockylinux9-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM rockylinux9-build-golang-base AS rockylinux9-build
+FROM rockylinux9-build-base AS rockylinux9-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=rockylinux9-build-otel /work/cache /work/cache
 
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
 
 RUN ./pkg/rpm/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache rockylinux9
 
 
@@ -241,29 +232,6 @@ RUN set -x; dnf -y update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM rockylinux10-build-base AS rockylinux10-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM rockylinux10-build-base AS rockylinux10-build-systemd
@@ -273,38 +241,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM rockylinux10-build-base AS rockylinux10-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM rockylinux10-build-golang-base AS rockylinux10-build
+FROM rockylinux10-build-base AS rockylinux10-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=rockylinux10-build-otel /work/cache /work/cache
 
 COPY --from=rockylinux10-build-systemd /work/cache /work/cache
 
 RUN ./pkg/rpm/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache rockylinux10
 
 
@@ -327,29 +282,6 @@ RUN set -x; apt-get update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM bookworm-build-base AS bookworm-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM bookworm-build-base AS bookworm-build-systemd
@@ -359,38 +291,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM bookworm-build-base AS bookworm-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM bookworm-build-golang-base AS bookworm-build
+FROM bookworm-build-base AS bookworm-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=bookworm-build-otel /work/cache /work/cache
 
 COPY --from=bookworm-build-systemd /work/cache /work/cache
 
 RUN ./pkg/deb/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache bookworm
 
 
@@ -413,29 +332,6 @@ RUN set -x; apt-get update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM bullseye-build-base AS bullseye-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM bullseye-build-base AS bullseye-build-systemd
@@ -445,38 +341,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM bullseye-build-base AS bullseye-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM bullseye-build-golang-base AS bullseye-build
+FROM bullseye-build-base AS bullseye-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=bullseye-build-otel /work/cache /work/cache
 
 COPY --from=bullseye-build-systemd /work/cache /work/cache
 
 RUN ./pkg/deb/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache bullseye
 
 
@@ -499,29 +382,6 @@ RUN set -x; apt-get update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM trixie-build-base AS trixie-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM trixie-build-base AS trixie-build-systemd
@@ -531,38 +391,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM trixie-build-base AS trixie-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM trixie-build-golang-base AS trixie-build
+FROM trixie-build-base AS trixie-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=trixie-build-otel /work/cache /work/cache
 
 COPY --from=trixie-build-systemd /work/cache /work/cache
 
 RUN ./pkg/deb/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache trixie
 
 
@@ -595,29 +442,6 @@ RUN set -x; \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM sles12-build-base AS sles12-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM sles12-build-base AS sles12-build-systemd
@@ -627,38 +451,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM sles12-build-base AS sles12-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM sles12-build-golang-base AS sles12-build
+FROM sles12-build-base AS sles12-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=sles12-build-otel /work/cache /work/cache
 
 COPY --from=sles12-build-systemd /work/cache /work/cache
 
 RUN ./pkg/rpm/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache sles12
 
 
@@ -681,29 +492,6 @@ RUN ln -fs /usr/lib/systemd /lib/systemd
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM sles15-build-base AS sles15-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM sles15-build-base AS sles15-build-systemd
@@ -713,38 +501,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM sles15-build-base AS sles15-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM sles15-build-golang-base AS sles15-build
+FROM sles15-build-base AS sles15-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=sles15-build-otel /work/cache /work/cache
 
 COPY --from=sles15-build-systemd /work/cache /work/cache
 
 RUN ./pkg/rpm/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache sles15
 
 
@@ -767,29 +542,6 @@ RUN ln -fs /usr/lib/systemd /lib/systemd
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM sles16-build-base AS sles16-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM sles16-build-base AS sles16-build-systemd
@@ -799,38 +551,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM sles16-build-base AS sles16-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM sles16-build-golang-base AS sles16-build
+FROM sles16-build-base AS sles16-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=sles16-build-otel /work/cache /work/cache
 
 COPY --from=sles16-build-systemd /work/cache /work/cache
 
 RUN ./pkg/rpm/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache sles16
 
 
@@ -853,29 +592,6 @@ RUN set -x; apt-get update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM jammy-build-base AS jammy-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM jammy-build-base AS jammy-build-systemd
@@ -885,38 +601,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM jammy-build-base AS jammy-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM jammy-build-golang-base AS jammy-build
+FROM jammy-build-base AS jammy-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=jammy-build-otel /work/cache /work/cache
 
 COPY --from=jammy-build-systemd /work/cache /work/cache
 
 RUN ./pkg/deb/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache jammy
 
 
@@ -939,29 +642,6 @@ RUN set -x; apt-get update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM noble-build-base AS noble-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM noble-build-base AS noble-build-systemd
@@ -971,38 +651,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM noble-build-base AS noble-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM noble-build-golang-base AS noble-build
+FROM noble-build-base AS noble-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=noble-build-otel /work/cache /work/cache
 
 COPY --from=noble-build-systemd /work/cache /work/cache
 
 RUN ./pkg/deb/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache noble
 
 
@@ -1025,29 +692,6 @@ RUN set -x; apt-get update && \
 
 SHELL ["/bin/bash", "-c"]
 
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM questing-build-base AS questing-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
 
 
 FROM questing-build-base AS questing-build-systemd
@@ -1057,38 +701,25 @@ COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM questing-build-base AS questing-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
 
 
-
-
-FROM questing-build-golang-base AS questing-build
+FROM questing-build-base AS questing-build
 WORKDIR /work
 COPY . /work
 
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh &> /dev/null || true
-WORKDIR /work
+# Copy the pre-compiled Go binaries from the shared build stage
+COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=questing-build-otel /work/cache /work/cache
 
 COPY --from=questing-build-systemd /work/cache /work/cache
 
 RUN ./pkg/deb/build.sh
 
-COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
+# Copy prebuilt plugin files to cache before packaging the plugin
+COPY --from=go-build /work/plugin-cache /work/cache
+
 RUN ./pkg/plugin/build.sh /work/cache questing
 
 

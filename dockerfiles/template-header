@@ -45,3 +45,66 @@ RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 
 
+# ======================================
+# Shared Go Binaries Build (SLES 12 / GLIBC 2.22)
+# ======================================
+FROM opensuse/archive:42.3 AS go-build
+
+# Install compiler tools and dependencies on SLES 12
+RUN set -x; \
+    # The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
+    zypper --no-gpg-check refresh 'OSS Update' && \
+    (echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
+    zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc8 gcc8-c++ zlib-devel expect systemd-devel unzip zip make curl && \
+    # Remove expired root certificate.
+    mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
+    update-ca-certificates && \
+    zypper -n update && \
+    # Set newer GCC as default with priority 1
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
+        --slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
+    update-alternatives --set gcc /usr/bin/gcc-8
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG TARGETARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+WORKDIR /work
+
+# 1. Download dependencies for the main repository
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 2. Download dependencies for the OTEL submodule
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+# Copy full source code
+COPY . /work
+
+# 3. Build otelopscol (CGO enabled)
+RUN \
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./builds/otel.sh /work/cache/
+
+# 4. Build ops-agent-engine (CGO disabled)
+RUN . VERSION && \
+    BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version" && \
+    BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=sles12" && \
+    BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}" && \
+    LD_FLAGS="-s -w ${BUILD_X1} ${BUILD_X2}" && \
+    CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
+      -ldflags "${LD_FLAGS}" \
+      github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
+
+# 5. Build ops_agent plugin helper (CGO disabled)
+RUN ./builds/ops_agent_plugin.sh /work/plugin-cache/
+

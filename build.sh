@@ -38,7 +38,7 @@ fi
 
 function build_opsagentengine() {
   if [[ ! -f /work/google_cloud_ops_agent_engine ]]; then
-  go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
+  CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
     -ldflags "$LD_FLAGS" \
     github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
   fi
