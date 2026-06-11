@@ -60,10 +60,9 @@ var dockerfileArguments = []templateArguments{
 		install_packages: `RUN set -x; yum -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		yum config-manager --set-enabled powertools && \
-		yum -y install git systemd \
-		autoconf libtool libcurl-devel openssl-devel \
-		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip`,
+		yum -y install systemd \
+		file systemd-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip pkgconfig`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-8",
 		package_extension: "rpm",
@@ -75,10 +74,9 @@ var dockerfileArguments = []templateArguments{
 		dnf -y install 'dnf-command(config-manager)' && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
-		dnf -y install git systemd \
-		autoconf libtool libcurl-devel openssl-devel \
-		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip`,
+		dnf -y install systemd \
+		file systemd-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip pkgconfig`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-9",
 		package_extension: "rpm",
@@ -90,10 +88,9 @@ var dockerfileArguments = []templateArguments{
 		dnf -y install 'dnf-command(config-manager)' && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
-		dnf -y install git systemd \
-		autoconf libtool libcurl-devel openssl-devel \
-		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip libzstd-devel`,
+		dnf -y install systemd \
+		file systemd-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip pkgconfig`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-10",
 		package_extension: "rpm",
@@ -102,9 +99,8 @@ var dockerfileArguments = []templateArguments{
 		from_image:  "debian:bookworm",
 		target_name: "bookworm",
 		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file libsystemd-dev \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file libsystemd-dev \
 		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bookworm",
@@ -114,9 +110,8 @@ var dockerfileArguments = []templateArguments{
 		from_image:  "debian:bullseye",
 		target_name: "bullseye",
 		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file libsystemd-dev \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file libsystemd-dev \
 		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bullseye",
@@ -126,9 +121,8 @@ var dockerfileArguments = []templateArguments{
 		from_image:  "debian:trixie",
 		target_name: "trixie",
 		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file systemd-dev libsystemd-dev \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file systemd-dev libsystemd-dev \
 		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-trixie",
@@ -143,17 +137,13 @@ var dockerfileArguments = []templateArguments{
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc8 gcc8-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip && \
+		zypper -n install systemd rpm-build expect systemd-devel systemd-rpm-macros unzip zip pkgconfig && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
 		zypper -n update && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd && \
-		# Set newer GCC as default with priority 1
-		update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
-    		--slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
-		update-alternatives --set gcc /usr/bin/gcc-8`,
+		ln -fs /usr/lib/systemd /lib/systemd`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-12",
 		package_extension: "rpm",
@@ -163,7 +153,7 @@ var dockerfileArguments = []templateArguments{
 		target_name: "sles15",
 		install_packages: `RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip
+		zypper -n install systemd rpm-build expect systemd-devel systemd-rpm-macros unzip zip pkgconfig
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
@@ -175,7 +165,7 @@ RUN ln -fs /usr/lib/systemd /lib/systemd`,
 		target_name: "sles16",
 		install_packages: `RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip
+		zypper -n install systemd rpm-build expect systemd-devel systemd-rpm-macros unzip zip pkgconfig
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
@@ -186,9 +176,8 @@ RUN ln -fs /usr/lib/systemd /lib/systemd`,
 		from_image:  "ubuntu:jammy",
 		target_name: "jammy",
 		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file libsystemd-dev tzdata \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-jammy",
@@ -198,9 +187,8 @@ RUN ln -fs /usr/lib/systemd /lib/systemd`,
 		from_image:  "ubuntu:noble",
 		target_name: "noble",
 		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file libsystemd-dev tzdata \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip debhelper`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-noble",
@@ -210,9 +198,8 @@ RUN ln -fs /usr/lib/systemd /lib/systemd`,
 		from_image:  "ubuntu:questing",
 		target_name: "questing",
 		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file systemd-dev debhelper libsystemd-dev tzdata \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file systemd-dev debhelper libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-questing",

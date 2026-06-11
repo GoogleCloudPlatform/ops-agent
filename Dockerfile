@@ -22,6 +22,8 @@
 
 ARG CMAKE_VERSION=3.25.2
 ARG GO_VERSION=1.25.0
+ARG USE_PREBUILT=false
+ARG TARGETARCH
 
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager
@@ -46,11 +48,11 @@ RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 
 # ======================================
-# Shared Go Binaries Build (SLES 12 / GLIBC 2.22)
+# Shared Go Binaries Build - Architecture Specific Bases
 # ======================================
-FROM opensuse/archive:42.3 AS go-build
 
-# Install compiler tools and dependencies on SLES 12
+# AMD64 Base (SLES 12)
+FROM opensuse/archive:42.3 AS go-builder-base-amd64
 RUN set -x; \
     # The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
     zypper --no-gpg-check refresh 'OSS Update' && \
@@ -65,6 +67,19 @@ RUN set -x; \
         --slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
     update-alternatives --set gcc /usr/bin/gcc-8
 
+# ARM64 Base (SLES 15)
+FROM opensuse/leap:15.1 AS go-builder-base-arm64
+RUN set -x; \
+    zypper -n refresh && \
+    zypper -n update && \
+    zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip make curl
+
+# Selector
+ARG TARGETARCH
+FROM go-builder-base-${TARGETARCH} AS go-builder-base
+
+# Common Compile Stage
+FROM go-builder-base AS go-false
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
@@ -109,6 +124,25 @@ RUN . VERSION && \
 RUN ./builds/ops_agent_plugin.sh /work/plugin-cache/
 
 
+# Stage to export prebuilt binaries to host
+FROM scratch AS go-compile-export
+COPY --from=go-false /work/google_cloud_ops_agent_engine /google_cloud_ops_agent_engine
+COPY --from=go-false /work/cache /cache
+COPY --from=go-false /work/plugin-cache /plugin-cache
+
+
+# Stage to import prebuilt binaries from host
+FROM scratch AS go-true
+COPY ./built-binaries/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY ./built-binaries/cache /work/cache
+COPY ./built-binaries/plugin-cache /work/plugin-cache
+
+
+# Final builder selector
+FROM go-${USE_PREBUILT} AS go-build
+
+
+
 
 # ======================================
 # Build Ops Agent for centos-8
@@ -119,10 +153,9 @@ FROM rockylinux:8 AS centos8-build-base
 RUN set -x; yum -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		yum config-manager --set-enabled powertools && \
-		yum -y install git systemd \
-		autoconf libtool libcurl-devel openssl-devel \
-		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip
+		yum -y install systemd \
+		file systemd-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip pkgconfig
 
 SHELL ["/bin/bash", "-c"]
 
@@ -172,10 +205,9 @@ RUN set -x; dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
-		dnf -y install git systemd \
-		autoconf libtool libcurl-devel openssl-devel \
-		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip
+		dnf -y install systemd \
+		file systemd-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip pkgconfig
 
 SHELL ["/bin/bash", "-c"]
 
@@ -225,10 +257,9 @@ RUN set -x; dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
-		dnf -y install git systemd \
-		autoconf libtool libcurl-devel openssl-devel \
-		gcc gcc-c++ make file systemd-devel zlib-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip libzstd-devel
+		dnf -y install systemd \
+		file systemd-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip pkgconfig
 
 SHELL ["/bin/bash", "-c"]
 
@@ -275,9 +306,8 @@ COPY --from=rockylinux10-build /google-cloud-ops-agent-plugin*.tar.gz /
 FROM debian:bookworm AS bookworm-build-base
 
 RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file libsystemd-dev \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file libsystemd-dev \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
@@ -325,9 +355,8 @@ COPY --from=bookworm-build /google-cloud-ops-agent-plugin*.tar.gz /
 FROM debian:bullseye AS bullseye-build-base
 
 RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file libsystemd-dev \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file libsystemd-dev \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
@@ -375,9 +404,8 @@ COPY --from=bullseye-build /google-cloud-ops-agent-plugin*.tar.gz /
 FROM debian:trixie AS trixie-build-base
 
 RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file systemd-dev libsystemd-dev \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file systemd-dev libsystemd-dev \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
@@ -428,17 +456,13 @@ RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc8 gcc8-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip && \
+		zypper -n install systemd rpm-build expect systemd-devel systemd-rpm-macros unzip zip pkgconfig && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
 		zypper -n update && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd && \
-		# Set newer GCC as default with priority 1
-		update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
-    		--slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
-		update-alternatives --set gcc /usr/bin/gcc-8
+		ln -fs /usr/lib/systemd /lib/systemd
 
 SHELL ["/bin/bash", "-c"]
 
@@ -486,7 +510,7 @@ FROM opensuse/leap:15.1 AS sles15-build-base
 
 RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip
+		zypper -n install systemd rpm-build expect systemd-devel systemd-rpm-macros unzip zip pkgconfig
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd
 
@@ -536,7 +560,7 @@ FROM opensuse/leap:16.0 AS sles16-build-base
 
 RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip
+		zypper -n install systemd rpm-build expect systemd-devel systemd-rpm-macros unzip zip pkgconfig
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd
 
@@ -585,9 +609,8 @@ COPY --from=sles16-build /google-cloud-ops-agent-plugin*.tar.gz /
 FROM ubuntu:jammy AS jammy-build-base
 
 RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file libsystemd-dev tzdata \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
@@ -635,9 +658,8 @@ COPY --from=jammy-build /google-cloud-ops-agent-plugin*.tar.gz /
 FROM ubuntu:noble AS noble-build-base
 
 RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file libsystemd-dev tzdata \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip debhelper
 
 SHELL ["/bin/bash", "-c"]
@@ -685,9 +707,8 @@ COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 FROM ubuntu:questing AS questing-build-base
 
 RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libssl-dev \
-		build-essential file systemd-dev debhelper libsystemd-dev tzdata \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
+		file systemd-dev debhelper libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip
 
 SHELL ["/bin/bash", "-c"]
