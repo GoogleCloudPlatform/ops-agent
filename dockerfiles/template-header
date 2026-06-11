@@ -23,6 +23,7 @@
 ARG CMAKE_VERSION=3.25.2
 ARG GO_VERSION=1.25.0
 ARG USE_PREBUILT=false
+ARG TARGETARCH
 
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager
@@ -47,11 +48,11 @@ RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 
 # ======================================
-# Shared Go Binaries Build (SLES 12 / GLIBC 2.22)
+# Shared Go Binaries Build - Architecture Specific Bases
 # ======================================
-FROM opensuse/archive:42.3 AS go-false
 
-# Install compiler tools and dependencies on SLES 12
+# AMD64 Base (SLES 12)
+FROM opensuse/archive:42.3 AS go-builder-base-amd64
 RUN set -x; \
     # The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
     zypper --no-gpg-check refresh 'OSS Update' && \
@@ -66,6 +67,19 @@ RUN set -x; \
         --slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
     update-alternatives --set gcc /usr/bin/gcc-8
 
+# ARM64 Base (SLES 15)
+FROM opensuse/leap:15.1 AS go-builder-base-arm64
+RUN set -x; \
+    zypper -n refresh && \
+    zypper -n update && \
+    zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip make curl
+
+# Selector
+ARG TARGETARCH
+FROM go-builder-base-${TARGETARCH} AS go-builder-base
+
+# Common Compile Stage
+FROM go-builder-base AS go-false
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
