@@ -1298,7 +1298,7 @@ func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *g
 
 func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !IsRPMBased(vm.ImageSpec) {
-		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not RPM based", vm.ImageSpec))
+		return fmt.Errorf("VM spec: %s, is not RPM based", vm.ImageSpec)
 	}
 
 	if location.packagesInGCS != "" {
@@ -1323,7 +1323,7 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 
 func verifyWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !gce.IsWindows(vm.ImageSpec) {
-		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not windows based", vm.ImageSpec))
+		return fmt.Errorf("VM spec: %s, is not windows based", vm.ImageSpec)
 	}
 	if location.packagesInGCS != "" {
 		return verifyWindowsBinaryIsSigned(ctx, logger, vm, fmt.Sprintf("%s\\*.goo", windowsAgentGCSDownloadPath))
@@ -1423,6 +1423,6 @@ func VerifyOpsAgentSigned(ctx context.Context, logger *log.Logger, vm *gce.VM) e
 	} else if gce.IsWindows(vm.ImageSpec) {
 		return verifyWindowsBinarySigned(ctx, logger, vm, location)
 	} else {
-		return fmt.Errorf(fmt.Sprintf("VM image: %s, is not suported for signing", vm.ImageSpec))
+		return fmt.Errorf("VM image: %s, is not supported for signing", vm.ImageSpec)
 	}
 }
