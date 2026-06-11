@@ -37,9 +37,15 @@
             - key: extradata
               value:
                 stringValue: "n"
+            - key: host
+              value:
+                stringValue: ""
             - key: ident
               value:
                 stringValue: my_app_id
+            - key: message
+              value:
+                stringValue: ""
             - key: msgid
               value:
                 stringValue: "n"
@@ -61,6 +67,12 @@
         body:
           kvlistValue:
             values:
+            - key: extradata
+              value:
+                stringValue: ""
+            - key: host
+              value:
+                stringValue: ""
             - key: ident
               value:
                 stringValue: my_app_id
