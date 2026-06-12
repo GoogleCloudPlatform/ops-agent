@@ -31,7 +31,7 @@ import (
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
+	"github.com/GoogleCloudPlatform/ops-agent/self_metrics"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/eventlog"

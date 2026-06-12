@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
+	"github.com/GoogleCloudPlatform/ops-agent/self_metrics"
 	"github.com/goccy/go-yaml"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"

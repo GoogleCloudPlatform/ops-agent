@@ -22,7 +22,7 @@ import (
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
+	"github.com/GoogleCloudPlatform/ops-agent/self_metrics"
 	"gotest.tools/v3/assert"
 )
 
