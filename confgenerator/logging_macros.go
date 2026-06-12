@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 )
 
 // LoggingReceiverMacro is a logging component that generates other

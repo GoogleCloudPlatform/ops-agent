@@ -26,8 +26,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -1083,7 +1083,7 @@ func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 	}
 	t := true
 	ucLoggingCopy.Logging.Service.OTelLogging = &t
-	_, err = ucLoggingCopy.GenerateOtelConfig(ctx, "", "")
+	_, err = ucLoggingCopy.GenerateOtelConfig(ctx, "", "", "")
 	return err == nil
 }
 

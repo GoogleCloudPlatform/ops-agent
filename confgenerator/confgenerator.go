@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 )
 
 func otlpExporterForTraces(userAgent string) otel.Component {
@@ -99,6 +99,7 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 const (
 	fileStorageExtensionType      = "file_storage"
 	googleClientAuthExtensionType = "googleclientauth"
+	healthChecksExtensionType     = "opsagenthealthchecks"
 )
 
 // fileStorageExtension returns a configured file_storage extension to be used by all receivers and exporters.
@@ -112,7 +113,7 @@ func fileStorageExtension(stateDir string) otel.Component {
 	}
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, logsDir, outDir, stateDir string) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -170,7 +171,14 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		Extensions: map[string]otel.Component{
 			googleClientAuthExtensionType: {Type: googleClientAuthExtensionType, Config: map[string]string{}},
 			fileStorageExtensionType:      fileStorageExtension(stateDir),
+			healthChecksExtensionType: {
+				Type: healthChecksExtensionType,
+				Config: map[string]interface{}{
+					"log_dir": logsDir,
+				},
+			},
 		},
+		DefaultExtensions: []string{healthChecksExtensionType},
 	}.Generate(ctx)
 	if err != nil {
 		return "", err

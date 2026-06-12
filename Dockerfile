@@ -92,12 +92,12 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 
 WORKDIR /work
 
-# 1. Download dependencies for the main repository
+# 1. Copy go.mod files for both main and submodule
 COPY go.mod go.sum ./
-RUN go mod download
-
-# 2. Download dependencies for the OTEL submodule
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+
+# 2. Download dependencies
+RUN go mod download
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 # Copy full source code

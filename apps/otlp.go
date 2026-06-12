@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 )
 
 // TODO: The collector defaults to this, but should we default to 127.0.0.1 or ::1 instead?

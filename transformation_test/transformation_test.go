@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"

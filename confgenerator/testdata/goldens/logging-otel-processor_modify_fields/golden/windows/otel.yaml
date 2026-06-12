@@ -28,6 +28,8 @@ extensions:
     create_directory: true
     directory: file_storage
   googleclientauth: {}
+  opsagenthealthchecks:
+    log_dir: ""
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -1487,6 +1489,7 @@ service:
   extensions:
   - file_storage
   - googleclientauth
+  - opsagenthealthchecks
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:

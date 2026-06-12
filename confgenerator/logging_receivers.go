@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 )
 
 // DBPath returns the database path for the given log tag

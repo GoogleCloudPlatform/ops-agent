@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/mitchellh/mapstructure"
 	commonconfig "github.com/prometheus/common/config"
@@ -103,6 +103,7 @@ type ModularConfig struct {
 	Pipelines         map[string]Pipeline
 	Exporters         map[string]ExporterComponents
 	Extensions        map[string]Component
+	DefaultExtensions []string
 	MetricsPort       uint16
 
 	// Test-only options:
@@ -127,6 +128,11 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
 	extensions := map[string]interface{}{}
+	for _, name := range c.DefaultExtensions {
+		if ext, ok := c.Extensions[name]; ok {
+			extensions[name] = ext.Config
+		}
+	}
 	exporterNames := map[string]string{}
 	pipelines := map[string]interface{}{}
 	service := map[string]interface{}{

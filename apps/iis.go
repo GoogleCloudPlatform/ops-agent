@@ -21,7 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 )
 
 type MetricsReceiverIis struct {

@@ -7,6 +7,8 @@ exporters:
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   googleclientauth: {}
+  opsagenthealthchecks:
+    log_dir: ""
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -774,6 +776,7 @@ receivers:
 service:
   extensions:
   - googleclientauth
+  - opsagenthealthchecks
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:

@@ -31,8 +31,8 @@ import (
 	"syscall"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 )
 
 const (

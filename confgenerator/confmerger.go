@@ -19,7 +19,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 )
 
 // MergeConfFiles merges the user provided config with the built-in config struct for the platform.

@@ -45,7 +45,7 @@ func ReadUnifiedConfigFromFile(ctx context.Context, path string) (*UnifiedConfig
 }
 
 func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, logsDir, stateDir, outDir string) error {
-	otelConfig, err := uc.GenerateOtelConfig(ctx, outDir, stateDir)
+	otelConfig, err := uc.GenerateOtelConfig(ctx, logsDir, outDir, stateDir)
 	if err != nil {
 		return fmt.Errorf("can't parse configuration: %w", err)
 	}

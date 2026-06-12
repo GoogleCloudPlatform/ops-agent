@@ -25,8 +25,8 @@ import (
 
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/self_metrics"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"

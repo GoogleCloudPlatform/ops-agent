@@ -25,7 +25,7 @@ import (
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 	spb "google.golang.org/protobuf/types/known/structpb"
 )
 

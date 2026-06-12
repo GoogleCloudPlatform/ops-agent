@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"

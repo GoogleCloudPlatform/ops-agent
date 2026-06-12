@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"

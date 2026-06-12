@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/self_metrics"
 	"github.com/goccy/go-yaml"
 	"github.com/shirou/gopsutil/host"
@@ -306,7 +306,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 
 	// Otel configs
-	otelGeneratedConfig, err := mergedUc.GenerateOtelConfig(ctx, "", "")
+	otelGeneratedConfig, err := mergedUc.GenerateOtelConfig(ctx, "", "", "")
 	if err != nil {
 		return
 	}
