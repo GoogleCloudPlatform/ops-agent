@@ -1,3 +1,5 @@
 [submodule "submodules/opentelemetry-operations-collector"]
 	path = submodules/opentelemetry-operations-collector
 	url = ../../GoogleCloudPlatform/opentelemetry-operations-collector.git
+	branch = ops_agent_3.1
+
