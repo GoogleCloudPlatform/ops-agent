@@ -20,11 +20,11 @@ import (
 	"log"
 	"os"
 
+	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/apps"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/logs"
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/self_metrics"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/self_metrics"
 )
 
 var (

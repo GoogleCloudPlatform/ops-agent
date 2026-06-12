@@ -111,13 +111,8 @@ RUN \
     ./builds/otel.sh /work/cache/
 
 # 4. Build ops-agent-engine (CGO disabled)
-RUN . VERSION && \
-    BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version" && \
-    BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=sles12" && \
-    BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}" && \
-    LD_FLAGS="-s -w ${BUILD_X1} ${BUILD_X2}" && \
-    CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
-      -ldflags "${LD_FLAGS}" \
+RUN CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
+      -ldflags "-s -w" \
       github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
 
 # 5. Build ops_agent plugin helper (CGO disabled)
@@ -178,7 +173,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=centos8-build-systemd /work/cache /work/cache
 
@@ -230,7 +225,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
 
@@ -282,7 +277,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=rockylinux10-build-systemd /work/cache /work/cache
 
@@ -331,7 +326,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=bookworm-build-systemd /work/cache /work/cache
 
@@ -380,7 +375,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=bullseye-build-systemd /work/cache /work/cache
 
@@ -429,7 +424,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=trixie-build-systemd /work/cache /work/cache
 
@@ -485,7 +480,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=sles12-build-systemd /work/cache /work/cache
 
@@ -535,7 +530,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=sles15-build-systemd /work/cache /work/cache
 
@@ -585,7 +580,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=sles16-build-systemd /work/cache /work/cache
 
@@ -634,7 +629,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=jammy-build-systemd /work/cache /work/cache
 
@@ -683,7 +678,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=noble-build-systemd /work/cache /work/cache
 
@@ -732,7 +727,7 @@ COPY . /work
 COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=questing-build-systemd /work/cache /work/cache
 
