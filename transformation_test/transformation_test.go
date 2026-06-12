@@ -106,15 +106,7 @@ func TestTransformationTests(t *testing.T) {
 		if !dir.IsDir() {
 			continue
 		}
-		if dir.Name() == "logging_processor-parse_regex_invalid_regex" ||
-			dir.Name() == "logging_processor-parse_regex_empty_fields" ||
-			dir.Name() == "logging_processor-parse_regex_optional_groups" ||
-			dir.Name() == "logging_processor-iis" ||
-			dir.Name() == "logging_processor-iis_access" {
-			continue
-		}
 		t.Run(dir.Name(), func(t *testing.T) {
-
 			t.Parallel()
 			// Unmarshal transformation_config.yaml
 			var transformationConfig transformationTest

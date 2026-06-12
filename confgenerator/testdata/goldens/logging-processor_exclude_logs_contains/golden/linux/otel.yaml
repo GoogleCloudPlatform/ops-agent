@@ -66,7 +66,7 @@ processors:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["Status"] != nil) and IsMatch(body["Status"], "(?i)IN"))
+      - ((body != nil and body["Status"] != nil) and IsMatchRubyRegex(body["Status"], "(?i)IN"))
   filter/otel_1:
     metrics:
       datapoint:
@@ -784,7 +784,7 @@ processors:
     log_statements:
     - context: log
       statements:
-      - "set(cache[\"__parsed_regex\"], ExtractPatterns(body[\"message\"], \"^(?<LogTimeStamp>\\\\d+:\\\\d+:\\\\d+) \\\\((?<Vendor>.*)\\\\) (?<Status>IN|OUT|DENIED): \\\"(?<License>.*)\\\" (?<User>.*)\\\\@(?<HostName>[\\\\w\\\\d\\\\-Â\\u00a0]+)[^ ]* (?<Details>.*)$\")) where ((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"^(?<LogTimeStamp>\\\\d+:\\\\d+:\\\\d+) \\\\((?<Vendor>.*)\\\\) (?<Status>IN|OUT|DENIED): \\\"(?<License>.*)\\\" (?<User>.*)\\\\@(?<HostName>[\\\\w\\\\d\\\\-Â\\u00a0]+)[^ ]* (?<Details>.*)$\"))"
+      - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^(?<LogTimeStamp>\\\\d+:\\\\d+:\\\\d+) \\\\((?<Vendor>.*)\\\\) (?<Status>IN|OUT|DENIED): \\\"(?<License>.*)\\\" (?<User>.*)\\\\@(?<HostName>[\\\\w\\\\d\\\\-Â\\u00a0]+)[^ ]* (?<Details>.*)$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^(?<LogTimeStamp>\\\\d+:\\\\d+:\\\\d+) \\\\((?<Vendor>.*)\\\\) (?<Status>IN|OUT|DENIED): \\\"(?<License>.*)\\\" (?<User>.*)\\\\@(?<HostName>[\\\\w\\\\d\\\\-Â\\u00a0]+)[^ ]* (?<Details>.*)$\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
       - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)

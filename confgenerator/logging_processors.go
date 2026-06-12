@@ -214,9 +214,9 @@ func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Comp
 
 	cachedParsedRegex := ottl.LValue{"cache", "__parsed_regex"}
 	statements := ottl.NewStatements(
-		cachedParsedRegex.SetIf(ottl.ExtractPatterns(fromAccessor, p.Regex), ottl.And(
+		cachedParsedRegex.SetIf(ottl.ExtractPatternsRubyRegex(fromAccessor, p.Regex, true), ottl.And(
 			fromAccessor.IsPresent(),
-			ottl.IsMatch(fromAccessor, p.Regex),
+			ottl.IsMatchRubyRegex(fromAccessor, p.Regex),
 		)),
 		fromAccessor.DeleteIf(cachedParsedRegex.IsPresent()),
 		ottl.LValue{"body"}.MergeMapsIf(cachedParsedRegex, "upsert", cachedParsedRegex.IsPresent()),
@@ -248,48 +248,48 @@ func init() {
 
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	"lib:default_message_parser": &LoggingProcessorParseRegex{
-		Regex: `^(?P<message>.*)$`,
+		Regex: `^(?<message>.*)$`,
 	},
 	"lib:apache": &LoggingProcessorParseRegex{
-		Regex: `^(?P<host>[^ ]*) [^ ]* (?P<user>[^ ]*) \[(?P<time>[^\]]*)\] "(?P<method>\S+)(?: +(?P<path>[^\"]*?)(?: +\S*)?)?" (?P<code>[^ ]*) (?P<size>[^ ]*)(?: "(?P<referer>[^\"]*)" "(?P<agent>[^\"]*)")?$`,
+		Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$`,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	},
 	"lib:apache2": &LoggingProcessorParseRegex{
-		Regex: `^(?P<host>[^ ]*) [^ ]* (?P<user>[^ ]*) \[(?P<time>[^\]]*)\] "(?P<method>\S+)(?: +(?P<path>[^ ]*) +\S*)?" (?P<code>[^ ]*) (?P<size>[^ ]*)(?: "(?P<referer>[^\"]*)" "(?P<agent>.*)")?$`,
+		Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$`,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	},
 	"lib:apache_error": &LoggingProcessorParseRegex{
-		Regex: `^\[[^ ]* (?P<time>[^\]]*)\] \[(?P<level>[^\]]*)\](?: \[pid (?P<pid>[^\]]*)\])?( \[client (?P<client>[^\]]*)\])? (?P<message>.*)$`,
+		Regex: `^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$`,
 	},
 	"lib:mongodb": &LoggingProcessorParseRegex{
-		Regex: `^(?P<time>[^ ]*)\s+(?P<severity>\w)\s+(?P<component>[^ ]+)\s+\[(?P<context>[^\]]+)]\s+(?P<message>.*?) *(?P<ms>(\d+))?(:?ms)?$`,
+		Regex: `^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
 		},
 	},
 	"lib:nginx": &LoggingProcessorParseRegex{
-		Regex: `^(?P<remote>[^ ]*) (?P<host>[^ ]*) (?P<user>[^ ]*) \[(?P<time>[^\]]*)\] "(?P<method>\S+)(?: +(?P<path>[^\"]*?)(?: +\S*)?)?" (?P<code>[^ ]*) (?P<size>[^ ]*)(?: "(?P<referer>[^\"]*)" "(?P<agent>[^\"]*)")`,
+		Regex: `^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")`,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	},
 	"lib:syslog-rfc5424": &LoggingProcessorParseRegex{
-		Regex: `^\<(?P<pri>[0-9]{1,5})\>1 (?P<time>[^ ]+) (?P<host>[^ ]+) (?P<ident>[^ ]+) (?P<pid>[-0-9]+) (?P<msgid>[^ ]+) (?P<extradata>(\[(.*?)\]|-)) (?P<message>.+)$`,
+		Regex: `^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$`,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%Z",
 		},
 	},
 	"lib:syslog-rfc3164": &LoggingProcessorParseRegex{
-		Regex: `/^\<(?P<pri>[0-9]+)\>(?P<time>[^ ]* {1,2}[^ ]* [^ ]*) (?P<host>[^ ]*) (?P<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?P<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?P<message>.*)$/`,
+		Regex: `/^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/`,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%b %d %H:%M:%S",

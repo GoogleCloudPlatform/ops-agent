@@ -64,7 +64,7 @@ processors:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"^#(?:Fields|Date|Version|Software):\"))"
+      - "((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^#(?:Fields|Date|Version|Software):\"))"
   filter/loggingmetrics_1:
     metrics:
       datapoint:
@@ -834,7 +834,7 @@ processors:
     log_statements:
     - context: log
       statements:
-      - "set(cache[\"__parsed_regex\"], ExtractPatterns(body[\"message\"], \"^(?<timestamp>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s\\\\d{2}:\\\\d{2}:\\\\d{2})\\\\s(?<http_request_serverIp>[^\\\\s]+)\\\\s(?<http_request_requestMethod>[^\\\\s]+)\\\\s(?<cs_uri_stem>\\\\/[^\\\\s]*)\\\\s(?<cs_uri_query>[^\\\\s]*)\\\\s(?<s_port>\\\\d*)\\\\s(?<user>[^\\\\s]+)\\\\s(?<http_request_remoteIp>[^\\\\s]+)\\\\s(?<http_request_userAgent>[^\\\\s]+)\\\\s(?<http_request_referer>[^\\\\s]+)\\\\s(?<http_request_status>\\\\d{3})\\\\s(?<sc_substatus>\\\\d+)\\\\s(?<sc_win32_status>\\\\d+)(?:\\\\s(?<sc_bytes>\\\\d+)\\\\s(?<cs_bytes>\\\\d+))?\\\\s(?<time_taken>\\\\d+)$\")) where ((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"^(?<timestamp>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s\\\\d{2}:\\\\d{2}:\\\\d{2})\\\\s(?<http_request_serverIp>[^\\\\s]+)\\\\s(?<http_request_requestMethod>[^\\\\s]+)\\\\s(?<cs_uri_stem>\\\\/[^\\\\s]*)\\\\s(?<cs_uri_query>[^\\\\s]*)\\\\s(?<s_port>\\\\d*)\\\\s(?<user>[^\\\\s]+)\\\\s(?<http_request_remoteIp>[^\\\\s]+)\\\\s(?<http_request_userAgent>[^\\\\s]+)\\\\s(?<http_request_referer>[^\\\\s]+)\\\\s(?<http_request_status>\\\\d{3})\\\\s(?<sc_substatus>\\\\d+)\\\\s(?<sc_win32_status>\\\\d+)(?:\\\\s(?<sc_bytes>\\\\d+)\\\\s(?<cs_bytes>\\\\d+))?\\\\s(?<time_taken>\\\\d+)$\"))"
+      - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^(?<timestamp>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s\\\\d{2}:\\\\d{2}:\\\\d{2})\\\\s(?<http_request_serverIp>[^\\\\s]+)\\\\s(?<http_request_requestMethod>[^\\\\s]+)\\\\s(?<cs_uri_stem>\\\\/[^\\\\s]*)\\\\s(?<cs_uri_query>[^\\\\s]*)\\\\s(?<s_port>\\\\d*)\\\\s(?<user>[^\\\\s]+)\\\\s(?<http_request_remoteIp>[^\\\\s]+)\\\\s(?<http_request_userAgent>[^\\\\s]+)\\\\s(?<http_request_referer>[^\\\\s]+)\\\\s(?<http_request_status>\\\\d{3})\\\\s(?<sc_substatus>\\\\d+)\\\\s(?<sc_win32_status>\\\\d+)(?:\\\\s(?<sc_bytes>\\\\d+)\\\\s(?<cs_bytes>\\\\d+))?\\\\s(?<time_taken>\\\\d+)$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^(?<timestamp>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s\\\\d{2}:\\\\d{2}:\\\\d{2})\\\\s(?<http_request_serverIp>[^\\\\s]+)\\\\s(?<http_request_requestMethod>[^\\\\s]+)\\\\s(?<cs_uri_stem>\\\\/[^\\\\s]*)\\\\s(?<cs_uri_query>[^\\\\s]*)\\\\s(?<s_port>\\\\d*)\\\\s(?<user>[^\\\\s]+)\\\\s(?<http_request_remoteIp>[^\\\\s]+)\\\\s(?<http_request_userAgent>[^\\\\s]+)\\\\s(?<http_request_referer>[^\\\\s]+)\\\\s(?<http_request_status>\\\\d{3})\\\\s(?<sc_substatus>\\\\d+)\\\\s(?<sc_win32_status>\\\\d+)(?:\\\\s(?<sc_bytes>\\\\d+)\\\\s(?<cs_bytes>\\\\d+))?\\\\s(?<time_taken>\\\\d+)$\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
       - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
@@ -908,11 +908,11 @@ processors:
       - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
       - set(cache["__field_4"], body["user"]) where (body != nil and body["user"] != nil)
       - set(cache["__omit_0"], false)
-      - set(cache["__omit_0"], true) where ((body != nil and body["cs_uri_query"] != nil) and IsMatch(body["cs_uri_query"], "(?i)^-$"))
+      - set(cache["__omit_0"], true) where ((body != nil and body["cs_uri_query"] != nil) and IsMatchRubyRegex(body["cs_uri_query"], "(?i)^-$"))
       - set(cache["__omit_1"], false)
-      - set(cache["__omit_1"], true) where ((body != nil and body["http_request_referer"] != nil) and IsMatch(body["http_request_referer"], "(?i)^-$"))
+      - set(cache["__omit_1"], true) where ((body != nil and body["http_request_referer"] != nil) and IsMatchRubyRegex(body["http_request_referer"], "(?i)^-$"))
       - set(cache["__omit_2"], false)
-      - set(cache["__omit_2"], true) where ((body != nil and body["user"] != nil) and IsMatch(body["user"], "(?i)^-$"))
+      - set(cache["__omit_2"], true) where ((body != nil and body["user"] != nil) and IsMatchRubyRegex(body["user"], "(?i)^-$"))
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
       - set(body["cs_uri_query"], cache["value"]) where (cache != nil and cache["value"] != nil)

@@ -204,8 +204,8 @@ func ParseSimplifiedXML(a Value) Value {
 	return valuef(`ParseSimplifiedXML(%s)`, a)
 }
 
-func ExtractPatterns(a Value, pattern string) Value {
-	return valuef(`ExtractPatterns(%s, %q)`, a, pattern)
+func ExtractPatternsRubyRegex(a Value, pattern string, omitEmptyValues bool) Value {
+	return valuef(`ExtractPatternsRubyRegex(%s, %q, %v)`, a, pattern, omitEmptyValues)
 }
 
 func Concat(values []Value, delimiter string) Value {
@@ -234,6 +234,10 @@ func ToValues(a Value) Value {
 
 func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
+}
+
+func IsMatchRubyRegex(target Value, pattern string) Value {
+	return valuef(`IsMatchRubyRegex(%s, %q)`, target, pattern)
 }
 
 func Equals(a, b Value) Value {
