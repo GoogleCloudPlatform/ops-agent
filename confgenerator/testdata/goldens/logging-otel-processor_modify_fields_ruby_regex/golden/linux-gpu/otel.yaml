@@ -799,7 +799,7 @@ processors:
     - context: log
       statements:
       - set(cache["__omit_0"], false)
-      - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatch(body["omitted"], "(?!foo)bar"))
+      - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatchRubyRegex(body["omitted"], "(?!foo)bar"))
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "world")
       - set(body["hello"], cache["value"]) where (cache != nil and cache["value"] != nil)

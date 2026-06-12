@@ -794,7 +794,7 @@ processors:
     log_statements:
     - context: log
       statements:
-      - "set(cache[\"__parsed_regex\"], ExtractPatterns(body[\"message\"], \"^\\\\<(?<pri>[0-9]{1,5})\\\\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\\\\[(.*?)\\\\]|-)) (?<message>.+)$\")) where ((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"^\\\\<(?<pri>[0-9]{1,5})\\\\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\\\\[(.*?)\\\\]|-)) (?<message>.+)$\"))"
+      - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^\\\\<(?<pri>[0-9]{1,5})\\\\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\\\\[(.*?)\\\\]|-)) (?<message>.+)$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^\\\\<(?<pri>[0-9]{1,5})\\\\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\\\\[(.*?)\\\\]|-)) (?<message>.+)$\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
       - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
@@ -856,7 +856,7 @@ processors:
     log_statements:
     - context: log
       statements:
-      - "set(cache[\"__parsed_regex\"], ExtractPatterns(body[\"message\"], \"/^\\\\<(?P<pri>[0-9]+)\\\\>(?P<time>[^ ]* {1,2}[^ ]* [^ ]*) (?P<host>[^ ]*) (?P<ident>[a-zA-Z0-9_\\\\/\\\\.\\\\-]*)(?:\\\\[(?P<pid>[0-9]+)\\\\])?(?:[^\\\\:]*\\\\:)? *(?P<message>.*)$/\")) where ((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"/^\\\\<(?P<pri>[0-9]+)\\\\>(?P<time>[^ ]* {1,2}[^ ]* [^ ]*) (?P<host>[^ ]*) (?P<ident>[a-zA-Z0-9_\\\\/\\\\.\\\\-]*)(?:\\\\[(?P<pid>[0-9]+)\\\\])?(?:[^\\\\:]*\\\\:)? *(?P<message>.*)$/\"))"
+      - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"/^\\\\<(?<pri>[0-9]+)\\\\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\\\\/\\\\.\\\\-]*)(?:\\\\[(?<pid>[0-9]+)\\\\])?(?:[^\\\\:]*\\\\:)? *(?<message>.*)$/\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"/^\\\\<(?<pri>[0-9]+)\\\\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\\\\/\\\\.\\\\-]*)(?:\\\\[(?<pid>[0-9]+)\\\\])?(?:[^\\\\:]*\\\\:)? *(?<message>.*)$/\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
       - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
