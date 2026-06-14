@@ -59,13 +59,8 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 			}
 		}
 	case "otel":
-		otelConfig, err := uc.GenerateOtelConfig(ctx, outDir, stateDir)
-		if err != nil {
-			return fmt.Errorf("can't parse configuration: %w", err)
-		}
-		if err = WriteConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
-			return err
-		}
+		// No-op. otelopscol now uses the googlecloudopsagent provider to translate config on the fly.
+		return nil
 	default:
 		return fmt.Errorf("unknown service %q", service)
 	}
