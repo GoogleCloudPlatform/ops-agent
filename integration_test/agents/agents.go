@@ -1361,6 +1361,6 @@ func VerifyOpsAgentSigned(ctx context.Context, logger *log.Logger, vm *gce.VM) e
 	} else if gce.IsWindows(vm.ImageSpec) {
 		return verifyWindowsBinarySigned(ctx, logger, vm, location)
 	} else {
-		return fmt.Errorf("VM image: %s, is not suported for signing", vm.ImageSpec)
+		return fmt.Errorf("VM image: %s, is not supported for signing", vm.ImageSpec)
 	}
 }
