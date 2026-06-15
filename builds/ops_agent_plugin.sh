@@ -15,7 +15,10 @@
 
 set -x -e
 DESTDIR=$1
+mkdir -p "$DESTDIR"
 source VERSION && echo $PKG_VERSION  > "$DESTDIR/OPS_AGENT_VERSION"
 mkdir -p "$DESTDIR/opt/google-cloud-ops-agent"
-go build -buildvcs=false -ldflags "-s -w" -o "$DESTDIR/opt/google-cloud-ops-agent/ops_agent" \
-  github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin
+if [[ ! -f "$DESTDIR/opt/google-cloud-ops-agent/ops_agent" ]]; then
+  CGO_ENABLED=0 go build -buildvcs=false -ldflags "-s -w" -o "$DESTDIR/opt/google-cloud-ops-agent/ops_agent" \
+    github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin
+fi
