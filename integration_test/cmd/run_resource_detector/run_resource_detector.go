@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator/resourcedetector"
 )
 
 func main() {

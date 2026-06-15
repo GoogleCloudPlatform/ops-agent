@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/set"
 )
 
 type MissingExpectedFeatureTrackingMetricsError struct {

@@ -55,7 +55,8 @@ COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetr
 
 WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
-RUN & ./build.ps1 -outDir /work/out/bin
+RUN Get-Content ../../../VERSION | Where-Object length | ForEach-Object { Invoke-Expression "\`$env:\`$_" }; `
+    & ./build.ps1 -outDir /work/out/bin -version $env:PKG_VERSION -buildDistro $env:BUILD_DISTRO
 
 ###############################################################################
 # Config generator/service installer
@@ -67,10 +68,9 @@ COPY . /work
 
 ARG WINDOWS_VERSION
 ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
-RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
-    go build -o bin/google-cloud-ops-agent.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_windows; `
+RUN go build -o bin/google-cloud-ops-agent.exe -ldflags "-s -w" ./cmd/ops_agent_windows; `
     Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/out/bin/; `
-    Copy-Item -Path confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
+    Copy-Item -Path submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
 
 ###############################################################################
 
@@ -87,7 +87,7 @@ COPY . /work
 ARG WINDOWS_VERSION
 ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
 RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
-    go build -o bin/ops_agent.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
+    go build -o bin/ops_agent.exe -ldflags "-s -w" ./cmd/ops_agent_uap_plugin; `
     Copy-Item -Path bin/ops_agent.exe -Destination /work/out/bin/; `
     $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
 
