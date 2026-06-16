@@ -19,10 +19,15 @@ fi
 
 sudo yum -y install https://repo.mysql.com/${MYSQL_VERSION}-community-release-el${MAJOR_VERSION_ID}.rpm
 
-if [ ${MAJOR_VERSION_ID} == 8 ]; then
-  sudo yum -y module disable mysql
+if [[ "$MAJOR_VERSION_ID" == "10" ]]; then
+  # EL10 AppStream provides mariadb11.8 and mysql8.4 which conflict with mysql-community-server
+  sudo yum -y install mysql-community-server --exclude=mariadb*,mysql8.4*
+else
+  if [ ${MAJOR_VERSION_ID} == 8 ]; then
+    sudo yum -y module disable mysql
+  fi
+  sudo yum -y install mysql-community-server
 fi
-sudo yum -y install mysql-community-server
 
 # Handle authentication plugin configuration
 if [[ "$MYSQL_VERSION" == "mysql84" ]]; then
