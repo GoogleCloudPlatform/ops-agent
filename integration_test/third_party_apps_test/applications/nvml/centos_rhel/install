@@ -57,8 +57,8 @@ EOF
     fi
 
     # Installing latest version of NVIDIA CUDA and driver
-    local CUDA_VERSION=12.9.0
-    local CUDA_BUNDLED_DRIVER_VERSION=575.51.03
+    local CUDA_VERSION=13.0.0
+    local CUDA_BUNDLED_DRIVER_VERSION=580.65.06
     echo "Installing CUDA Toolkit $CUDA_VERSION from CUDA installer with bundled driver $CUDA_BUNDLED_DRIVER_VERSION"
     curl -fSsl -O https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run
     sudo sh cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run --silent
@@ -85,7 +85,7 @@ install_cuda_from_package_manager() {
     fi
     install_driver_package
     # TODO(b/377558109): remove the temporary fix once the repo is updated
-    sudo yum -y install cuda-toolkit-12-9 cuda-demo*
+    sudo yum -y install cuda-toolkit-13-0 cuda-demo*
     verify_driver
 }
 
@@ -114,8 +114,8 @@ try_install() {
 
 handle_rhel9() {
     install_driver_package() {
-        # Ref: https://developer.nvidia.com/cuda-12-9-0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
-        sudo yum -y module install nvidia-driver:575-dkms
+        # Ref: https://developer.nvidia.com/cuda-13-0-0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=9&target_type=rpm_network
+        sudo yum -y module install nvidia-driver:580-dkms
     }
 }
 
