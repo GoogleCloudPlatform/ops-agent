@@ -286,6 +286,7 @@ func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPip
 			filepath.Join(r.OtelRuntimeDir, "feature_tracking_otlp.json")},
 		"replay_file":   true,
 		"poll_interval": time.Duration(60 * time.Second).String(),
+		"start_at":      "beginning",
 	}
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
