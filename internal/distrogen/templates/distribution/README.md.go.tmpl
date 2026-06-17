@@ -1,0 +1,53 @@
+# {{ .DisplayName }}
+
+{{ .Blurb }}
+
+# Components
+
+## Receivers
+
+| Component Name | Documentation |
+| -------------- | ------------- |
+{{ range $name, $component := .Receivers -}}
+| {{ $name }} | [docs]({{ $component.RenderDocsURL }}) |
+{{ end }}
+
+## Processors
+
+| Component Name | Documentation |
+| -------------- | ------------- |
+{{ range $name, $component := .Processors -}}
+| {{ $name }} | [docs]({{ $component.RenderDocsURL }}) |
+{{ end }}
+
+## Exporters
+
+| Component Name | Documentation |
+| -------------- | ------------- |
+{{ range $name, $component := .Exporters -}}
+| {{ $name }} | [docs]({{ $component.RenderDocsURL }}) |
+{{ end }}
+
+## Extensions
+
+| Component Name | Documentation |
+| -------------- | ------------- |
+{{ range $name, $component := .Extensions -}}
+| {{ $name }} | [docs]({{ $component.RenderDocsURL }}) |
+{{ end }}
+
+## Connectors
+
+| Component Name | Documentation |
+| -------------- | ------------- |
+{{ range $name, $component := .Connectors -}}
+| {{ $name }} | [docs]({{ $component.RenderDocsURL }}) |
+{{ end }}
+
+## Providers
+
+| Component Name | Documentation |
+| -------------- | ------------- |
+{{ range $name, $component := .Providers -}}
+| {{ $name }} | [docs]({{ $component.RenderDocsURL }}) |
+{{ end }}

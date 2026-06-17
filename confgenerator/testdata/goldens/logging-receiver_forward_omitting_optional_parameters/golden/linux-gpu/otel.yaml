@@ -924,7 +924,7 @@ receivers:
     start_at: beginning
     storage: file_storage
   fluentforward/fluent__logs:
-    endpoint: ":0"
+    endpoint: :0
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:

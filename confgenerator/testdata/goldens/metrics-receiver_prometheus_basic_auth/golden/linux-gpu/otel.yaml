@@ -998,6 +998,10 @@ receivers:
             location: test-zone
             machine_type: test-machine-type
             namespace: test-instance-id/test-instance-name
+      storage:
+        tsdb:
+          outofordertimewindow: 0
+          retention: {}
       otlp:
         translation_strategy: UnderscoreEscapingWithSuffixes
         label_name_underscore_sanitization: true

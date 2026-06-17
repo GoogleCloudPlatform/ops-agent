@@ -1,0 +1,72 @@
+name: otelopscol
+module: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/otelopscol
+display_name: ""
+description: OpenTelemetry Collector binary used by the Ops Agent
+blurb: ""
+build_container: debian
+version: v0.151.0
+opentelemetry_version: 0.151.0
+opentelemetry_contrib_version: 0.151.0
+opentelemetry_stable_version: 1.57.0
+go_version: 1.26.1
+binary_name: otelopscol
+build_tags: gpu
+boringcrypto: false
+docker_repo: ""
+components:
+    receivers:
+        - filelog
+        - fluentforward
+        - hostmetrics
+        - iis
+        - prometheus
+        - otlp
+        - syslog
+        - sqlserver
+        - sqlquery
+        - mysql
+        - windowseventlog
+        - windowsperfcounters
+        - journald
+        - otlpjsonfile
+        - dcgm
+        - nvml
+    processors:
+        - cumulativetodelta
+        - deltatocumulative
+        - deltatorate
+        - filter
+        - groupbyattrs
+        - interval
+        - metricstransform
+        - resourcedetection
+        - resource
+        - transform
+        - batch
+        - memorylimiter
+        - metricstarttime
+        - agentmetrics
+        - normalizesums
+    exporters:
+        - otlp
+        - otlphttp
+        - debug
+    extensions:
+        - zpages
+        - googleclientauth
+        - pprof
+        - filestorage
+    providers:
+        - googlesecretmanager
+        - file
+        - env
+replaces:
+    - from: github.com/GoogleCloudPlatform/opentelemetry-operations-collector
+      to: ../../
+      reason: Reference root module of repository to find dependency packages.
+    - from: github.com/buger/jsonparser
+      to: github.com/buger/jsonparser v1.1.2
+      reason: Force update buger/jsonparser to v1.1.2 to fix vulnerability
+collector_cgo: true
+component_module_base: ""
+distrogen_version: ""

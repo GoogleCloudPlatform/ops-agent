@@ -1,0 +1,664 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+receivers:
+    activedirectoryds:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/activedirectorydsreceiver/README.md
+    aerospike:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/aerospikereceiver/README.md
+    apache:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/apachereceiver/README.md
+    apachespark:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/apachesparkreceiver/README.md
+    awscloudwatch:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awscloudwatchreceiver/README.md
+    awscontainerinsight:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awscontainerinsightreceiver/README.md
+    awsecscontainermetrics:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver/README.md
+    awsfirehose:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsfirehosereceiver/README.md
+    awsxray:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsxrayreceiver/README.md
+    azureblob:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/azureblobreceiver/README.md
+    azureeventhub:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/azureeventhubreceiver/README.md
+    azuremonitor:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/azuremonitorreceiver/README.md
+    bigip:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/bigipreceiver/README.md
+    carbon:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/carbonreceiver/README.md
+    chrony:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/chronyreceiver/README.md
+    cloudflare:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/cloudflarereceiver/README.md
+    cloudfoundry:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/cloudfoundryreceiver/README.md
+    collectd:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/collectdreceiver/README.md
+    couchdb:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/couchdbreceiver/README.md
+    creator:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/receivercreator/README.md
+    datadog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/datadogreceiver/README.md
+    dockerstats:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver/README.md
+    elasticsearch:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/elasticsearchreceiver/README.md
+    expvar:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/expvarreceiver/README.md
+    filelog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver/README.md
+    filestats:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filestatsreceiver/README.md
+    flinkmetrics:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/flinkmetricsreceiver/README.md
+    fluentforward:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/fluentforwardreceiver/README.md
+    googlecloudmonitoring:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/googlecloudmonitoringreceiver/README.md
+    googlecloudpubsub:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/googlecloudpubsubreceiver/README.md
+    haproxy:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/haproxyreceiver/README.md
+    hostmetrics:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver/README.md
+    httpcheck:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver/README.md
+    iis:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/iisreceiver/README.md
+    influxdb:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/influxdbreceiver/README.md
+    jaeger:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver/README.md
+    jmx:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jmxreceiver/README.md
+    journald:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver/README.md
+    k8scluster:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver/README.md
+    k8sevents:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8seventsreceiver/README.md
+    k8sobjects:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sobjectsreceiver/README.md
+    kafka:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/kafkareceiver/README.md
+    kafkametrics:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/kafkametricsreceiver/README.md
+    kubeletstats:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/kubeletstatsreceiver/README.md
+    loki:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/lokireceiver/README.md
+    memcached:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/memcachedreceiver/README.md
+    mongodb:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/mongodbreceiver/README.md
+    mongodbatlas:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/mongodbatlasreceiver/README.md
+    mysql:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/mysqlreceiver/README.md
+    namedpipe:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/namedpipereceiver/README.md
+    nginx:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/nginxreceiver/README.md
+    nop:
+        gomod: go.opentelemetry.io/collector/receiver/nopreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/nopreceiver/README.md
+    nsxt:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/nsxtreceiver/README.md
+    opencensus:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/opencensusreceiver/README.md
+    oracledb:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/oracledbreceiver/README.md
+    otelarrow:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/otelarrowreceiver/README.md
+    otlp:
+        gomod: go.opentelemetry.io/collector/receiver/otlpreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver/README.md
+    otlpjsonfile:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/otlpjsonfilereceiver/README.md
+    podman:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/podmanreceiver/README.md
+    postgresql:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/postgresqlreceiver/README.md
+    prometheus:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver/README.md
+    prometheusremotewrite:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusremotewritereceiver/README.md
+    pulsar:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/pulsarreceiver/README.md
+    purefa:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/purefareceiver/README.md
+    purefb:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/purefbreceiver/README.md
+    rabbitmq:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/rabbitmqreceiver/README.md
+    receivercreator:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/receivercreator/README.md
+    redis:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/redisreceiver/README.md
+    riak:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/riakreceiver/README.md
+    sapm:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/sapmreceiver/README.md
+    signalfx:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/signalfxreceiver/README.md
+    simpleprometheus:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/simpleprometheusreceiver/README.md
+    skywalking:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/skywalkingreceiver/README.md
+    snmp:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/snmpreceiver/README.md
+    snowflake:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/snowflakereceiver/README.md
+    solace:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/solacereceiver/README.md
+    splunkenterprise:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/splunkenterprisereceiver/README.md
+    splunkhec:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/splunkhecreceiver/README.md
+    sqlquery:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/sqlqueryreceiver/README.md
+    sqlserver:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/sqlserverreceiver/README.md
+    sshcheck:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/sshcheckreceiver/README.md
+    statsd:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/statsdreceiver/README.md
+    syslog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver/README.md
+    tcplog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/tcplogreceiver/README.md
+    udplog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/udplogreceiver/README.md
+    vcenter:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/vcenterreceiver/README.md
+    wavefront:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/wavefrontreceiver/README.md
+    webhookevent:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/webhookeventreceiver/README.md
+    windowseventlog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/windowseventlogreceiver/README.md
+    windowsperfcounters:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/windowsperfcountersreceiver/README.md
+    zipkin:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/zipkinreceiver/README.md
+    zookeeper:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/zookeeperreceiver/README.md
+processors:
+    attributes:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor/README.md
+    batch:
+        gomod: go.opentelemetry.io/collector/processor/batchprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor/README.md
+    cumulativetodelta:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/cumulativetodeltaprocessor/README.md
+    deltatocumulative:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/deltatocumulativeprocessor/README.md
+    deltatorate:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/deltatorateprocessor/README.md
+    filter:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor/README.md
+    geoip:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/geoipprocessor/README.md
+    groupbyattrs:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor/README.md
+    groupbytrace:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbytraceprocessor/README.md
+    k8sattributes:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/k8sattributesprocessor/README.md
+    logdedup:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/logdedupprocessor/README.md
+    logstransform:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/logstransformprocessor/README.md
+    memorylimiter:
+        gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiterprocessor/README.md
+    metricsgeneration:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricsgenerationprocessor/README.md
+    metricstarttime:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstarttimeprocessor/README.md
+    metricstransform:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor/README.md
+    probabilisticsampler:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor/README.md
+    redaction:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/redactionprocessor/README.md
+    remotetap:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/remotetapprocessor/README.md
+    resource:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourceprocessor/README.md
+    resourcedetection:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor/README.md
+    routing:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor/README.md
+    span:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/spanprocessor/README.md
+    sumologic:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/sumologicprocessor/README.md
+    tailsampling:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor/README.md
+    transform:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/README.md
+    interval:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor v0.119.0
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/intervalprocessor/README.md
+
+exporters:
+    alibabacloudlogservice:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/alibabacloudlogserviceexporter/README.md
+    awscloudwatchlogs:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awscloudwatchlogsexporter/README.md
+    awsemf:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awsemfexporter/README.md
+    awskinesis:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awskinesisexporter/README.md
+    awss3:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awss3exporter/README.md
+    awsxray:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awsxrayexporter/README.md
+    azuredataexplorer:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/azuredataexplorerexporter/README.md
+    azuremonitor:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/azuremonitorexporter/README.md
+    carbon:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/carbonexporter/README.md
+    cassandra:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/cassandraexporter/README.md
+    clickhouse:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/clickhouseexporter/README.md
+    coralogix:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/coralogixexporter/README.md
+    datadog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/datadogexporter/README.md
+    dataset:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/datasetexporter/README.md
+    debug:
+        gomod: go.opentelemetry.io/collector/exporter/debugexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/debugexporter/README.md
+    elasticsearch:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/elasticsearchexporter/README.md
+    file:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/fileexporter/README.md
+    googlecloud:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/googlecloudexporter/README.md
+    googlecloudpubsub:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/googlecloudpubsubexporter/README.md
+    googlemanagedprometheus:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/googlemanagedprometheusexporter/README.md
+    honeycombmarker:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/honeycombmarkerexporter/README.md
+    influxdb:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/influxdbexporter/README.md
+    kafka:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/kafkaexporter/README.md
+    loadbalancing:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/loadbalancingexporter/README.md
+    logicmonitor:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/logicmonitorexporter/README.md
+    logzio:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/logzioexporter/README.md
+    loki:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/lokiexporter/README.md
+    mezmo:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/mezmoexporter/README.md
+    nop:
+        gomod: go.opentelemetry.io/collector/exporter/nopexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/nopexporter/README.md
+    opencensus:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/opencensusexporter/README.md
+    opensearch:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/opensearchexporter/README.md
+    otelarrow:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/otelarrowexporter/README.md
+    otlp:
+        gomod: go.opentelemetry.io/collector/exporter/otlpexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter/README.md
+    otlphttp:
+        gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter/README.md
+    prometheus:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusexporter/README.md
+    prometheusremotewrite:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusremotewriteexporter/README.md
+    pulsar:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/pulsarexporter/README.md
+    rabbitmq:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/rabbitmqexporter/README.md
+    sapm:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sapmexporter/README.md
+    sentry:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sentryexporter/README.md
+    signalfx:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter/README.md
+    splunkhec:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter/README.md
+    sumologic:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter/README.md
+    syslog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/syslogexporter/README.md
+    tencentcloudlogservice:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/tencentcloudlogserviceexporter/README.md
+    zipkin:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/zipkinexporter/README.md
+
+connectors:
+    count:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/countconnector/README.md
+    datadog:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/datadogconnector/README.md
+    exceptions:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/exceptionsconnector/README.md
+    failover:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/failoverconnector/README.md
+    forward:
+        gomod: go.opentelemetry.io/collector/connector/forwardconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/connector/forwardconnector/README.md
+    grafanacloud:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/grafanacloudconnector/README.md
+    otlpjson:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/otlpjsonconnector/README.md
+    roundrobin:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/roundrobinconnector/README.md
+    routing:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector/README.md
+    servicegraph:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/servicegraphconnector/README.md
+    spanmetrics:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/spanmetricsconnector/README.md
+    signaltometrics:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/signaltometricsconnector/README.md
+
+extensions:
+    ack:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/ackextension/README.md
+    asapauth:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/asapauthextension/README.md
+    awsproxy:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/awsproxy/README.md
+    basicauth:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/basicauthextension/README.md
+    bearertokenauth:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/bearertokenauthextension/README.md
+    dbstorage:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/README.md
+    dockerobserver:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/observer/README.md
+    ecsobserver:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/observer/README.md
+    ecstaskobserver:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/observer/README.md
+    filestorage:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage/README.md
+    googleclientauth:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/googleclientauthextension/README.md
+    headerssetter:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/headerssetterextension/README.md
+    healthcheck:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/healthcheckextension/README.md
+    healthcheckv2:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension
+        docs_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/healthcheckv2extension/README.md
+    hostobserver:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/observer/README.md
+    httpforwarder:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/httpforwarderextension/README.md
+    jaegerencoding:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/README.md
+    jaegerremotesampling:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/jaegerremotesampling/README.md
+    jsonlogencoding:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/README.md
+    k8sobserver:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/observer/README.md
+    oauth2clientauth:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oauth2clientauthextension/README.md
+    oidcauth:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oidcauthextension/README.md
+    opamp:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/opampextension/README.md
+    otlpencoding:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/README.md
+    pprof:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/pprofextension/README.md
+    sigv4auth:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/sigv4authextension/README.md
+    sumologic:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/sumologicextension/README.md
+    zipkinencoding:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/README.md
+    zpages:
+        gomod: go.opentelemetry.io/collector/extension/zpagesextension
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/extension/zpagesextension/README.md
+providers:
+    env:
+        gomod: go.opentelemetry.io/collector/confmap/provider/envprovider
+        stable: true
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/confmap/provider/envprovider
+    file:
+        gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider
+        stable: true
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/confmap/provider/fileprovider
+    http:
+        gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider
+        stable: true
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/confmap/provider/httpprovider
+    https:
+        gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider
+        stable: true
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/confmap/provider/httpsprovider
+    yaml:
+        gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider
+        stable: true
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector/tree/main/confmap/provider/yamlprovider
+    googlesecretmanager:
+        gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretmanagerprovider
+        docs_url: https://www.github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/confmap/provider/googlesecretmanagerprovider

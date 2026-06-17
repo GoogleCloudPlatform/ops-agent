@@ -1,0 +1,15 @@
+[Unit]
+Description=A basic distribution of the OpenTelemetry Collector
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/otelcol-basic/otelcol-basic.conf
+ExecStart=/usr/bin/otelcol-basic $OTELCOL_OPTIONS
+KillMode=mixed
+Restart=on-failure
+Type=simple
+User=otelcol-basic
+Group=otelcol-basic
+
+[Install]
+WantedBy=multi-user.target

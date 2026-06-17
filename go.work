@@ -1,0 +1,14 @@
+go 1.25.0
+
+use (
+	.
+	./cmd/otelopscol
+	./internal/components
+	./internal/components/processor/agentmetricsprocessor
+	./internal/components/processor/filterprocessor
+	./internal/components/processor/normalizesumsprocessor
+	./internal/components/processor/transformprocessor
+	./internal/components/receiver/dcgmreceiver
+	./internal/components/receiver/nvmlreceiver
+	./internal/distrogen
+)

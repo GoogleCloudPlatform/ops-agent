@@ -1,0 +1,21 @@
+default:
+all_set:
+  metrics:
+    nvml.gpu.memory.bytes_used:
+      enabled: true
+    nvml.gpu.processes.max_bytes_used:
+      enabled: true
+    nvml.gpu.processes.utilization:
+      enabled: true
+    nvml.gpu.utilization:
+      enabled: true
+none_set:
+  metrics:
+    nvml.gpu.memory.bytes_used:
+      enabled: false
+    nvml.gpu.processes.max_bytes_used:
+      enabled: false
+    nvml.gpu.processes.utilization:
+      enabled: false
+    nvml.gpu.utilization:
+      enabled: false

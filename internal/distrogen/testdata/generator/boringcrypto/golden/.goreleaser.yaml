@@ -1,0 +1,72 @@
+version: 2
+project_name: opentelemetry-operations-collector
+
+snapshot:
+  version_template: 0.121.0
+
+env:
+  - LD_FLAGS=-s -w
+  - CGO_ENABLED=0 # TODO: CGO is not supported in goreleaser yet.
+  - BUILD_FLAGS=-trimpath
+  - GOWORK=off
+
+builds:
+  - id: otelcol-basic-linux
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    binary: otelcol-basic
+    dir: _build
+    ldflags:
+      - "-s -w"
+    flags:
+      - "-trimpath"
+      - "-buildvcs=false"
+
+  - id: otelcol-basic-windows
+    goos:
+      - windows
+    goarch:
+      - amd64
+    binary: otelcol-basic
+    dir: _build
+    ldflags:
+      - "-s -w"
+    flags:
+      - "-trimpath"
+      - "-buildvcs=false"
+
+nfpms:
+  - package_name: otelcol-basic
+    contents:
+      - src: otelcol-basic.service
+        dst: /lib/systemd/system/otelcol-basic.service
+      - src: otelcol-basic.conf
+        dst: /etc/otelcol-basic/otelcol-basic.conf
+        type: config|noreplace
+        file_info:
+          mode: 0644
+      - src: config.yaml
+        dst: /etc/otelcol-basic/config.yaml
+        type: config|noreplace
+        file_info:
+          mode: 0644
+    scripts:
+      preinstall: preinstall.sh
+      postinstall: postinstall.sh
+      preremove: preremove.sh
+    overrides:
+      rpm:
+        dependencies:
+          - /bin/sh
+    ids:
+      - otelcol-basic-linux
+    formats:
+      - deb
+      - rpm
+    umask: 0
+    maintainer: Google Cloud Platform <google@google.com> # something better than this
+    description: A basic distribution of the OpenTelemetry Collector
+    license: Apache 2.0

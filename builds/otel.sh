@@ -29,13 +29,7 @@ if [ -z "${GO_BIN}" ]; then
 fi
 ARCH=$($GO_BIN env GOARCH)
 
-cd submodules/opentelemetry-operations-collector/otelopscol
+cd cmd/otelopscol
 
-BUILDARCH="$ARCH" \
-TARGETARCH="$ARCH" \
-GO_BIN="${GO_BIN}" \
-COLLECTOR_LD_FLAGS="$LDFLAGS" \
-COLLECTOR_BUILDVCS="false" \
-COLLECTOR_BUILD_TAGS="gpu" \
-    make build
-cp ./otelopscol "$DESTDIR/otelopscol"
+"${GO_BIN}" build -buildvcs=false -tags="gpu" -ldflags="-s -w ${LDFLAGS}" -o "$DESTDIR/otelopscol" .
+

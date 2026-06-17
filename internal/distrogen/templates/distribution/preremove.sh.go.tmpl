@@ -1,0 +1,6 @@
+if [ "$1" != "1" ]; then
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl stop {{ .BinaryName }}.service
+        systemctl disable {{ .BinaryName }}.service
+    fi
+fi

@@ -1,0 +1,33 @@
+name: basic-distro
+module: ""
+display_name: Basic OTel
+description: A basic distribution of the OpenTelemetry Collector
+blurb: A basic collector distro
+build_container: debian
+version: 0.121.0
+opentelemetry_version: 0.121.0
+opentelemetry_contrib_version: 0.121.0
+opentelemetry_stable_version: 1.27.0
+go_version: 1.24.0
+binary_name: otelcol-basic
+build_tags: ""
+boringcrypto: false
+docker_repo: us-docker.pkg.dev/experimental-braydonk/google-otel
+components:
+    receivers:
+        - otlp
+    processors:
+        - batch
+        - memorylimiter
+    exporters:
+        - otlp
+    connectors:
+        - forward
+    extensions:
+        - pprof
+    providers:
+        - yaml
+feature_gates:
+    - exporter.googlemanagedprometheus.intToDouble
+component_module_base: github.com/GoogleCloudPlatform/opentelemetry-operations-collector/basic
+distrogen_version: v0.130.1-0.20250724183747-261516e1bff1

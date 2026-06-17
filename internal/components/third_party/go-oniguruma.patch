@@ -1,0 +1,87 @@
+diff --git a/chelper.c b/chelper.c
+index 035f3b4..5ccf7c8 100644
+--- a/chelper.c
++++ b/chelper.c
+@@ -23,7 +23,7 @@ int NewOnigRegex( char *pattern, int pattern_length, int option,
+ 
+     memset(*error_buffer, 0, ONIG_MAX_ERROR_MESSAGE_LEN * sizeof(char));
+ 
+-    ret = onig_new(regex, pattern_start, pattern_end, (OnigOptionType)(option), *encoding, OnigDefaultSyntax, *error_info);
++    ret = onig_new(regex, pattern_start, pattern_end, (OnigOptionType)(option), *encoding, ONIG_SYNTAX_RUBY, *error_info);
+ 
+     if (ret != ONIG_NORMAL) {
+         error_msg_len = onig_error_code_to_str((unsigned char*)(*error_buffer), ret, *error_info);
+diff --git a/chelper.h b/chelper.h
+index 4d00e7f..e053c0d 100644
+--- a/chelper.h
++++ b/chelper.h
+@@ -1,4 +1,4 @@
+-#include <oniguruma.h>
++#include "../oniguruma/src/oniguruma.h"
+ 
+ extern int NewOnigRegex( char *pattern, int pattern_length, int option,
+                                   OnigRegex *regex, OnigEncoding *encoding, OnigErrorInfo **error_info, char **error_buffer);
+diff --git a/go.mod b/go.mod
+deleted file mode 100644
+index 59236e0..0000000
+--- a/go.mod
++++ /dev/null
+@@ -1,3 +0,0 @@
+-module github.com/go-enry/go-oniguruma
+-
+-go 1.14
+diff --git a/regex.go b/regex.go
+index fbe661a..94d7ea0 100644
+--- a/regex.go
++++ b/regex.go
+@@ -1,10 +1,7 @@
+ package rubex
+ 
+ /*
+-#cgo CFLAGS: -I/usr/local/include
+-#cgo LDFLAGS: -L/usr/local/lib -lonig
+ #include <stdlib.h>
+-#include <oniguruma.h>
+ #include "chelper.h"
+ */
+ import "C"
+@@ -19,6 +16,8 @@ import (
+ 	"sync"
+ 	"unicode/utf8"
+ 	"unsafe"
++
++	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/third_party/oniguruma/src"
+ )
+ 
+ const numMatchStartSize = 4
+@@ -37,6 +36,7 @@ type Regexp struct {
+ 
+ 	numCaptures    int32
+ 	namedGroupInfo NamedGroupInfo
++	subexpnames    []string
+ }
+ 
+ // NewRegexp creates and initializes a new Regexp with the given pattern and option.
+@@ -122,6 +122,10 @@ func (re *Regexp) Free() {
+ 	}
+ }
+ 
++func (re *Regexp) SubexpNames() []string {
++	return re.subexpnames
++}
++
+ func (re *Regexp) getNamedGroupInfo() NamedGroupInfo {
+ 	numNamedGroups := int(C.onig_number_of_names(re.regex))
+ 	// when any named capture exists, there is no numbered capture even if
+@@ -152,9 +156,11 @@ func (re *Regexp) getNamedGroupInfo() NamedGroupInfo {
+ 		))
+ 	}
+ 
++	re.subexpnames = make([]string, length)
+ 	for i, nameAsBytes := range namesAsBytes {
+ 		name := string(nameAsBytes)
+ 		namedGroupInfo[name] = int(groupNumbers[i])
++		re.subexpnames[namedGroupInfo[name]-1] = name
+ 	}
+ 
+ 	return namedGroupInfo
