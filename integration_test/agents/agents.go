@@ -511,7 +511,8 @@ func IsRPMBased(imageSpec string) bool {
 		strings.HasPrefix(imageSpec, "suse-cloud") ||
 		strings.HasPrefix(imageSpec, "suse-sap-cloud") ||
 		strings.HasPrefix(imageSpec, "opensuse-cloud") ||
-		strings.Contains(imageSpec, "sles-")
+		strings.Contains(imageSpec, "sles-") ||
+		strings.HasPrefix(imageSpec, "almalinux-cloud")
 }
 
 // StripTildeSuffix strips off everything after the first ~ character. We see
