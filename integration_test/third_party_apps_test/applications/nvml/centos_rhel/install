@@ -1,6 +1,7 @@
 set -e
 source /etc/os-release
 MAJOR_VERSION_ID=${VERSION_ID%%.*}
+sudo yum install -y git make gcc gcc-c++
 
 verify_driver() {
     # Verify NVIDIA driver:
@@ -39,7 +40,7 @@ metadata_expire=6h
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
 EOF
     fi
-    sudo yum install -y pciutils gcc make wget yum-utils
+    sudo yum install -y pciutils wget yum-utils
     local KERNEL_PACKAGE="kernel-devel-$(uname -r)"
     if [[ $ID == rocky && "$MAJOR_VERSION_ID" == 9 && "$STATUS_CODE" == "403" ]]; then
       wget https://dl.rockylinux.org/vault/rocky/$VERSION_ID/AppStream/x86_64/os/Packages/k/${KERNEL_PACKAGE}.rpm

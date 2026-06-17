@@ -2,6 +2,7 @@ set -e
 source /etc/os-release
 
 sudo apt update
+sudo apt install -y build-essential git
 KERNEL_VERSION=`uname -r`
 sudo apt install -y wget
 
@@ -50,7 +51,7 @@ else
         wget "$BASE_URL/$PKG_COMMON" "$BASE_URL/$PKG_ARCH" "$BASE_URL/$PKG_KBUILD" "$BASE_URL/$PKG_COMPILER"
         sudo apt-get install -y "./$PKG_COMMON" "./$PKG_ARCH" "./$PKG_KBUILD" "./$PKG_COMPILER"
     fi
-    sudo apt install -y software-properties-common pciutils gcc make dkms git
+    sudo apt install -y software-properties-common pciutils dkms
 
     # Install CUDA and driver the same way as the nvml app
     # Prefer to install from the package manager since it is normally faster and has
