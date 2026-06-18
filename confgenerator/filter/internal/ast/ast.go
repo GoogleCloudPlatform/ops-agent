@@ -498,23 +498,24 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 		return nil, fmt.Errorf("unimplemented operator: %s", r.Operator)
 	case ":":
 		// substring match, case insensitive
-		expr = ottl.IsMatchRubyRegex(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
+		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
 	case "=~", "!~":
 		// regex match, case sensitive
 
 		// TODO: b/436898109 - Enable regex validity config checks when Ruby Regex library
 		// is added to the Ops Agent build. This requires "CGO_ENABLED=1".
-		// if _, err := regexp.Compile(r.RHS); err != nil {
-		//	return nil, fmt.Errorf("unsupported regex %q: %w", r.RHS, err)
-		//}
-		expr = ottl.IsMatchRubyRegex(lhs, r.RHS)
+
+		expr = ottl.IsMatch(lhs, r.RHS)
+		if _, err := regexp.Compile(r.RHS); err != nil {
+			expr = ottl.IsMatchRubyRegex(lhs, r.RHS)
+		}
 
 		if r.Operator == "!~" {
 			expr = ottl.Not(expr)
 		}
 	case "=", "!=":
 		// equality, case insensitive
-		expr = ottl.IsMatchRubyRegex(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
+		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
 		if r.Operator == "!=" {
 			expr = ottl.Not(expr)
 		}
@@ -527,6 +528,15 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 	return nil, fmt.Errorf("unknown operator: %s", r.Operator)
 }
 
+func (r Restriction) HasRubyRegex() bool {
+	switch r.Operator {
+	case "=~", "!~":
+		_, err := regexp.Compile(r.RHS)
+		return err != nil
+	}
+	return false
+}
+
 type Expression interface {
 	// Simplify returns a logically equivalent Expression.
 	Simplify() Expression
@@ -536,6 +546,8 @@ type Expression interface {
 
 	// OTTLExpression returns an OTTL value that can be used to evaluate the expression.
 	OTTLExpression() (ottl.Value, error)
+
+	HasRubyRegex() bool
 
 	fmt.Stringer
 }
@@ -606,6 +618,15 @@ func (s exprSlice) OTTLExpression(operator func(...ottl.Value) ottl.Value) (ottl
 	return operator(values...), err
 }
 
+func (s exprSlice) HasRubyRegex() bool {
+	for _, e := range s {
+		if e.HasRubyRegex() {
+			return true
+		}
+	}
+	return false
+}
+
 func (s exprSlice) String(operator string) string {
 	var out []string
 	for _, e := range s {
@@ -620,6 +641,10 @@ func (c Conjunction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 
 func (c Conjunction) OTTLExpression() (ottl.Value, error) {
 	return exprSlice(c).OTTLExpression(ottl.And)
+}
+
+func (c Conjunction) HasRubyRegex() bool {
+	return exprSlice(c).HasRubyRegex()
 }
 
 func (c Conjunction) String() string {
@@ -659,6 +684,10 @@ func (d Disjunction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 
 func (d Disjunction) OTTLExpression() (ottl.Value, error) {
 	return exprSlice(d).OTTLExpression(ottl.Or)
+}
+
+func (d Disjunction) HasRubyRegex() bool {
+	return exprSlice(d).HasRubyRegex()
 }
 
 func (d Disjunction) String() string {

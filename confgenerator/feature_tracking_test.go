@@ -1123,13 +1123,14 @@ func getFeaturesForComponent(i interface{}, parent []string) [][]string {
 	t := v.Type()
 
 	// Short circuit if the component defines its own feature extraction.
-	if customFeatures, ok := v.Interface().(confgenerator.CustomFeatures); ok {
-		features := customFeatures.ListAllFeatures()
-		fullFeatures := make([][]string, 0)
-		for _, feature := range features {
-			fullFeatures = append(fullFeatures, appendFieldName(parent, feature))
+	if v, ok := v.Interface().(confgenerator.CustomFeatures); ok {
+		customFeatures, complete := v.ListAllFeatures()
+		for _, feature := range customFeatures {
+			features = append(features, appendFieldName(parent, feature))
 		}
-		return fullFeatures
+		if complete {
+			return features
+		}
 	}
 
 	for j := 0; j < t.NumField(); j++ {

@@ -1025,7 +1025,7 @@ processors:
       - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
       - set(cache["__field_1"], body["json_message"]) where (body != nil and body["json_message"] != nil)
       - set(cache["__omit_0"], false)
-      - "set(cache[\"__omit_0\"], true) where ((body != nil and body[\"attributes\"] != nil) and IsMatchRubyRegex(body[\"attributes\"], \"(?i)^\\\\{\\\\}$\"))"
+      - "set(cache[\"__omit_0\"], true) where ((body != nil and body[\"attributes\"] != nil) and IsMatch(body[\"attributes\"], \"(?i)^\\\\{\\\\}$\"))"
       - delete_key(body, "json_message") where (body != nil and body["json_message"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
