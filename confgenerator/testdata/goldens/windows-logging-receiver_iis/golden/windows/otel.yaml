@@ -64,7 +64,7 @@ processors:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^#(?:Fields|Date|Version|Software):\"))"
+      - "((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"^#(?:Fields|Date|Version|Software):\"))"
   filter/loggingmetrics_1:
     metrics:
       datapoint:
@@ -908,11 +908,11 @@ processors:
       - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
       - set(cache["__field_4"], body["user"]) where (body != nil and body["user"] != nil)
       - set(cache["__omit_0"], false)
-      - set(cache["__omit_0"], true) where ((body != nil and body["cs_uri_query"] != nil) and IsMatchRubyRegex(body["cs_uri_query"], "(?i)^-$"))
+      - set(cache["__omit_0"], true) where ((body != nil and body["cs_uri_query"] != nil) and IsMatch(body["cs_uri_query"], "(?i)^-$"))
       - set(cache["__omit_1"], false)
-      - set(cache["__omit_1"], true) where ((body != nil and body["http_request_referer"] != nil) and IsMatchRubyRegex(body["http_request_referer"], "(?i)^-$"))
+      - set(cache["__omit_1"], true) where ((body != nil and body["http_request_referer"] != nil) and IsMatch(body["http_request_referer"], "(?i)^-$"))
       - set(cache["__omit_2"], false)
-      - set(cache["__omit_2"], true) where ((body != nil and body["user"] != nil) and IsMatchRubyRegex(body["user"], "(?i)^-$"))
+      - set(cache["__omit_2"], true) where ((body != nil and body["user"] != nil) and IsMatch(body["user"], "(?i)^-$"))
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
       - set(body["cs_uri_query"], cache["value"]) where (cache != nil and cache["value"] != nil)

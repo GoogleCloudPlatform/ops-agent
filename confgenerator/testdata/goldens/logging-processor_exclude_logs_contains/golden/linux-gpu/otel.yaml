@@ -71,7 +71,7 @@ processors:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["Status"] != nil) and IsMatchRubyRegex(body["Status"], "(?i)IN"))
+      - ((body != nil and body["Status"] != nil) and IsMatch(body["Status"], "(?i)IN"))
   filter/otel_1:
     metrics:
       datapoint:
