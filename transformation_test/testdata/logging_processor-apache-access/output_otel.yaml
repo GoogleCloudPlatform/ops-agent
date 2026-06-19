@@ -1,6 +1,6 @@
 - entries:
   - httpRequest:
-      protocol: HTTP/1.1
+      protocol: HTTP/1.0
       remoteIp: 127.0.0.1
       requestMethod: GET
       requestUrl: /apache_pb.gif
@@ -18,7 +18,7 @@
       type: gce_instance
     timestamp: 2000-10-10T20:55:36Z
   - httpRequest:
-      protocol: HTTP/1.1
+      protocol: HTTP/1.0
       referer: http://www.example.com/start.html
       remoteIp: 192.168.1.100
       requestMethod: GET
