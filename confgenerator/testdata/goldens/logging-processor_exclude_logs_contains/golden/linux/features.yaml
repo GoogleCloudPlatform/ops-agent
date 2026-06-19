@@ -24,8 +24,16 @@
   value: "1"
 - module: logging
   feature: processors:parse_regex
+  key: "[0].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:parse_regex
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[1].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[1].enabled"

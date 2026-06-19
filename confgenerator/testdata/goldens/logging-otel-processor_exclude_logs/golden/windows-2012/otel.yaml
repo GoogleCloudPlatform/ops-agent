@@ -76,72 +76,72 @@ processors:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "(?i)^bar$"))
+      - ((body != nil and body["message"] != nil) and IsMatch(body["message"], "(?i)^bar$"))
   filter/logs_p1_sample__logs_1:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"a\\\\\\\\.b\"))"
+      - "((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"a\\\\\\\\.b\"))"
   filter/logs_p1_sample__logs_10:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"a`~!@#$%^&*()-_=+\\\\|]}[{<.>/?;:b\"] != nil) and IsMatchRubyRegex(body[\"a`~!@#$%^&*()-_=+\\\\|]}[{<.>/?;:b\"], \"(?i)^foo$\"))"
+      - "((body != nil and body[\"a`~!@#$%^&*()-_=+\\\\|]}[{<.>/?;:b\"] != nil) and IsMatch(body[\"a`~!@#$%^&*()-_=+\\\\|]}[{<.>/?;:b\"], \"(?i)^foo$\"))"
   filter/logs_p1_sample__logs_11:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"a:=<>+~\\\\.*\\a\\b\\f\\t\\vb\"] != nil) and IsMatchRubyRegex(body[\"a:=<>+~\\\\.*\\a\\b\\f\\t\\vb\"], \"(?i)^foo$\"))"
+      - "((body != nil and body[\"a:=<>+~\\\\.*\\a\\b\\f\\t\\vb\"] != nil) and IsMatch(body[\"a:=<>+~\\\\.*\\a\\b\\f\\t\\vb\"], \"(?i)^foo$\"))"
   filter/logs_p1_sample__logs_12:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"foo\\nbar\"))"
+      - "((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"foo\\nbar\"))"
   filter/logs_p1_sample__logs_13:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["☃"] != nil) and IsMatchRubyRegex(body["☃"], "(?i)^foo$"))
+      - ((body != nil and body["☃"] != nil) and IsMatch(body["☃"], "(?i)^foo$"))
   filter/logs_p1_sample__logs_14:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["a'b"] != nil) and IsMatchRubyRegex(body["a'b"], "(?i)^foo$"))
+      - ((body != nil and body["a'b"] != nil) and IsMatch(body["a'b"], "(?i)^foo$"))
   filter/logs_p1_sample__logs_15:
     error_mode: ignore
     logs:
       log_record:
-      - (((((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "(?i)^foo$")) and ((severity_text != nil) and IsMatchRubyRegex(severity_text, "bar"))) or (not ((body != nil and body["log"] != nil) and (not IsMatchRubyRegex(body["log"], "baz"))))) and ((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "(?i)frob")))
+      - (((((body != nil and body["message"] != nil) and IsMatch(body["message"], "(?i)^foo$")) and ((severity_text != nil) and IsMatch(severity_text, "bar"))) or (not ((body != nil and body["log"] != nil) and (not IsMatch(body["log"], "baz"))))) and ((body != nil and body["message"] != nil) and IsMatch(body["message"], "(?i)frob")))
   filter/logs_p1_sample__logs_16:
     error_mode: ignore
     logs:
       log_record:
-      - (((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "(?i)^foo$")) or ((body != nil and body["message"] != nil) and (not IsMatchRubyRegex(body["message"], "(?i)^bar$"))) or ((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "(?i)baz")) or ((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "wal")) or ((body != nil and body["message"] != nil) and (not IsMatchRubyRegex(body["message"], "rus"))))
+      - (((body != nil and body["message"] != nil) and IsMatch(body["message"], "(?i)^foo$")) or ((body != nil and body["message"] != nil) and (not IsMatch(body["message"], "(?i)^bar$"))) or ((body != nil and body["message"] != nil) and IsMatch(body["message"], "(?i)baz")) or ((body != nil and body["message"] != nil) and IsMatch(body["message"], "wal")) or ((body != nil and body["message"] != nil) and (not IsMatch(body["message"], "rus"))))
   filter/logs_p1_sample__logs_17:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"(?i)^a`~!@#\\\\$%\\\\^&\\\\*\\\\(\\\\)-_=\\\\+\\\\\\\\\\\\|\\\\]\\\\}\\\\[\\\\{<\\\\.>/\\\\?;:,b$\"))"
+      - "((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"(?i)^a`~!@#\\\\$%\\\\^&\\\\*\\\\(\\\\)-_=\\\\+\\\\\\\\\\\\|\\\\]\\\\}\\\\[\\\\{<\\\\.>/\\\\?;:,b$\"))"
   filter/logs_p1_sample__logs_18:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"(?i)^a,:=<>\\\\+~\\\"\\\\\\\\\\\\.\\\\*\\a\\b\\f\\n\\r\\t\\v!!!!b$\"))"
+      - "((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"(?i)^a,:=<>\\\\+~\\\"\\\\\\\\\\\\.\\\\*\\a\\b\\f\\n\\r\\t\\v!!!!b$\"))"
   filter/logs_p1_sample__logs_19:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"foo\\\\[bar\\\\]\"))"
+      - "((body != nil and body[\"message\"] != nil) and IsMatch(body[\"message\"], \"foo\\\\[bar\\\\]\"))"
   filter/logs_p1_sample__logs_2:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], " bar "))
+      - ((body != nil and body["message"] != nil) and IsMatch(body["message"], " bar "))
   filter/logs_p1_sample__logs_20:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "☃"))
+      - ((body != nil and body["message"] != nil) and IsMatch(body["message"], "☃"))
   filter/logs_p1_sample__logs_21:
     error_mode: ignore
     logs:
@@ -151,43 +151,43 @@ processors:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["field1"] != nil) and IsMatchRubyRegex(body["field1"], "first"))
-      - ((body != nil and body["field2"] != nil) and IsMatchRubyRegex(body["field2"], "second"))
+      - ((body != nil and body["field1"] != nil) and IsMatch(body["field1"], "first"))
+      - ((body != nil and body["field2"] != nil) and IsMatch(body["field2"], "second"))
   filter/logs_p1_sample__logs_3:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "/bar/"))
+      - ((body != nil and body["message"] != nil) and IsMatch(body["message"], "/bar/"))
   filter/logs_p1_sample__logs_4:
     error_mode: ignore
     logs:
       log_record:
-      - ((severity_text != nil) and IsMatchRubyRegex(severity_text, "ERROR"))
+      - ((severity_text != nil) and IsMatch(severity_text, "ERROR"))
   filter/logs_p1_sample__logs_5:
     error_mode: ignore
     logs:
       log_record:
-      - ((body != nil and body["message"] != nil) and IsMatchRubyRegex(body["message"], "foo"))
+      - ((body != nil and body["message"] != nil) and IsMatch(body["message"], "foo"))
   filter/logs_p1_sample__logs_6:
     error_mode: ignore
     logs:
       log_record:
-      - ((attributes != nil and attributes["gcp.http_request"] != nil and attributes["gcp.http_request"]["method"] != nil) and IsMatchRubyRegex(attributes["gcp.http_request"]["method"], "GET"))
+      - ((attributes != nil and attributes["gcp.http_request"] != nil and attributes["gcp.http_request"]["method"] != nil) and IsMatch(attributes["gcp.http_request"]["method"], "GET"))
   filter/logs_p1_sample__logs_7:
     error_mode: ignore
     logs:
       log_record:
-      - ((trace_id.string != nil) and IsMatchRubyRegex(trace_id.string, "(?i)^foo$"))
+      - ((trace_id.string != nil) and IsMatch(trace_id.string, "(?i)^foo$"))
   filter/logs_p1_sample__logs_8:
     error_mode: ignore
     logs:
       log_record:
-      - ((span_id.string != nil) and IsMatchRubyRegex(span_id.string, "foo"))
+      - ((span_id.string != nil) and IsMatch(span_id.string, "foo"))
   filter/logs_p1_sample__logs_9:
     error_mode: ignore
     logs:
       log_record:
-      - "((body != nil and body[\"aa\\tbb\"] != nil) and IsMatchRubyRegex(body[\"aa\\tbb\"], \"(?i)^foo$\"))"
+      - "((body != nil and body[\"aa\\tbb\"] != nil) and IsMatch(body[\"aa\\tbb\"], \"(?i)^foo$\"))"
   filter/otel_1:
     metrics:
       datapoint:

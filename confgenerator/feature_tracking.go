@@ -61,12 +61,14 @@ type CustomFeature struct {
 // track features not captured by the `tracking` struct tag.
 type CustomFeatures interface {
 	// ExtractFeatures returns a list of features that will be tracked for this component.
-	ExtractFeatures() ([]CustomFeature, error)
+	// If the boolean is true, no further features will be extracted from the component.
+	ExtractFeatures() ([]CustomFeature, bool, error)
 
 	// ListAllFeatures returns a list of all features that could be tracked for this component.
 	// This lists all the possible features that could be tracked for this component, but some of these
 	// features may not be tracked when not used by the component.
-	ListAllFeatures() []string
+	// If the boolean is true, no further features will be extracted from the component.
+	ListAllFeatures() ([]string, bool)
 }
 
 // ExtractFeatures fields that containing a tracking tag will be tracked.
@@ -183,12 +185,13 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 
 // TODO(b/272536539): add time.Duration to auto tracking
 func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature, error) {
+	var features []Feature
+
 	if customFeatures, ok := c.Interface().(CustomFeatures); ok {
-		cfs, err := customFeatures.ExtractFeatures()
+		cfs, complete, err := customFeatures.ExtractFeatures()
 		if err != nil {
 			return nil, err
 		}
-		var features []Feature
 		for _, cf := range cfs {
 			features = append(features, Feature{
 				Module: feature.Module,
@@ -198,11 +201,13 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 				Value:  cf.Value,
 			})
 		}
-		return features, nil
+		if complete {
+			return features, nil
+		}
 	}
 
 	if md.isExcluded {
-		return nil, nil
+		return features, nil
 	}
 	t := c.Type()
 
@@ -211,15 +216,13 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 	}
 
 	if c.IsZero() {
-		return nil, nil
+		return features, nil
 	}
 
 	v := reflect.Indirect(c)
 	if v.Kind() == reflect.Invalid {
-		return nil, nil
+		return features, nil
 	}
-
-	var features []Feature
 
 	switch kind := t.Kind(); {
 	case kind == reflect.Struct:
