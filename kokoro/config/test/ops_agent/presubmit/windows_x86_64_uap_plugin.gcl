@@ -6,6 +6,7 @@ config build = common.ops_agent_test {
       TARGET = 'windows'
       ARCH = 'x86_64'
       IS_OPS_AGENT_UAP_PLUGIN = 'true'
+      TEST_PARALLEL = '100'
     }
   }
 }
