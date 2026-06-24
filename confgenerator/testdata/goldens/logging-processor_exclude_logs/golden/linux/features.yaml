@@ -24,12 +24,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[0].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[0].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[0].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[1].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[1].enabled"
@@ -40,12 +48,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[2].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[2].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[2].match_any.__length"
   value: "2"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[3].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[3].enabled"
@@ -56,12 +72,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[4].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[4].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[4].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[5].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[5].enabled"
@@ -72,12 +96,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[6].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[6].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[6].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[7].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[7].enabled"
@@ -88,12 +120,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[8].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[8].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[8].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[9].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[9].enabled"
@@ -104,12 +144,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[10].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[10].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[10].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[11].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[11].enabled"
@@ -120,12 +168,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[12].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[12].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[12].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[13].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[13].enabled"
@@ -136,12 +192,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[14].has_ruby_regex"
+  value: "true"
+- module: logging
+  feature: processors:exclude_logs
   key: "[14].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[14].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[15].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[15].enabled"
@@ -152,12 +216,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[16].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[16].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[16].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[17].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[17].enabled"
@@ -168,12 +240,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[18].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[18].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[18].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[19].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[19].enabled"
@@ -184,6 +264,10 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[20].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[20].enabled"
   value: "true"
 - module: logging
@@ -192,12 +276,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[21].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[21].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[21].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[22].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[22].enabled"

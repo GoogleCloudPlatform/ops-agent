@@ -11,11 +11,13 @@ App,Field,Override,
 *apps.ReceiverOTLP,MetricsMode,
 *apps.ReceiverOTLP,confgenerator.ConfigComponent.Type,
 *confgenerator.LoggingProcessorExcludeLogs,confgenerator.ConfigComponent.Type,
+*confgenerator.LoggingProcessorExcludeLogs,has_ruby_regex
 *confgenerator.LoggingProcessorModifyFields,confgenerator.ConfigComponent.Type,
 *confgenerator.LoggingProcessorModifyFields,has_ruby_regex
 *confgenerator.LoggingProcessorParseJson,confgenerator.ConfigComponent.Type,
 *confgenerator.LoggingProcessorParseRegex,PreserveKey,
 *confgenerator.LoggingProcessorParseRegex,confgenerator.ConfigComponent.Type,
+*confgenerator.LoggingProcessorParseRegex,has_ruby_regex
 *confgenerator.LoggingReceiverFiles,RecordLogFilePath,
 *confgenerator.LoggingReceiverFiles,WildcardRefreshInterval,
 *confgenerator.LoggingReceiverFiles,confgenerator.ConfigComponent.Type,

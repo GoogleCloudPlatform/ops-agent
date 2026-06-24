@@ -16,12 +16,20 @@
   value: "true"
 - module: logging
   feature: processors:exclude_logs
+  key: "[0].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:exclude_logs
   key: "[0].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[0].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[1].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[1].enabled"
@@ -32,12 +40,20 @@
   value: "1"
 - module: logging
   feature: processors:exclude_logs
+  key: "[2].has_ruby_regex"
+  value: "true"
+- module: logging
+  feature: processors:exclude_logs
   key: "[2].enabled"
   value: "true"
 - module: logging
   feature: processors:exclude_logs
   key: "[2].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[3].has_ruby_regex"
+  value: "false"
 - module: logging
   feature: processors:exclude_logs
   key: "[3].enabled"
