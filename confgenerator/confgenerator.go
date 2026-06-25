@@ -28,63 +28,52 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
+func baseOtlpExporterConfig(userAgent string) map[string]interface{} {
+	return map[string]interface{}{
+		"endpoint":      "telemetry.googleapis.com:443",
+		"balancer_name": "pick_first",
+		"auth": map[string]interface{}{
+			"authenticator": "googleclientauth",
+		},
+		"user_agent": userAgent,
+	}
+}
+
 func otlpExporterForTraces(userAgent string) otel.Component {
 	return otel.Component{
-		Type: "otlp_grpc",
-		Config: map[string]interface{}{
-			"endpoint":      "telemetry.googleapis.com:443",
-			"balancer_name": "pick_first",
-			"auth": map[string]interface{}{
-				"authenticator": "googleclientauth",
-			},
-			"user_agent": userAgent,
-		},
+		Type:   "otlp_grpc",
+		Config: baseOtlpExporterConfig(userAgent),
 	}
 }
 
 func otlpExporterForMetrics(userAgent string) otel.Component {
 	return otel.Component{
-		Type: "otlp_grpc",
-		Config: map[string]interface{}{
-			"endpoint": "telemetry.googleapis.com:443",
-			// b/485538253: Use pick_first balancer until we can understand why round_robin is failing.
-			"balancer_name": "pick_first",
-			"auth": map[string]interface{}{
-				"authenticator": "googleclientauth",
-			},
-			"user_agent": userAgent,
-		},
+		Type:   "otlp_grpc",
+		Config: baseOtlpExporterConfig(userAgent),
 	}
 }
 
 func otlpExporterForLogs(userAgent string) otel.Component {
-	return otel.Component{
-		Type: "otlp_grpc",
-		Config: map[string]interface{}{
-			"endpoint": "telemetry.googleapis.com:443",
-			// b/485538253: Use pick_first balancer until we can understand why round_robin is failing.
-			"balancer_name": "pick_first",
-			"auth": map[string]interface{}{
-				"authenticator": "googleclientauth",
-			},
-			"user_agent": userAgent,
-			"sending_queue": map[string]interface{}{
-				"enabled":       true,
-				"queue_size":    20000000,
-				"num_consumers": 10,
-				"sizer":         "bytes",
-				// Blocks the "sending_queue" on overflow to reduce log loss.
-				"block_on_overflow": true,
-				// Set batch in "sending_queue" is recommended instead of using the batch processor.
-				"batch": map[string]interface{}{
-					"flush_timeout": "200ms",
-					"min_size":      1000000,
-					"max_size":      5000000,
-					"sizer":         "bytes",
-				},
-				"storage": fileStorageExtensionType,
-			},
+	config := baseOtlpExporterConfig(userAgent)
+	config["sending_queue"] = map[string]interface{}{
+		"enabled":       true,
+		"queue_size":    20000000,
+		"num_consumers": 10,
+		"sizer":         "bytes",
+		// Blocks the "sending_queue" on overflow to reduce log loss.
+		"block_on_overflow": true,
+		// Set batch in "sending_queue" is recommended instead of using the batch processor.
+		"batch": map[string]interface{}{
+			"flush_timeout": "200ms",
+			"min_size":      1000000,
+			"max_size":      5000000,
+			"sizer":         "bytes",
 		},
+		"storage": fileStorageExtensionType,
+	}
+	return otel.Component{
+		Type:   "otlp_grpc",
+		Config: config,
 	}
 }
 
