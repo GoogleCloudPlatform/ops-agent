@@ -71,6 +71,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/api/distribution"
@@ -5425,6 +5426,34 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	})
 }
 
+func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	logger.Println("Waiting for network block to propagate...")
+	checkCmd := "curl -s -m 5 https://telemetry.googleapis.com > /dev/null"
+	if gce.IsWindows(vm.ImageSpec) {
+		checkCmd = "if ((Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded) { exit 0 } else { exit 1 }"
+	}
+
+	timeout := time.After(5 * time.Minute)
+	tick := time.NewTicker(10 * time.Second)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeout:
+			return fmt.Errorf("timeout waiting for network block to propagate")
+		case <-tick.C:
+			_, err := gce.RunRemotely(ctx, logger, vm, checkCmd)
+			if err != nil {
+				logger.Printf("Network check failed as expected (network block propagated): %v", err)
+				return nil
+			}
+			logger.Println("Network check still succeeded, waiting...")
+		}
+	}
+}
+
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
@@ -5456,7 +5485,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.AddTagToVm(ctx, logger, vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(2 * time.Minute)
+		if err := waitForNetworkBlock(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
@@ -5995,13 +6026,29 @@ func TestAppHubLogLabels(t *testing.T) {
 			"--uri",
 		}
 
-		output, err := gce.RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
+		var migResourceString string
+
+		// AppHub discovery is asynchronous and can take several minutes. Retry for up to 3 minutes.
+		discoveryCtx, discoveryCancel := context.WithTimeout(ctx, 3*time.Minute)
+		defer discoveryCancel()
+
+		err := backoff.Retry(func() error {
+			out, err := gce.RunGcloud(discoveryCtx, logger, "", discoverMIGWorkloadArgs)
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(out.Stdout) == "" {
+				return fmt.Errorf("discovered workload for %s not found yet", migVM.ManagedInstanceGroupName())
+			}
+			migResourceString = strings.Replace(strings.TrimSpace(out.Stdout), "https://apphub.googleapis.com/v1/", "", 1)
+			return nil
+		}, backoff.WithContext(backoff.NewConstantBackOff(15*time.Second), discoveryCtx))
+
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("Failed to discover AppHub workload: %v", err)
 		}
 
 		// Setup Apphub #2 : Register Managed Instance Group as AppHub workload.
-		migResourceString := strings.Replace(output.Stdout, "https://apphub.googleapis.com/v1/", "", 1)
 		registerAppHubWorkloadArgs := []string{
 			"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
 			"--application=" + AppHubIntegrationTestApp,
@@ -6011,8 +6058,7 @@ func TestAppHubLogLabels(t *testing.T) {
 			"--format=json",
 		}
 
-		output, err = gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
-		if err != nil {
+		if _, err := gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs); err != nil {
 			t.Fatal(err)
 		}
 
@@ -6029,8 +6075,7 @@ func TestAppHubLogLabels(t *testing.T) {
 				"--format=json",
 			}
 
-			output, err = gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs)
-			if err != nil {
+			if _, err := gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs); err != nil {
 				t.Fatal(err)
 			}
 		})
