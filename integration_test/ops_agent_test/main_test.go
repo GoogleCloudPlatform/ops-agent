@@ -5711,6 +5711,43 @@ func TestPartialSuccess(t *testing.T) {
 	})
 }
 
+func restartInstanceWithRetries(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	logger.Printf("Stopping instance %s...", vm.Name)
+	if err := gce.StopInstance(ctx, logger, vm); err != nil {
+		return fmt.Errorf("failed to stop instance: %v", err)
+	}
+
+	maxAttempts := 5
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		logger.Printf("Starting instance %s (attempt %d/%d)...", vm.Name, attempt, maxAttempts)
+		err := gce.StartInstance(ctx, logger, vm)
+		if err == nil {
+			logger.Printf("Instance %s started successfully", vm.Name)
+			return nil
+		}
+
+		lastErr = err
+		errStr := err.Error()
+		isStockout := strings.Contains(errStr, "ZONE_RESOURCE_POOL_EXHAUSTED") ||
+			strings.Contains(errStr, "currently unavailable") ||
+			strings.Contains(errStr, "resource pool exhausted")
+
+		if isStockout {
+			logger.Printf("Instance start failed due to stockout: %v. Retrying in 1 minute...", err)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(1 * time.Minute):
+			}
+		} else {
+			// Non-stockout error, fail immediately.
+			return fmt.Errorf("failed to start instance (non-stockout error): %v", err)
+		}
+	}
+	return fmt.Errorf("failed to start instance after %d attempts. Last error: %v", maxAttempts, lastErr)
+}
+
 func TestRestartVM(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -5746,7 +5783,7 @@ func TestRestartVM(t *testing.T) {
 		}
 
 		logger.Printf(`Restarting instance. For details, see "VM_restart.txt".`)
-		if err := gce.RestartInstance(ctx, dirLog.ToFile("VM_restart.txt"), vm); err != nil {
+		if err := restartInstanceWithRetries(ctx, dirLog.ToFile("VM_restart.txt"), vm); err != nil {
 			t.Fatal(err)
 		}
 
