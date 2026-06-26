@@ -39,7 +39,7 @@ ENV MSVS_BUILD_TOOLS_VERSION="$MSVS_VERSION" `
 RUN $msvs_build_tools_dist_name=\"vs_buildtools.exe\"; `
     $msvs_build_tools_dist=\"${env:TMP}\${msvs_build_tools_dist_name}\"; `
     $msvs_build_tools_channel=\"C:\local\VisualStudio.chman\"; `
-    $msvs_build_tools_dist_url=\"${env:MSVS_BUILD_TOOLS_DOWNLOAD_URL}/${env:MSVS_BUILD_TOOLS_VERSION}/release/${msvs_build_tools_dist_name}\"; `
+    $msvs_build_tools_dist_url=\"https://download.visualstudio.microsoft.com/download/pr/83ec5fa2-d38d-43d5-9f58-31ea8e1c66e4/62d8e57ac5ccd56eabd627c9de2cafe4dc463f9db520a72673ed08b1e83c48b7/vs_BuildTools.exe\"; `
     $msvs_build_tools_channel_url=\"${env:MSVS_BUILD_TOOLS_DOWNLOAD_URL}/${env:MSVS_BUILD_TOOLS_VERSION}/release/channel\"; `
     Write-Host \"Downloading Visual Studio Build Tools...\"; `
     Write-Host \"${msvs_build_tools_dist_url} -> ${msvs_build_tools_dist}\"; `
