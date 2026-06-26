@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -87,39 +86,51 @@ func googleCloudLoggingExporter() otel.Component {
 }
 
 func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, true, false)
+	return pipeline
 }
 
 func ConvertGCMOtelExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, false, false)
+	return pipeline
 }
 
 func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, false, true)
+	return pipeline
 }
 
 func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
-	expOtlpExporter := experiments.FromContext(ctx)["otlp_exporter"]
-	if !expOtlpExporter {
-		return pipeline
-	}
+	return pipeline
+}
 
-	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
-		if isPrometheus {
-			pipeline.ExporterTypes["metrics"] = otel.GMP
-		} else {
-			pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
-			if isSystem {
-				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+func ConvertPipelinesToOtlp(receiverPipelines map[string]otel.ReceiverPipeline) {
+	for rID, pipeline := range receiverPipelines {
+		if _, ok := pipeline.ExporterTypes["metrics"]; ok {
+			if pipeline.ExporterTypes["metrics"] == otel.System {
+				pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
+				if pipeline.Processors == nil {
+					pipeline.Processors = make(map[string][]otel.Component)
+				}
+				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"],
+					otel.MetricsRemoveInstrumentationLibraryLabelsAttributes(),
+					otel.MetricsRemoveServiceAttributes(),
+				)
+			} else if pipeline.ExporterTypes["metrics"] == otel.OTel {
+				pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
 			}
 		}
-	}
 
-	if _, ok := pipeline.ExporterTypes["logs"]; ok {
-		pipeline.ExporterTypes["logs"] = otel.OTLP_Logs
+		if _, ok := pipeline.ExporterTypes["logs"]; ok {
+			if pipeline.ExporterTypes["logs"] == otel.Logging {
+				pipeline.ExporterTypes["logs"] = otel.OTLP_Logs
+			}
+		}
+
+		if _, ok := pipeline.ExporterTypes["traces"]; ok {
+			if pipeline.ExporterTypes["traces"] == otel.OTel {
+				pipeline.ExporterTypes["traces"] = otel.OTLP_Traces
+			}
+		}
+		receiverPipelines[rID] = pipeline
 	}
-	return pipeline
 }
 
 func otlpExporterForMetrics(userAgent string) otel.Component {
@@ -168,6 +179,21 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 	}
 }
 
+func otlpExporterForTraces(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "otlp_grpc",
+		Config: map[string]interface{}{
+			"endpoint": "telemetry.googleapis.com:443",
+			// b/485538253: Use pick_first balancer until we can understand why round_robin is failing.
+			"balancer_name": "pick_first",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+			"user_agent": userAgent,
+		},
+	}
+}
+
 func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "googlemanagedprometheus",
@@ -208,6 +234,7 @@ func fileStorageExtension(stateDir string) otel.Component {
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
 	p := platform.FromContext(ctx)
+
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
@@ -223,8 +250,13 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		FluentBitPort:       int(uc.GetFluentBitMetricsPort()),
 		OtelPort:            int(uc.GetOtelMetricsPort()),
 		OtelRuntimeDir:      outDir,
+		OtlpExporterEnabled: uc.Global.GetOtlpExporter(),
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
+
+	if uc.Global.GetOtlpExporter() {
+		ConvertPipelinesToOtlp(receiverPipelines)
+	}
 	resource, err := p.GetResource()
 	if err != nil {
 		return "", err
@@ -265,6 +297,17 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 						otel.DisableOtlpRoundTrip(),
 						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
+					},
+				},
+			},
+			otel.OTLP_Traces: {
+				Exporter:       otlpExporterForTraces(userAgent),
+				UsedExtensions: []string{googleClientAuthExtensionType},
+				ProcessorsByType: map[string][]otel.Component{
+					"traces": {
+						// Note: resourcedetection processor is added automatically at the receiver pipeline level in otel/modular.go.
+						otel.GCPProjectID(resource.ProjectName()),
+						otel.BatchProcessor(200, 200, "200ms"),
 					},
 				},
 			},
@@ -486,6 +529,7 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 // It returns a map of filenames to file contents.
 func (uc *UnifiedConfig) GenerateFluentBitConfigs(ctx context.Context, logsDir string, stateDir string) (map[string]string, error) {
 	userAgent, _ := platform.FromContext(ctx).UserAgent("Google-Cloud-Ops-Agent-Logging")
+
 	components, err := uc.generateFluentbitComponents(ctx, userAgent)
 	if err != nil {
 		return nil, err

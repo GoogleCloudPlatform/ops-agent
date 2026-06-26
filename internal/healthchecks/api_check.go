@@ -26,7 +26,6 @@ import (
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/googleapis/gax-go/v2/apierror"
 	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
@@ -328,6 +327,10 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 	return nil
 }
 
+type APICheck struct {
+	otlpExporterEnabled bool
+}
+
 func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -385,8 +388,6 @@ func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetect
 	return nil
 }
 
-type APICheck struct{}
-
 func (c APICheck) Name() string {
 	return "API Check"
 }
@@ -402,7 +403,7 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	var wg sync.WaitGroup
 
 	wg.Add(2)
-	if experiments.FromContext(context.Background())["otlp_exporter"] {
+	if c.otlpExporterEnabled {
 		logger.Infof("Running Telemetry API checks")
 		go func() {
 			defer wg.Done()

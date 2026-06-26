@@ -53,6 +53,7 @@ type service struct {
 	log          debug.Log
 	userConf     string
 	outDirectory string
+	uc           *confgenerator.UnifiedConfig
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -141,16 +142,16 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
-func getHealthCheckResults() []healthchecks.HealthCheckResult {
+func getHealthCheckResults(otlpExporterEnabled bool) []healthchecks.HealthCheckResult {
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory(otlpExporterEnabled)
 	logger := healthchecks.CreateHealthChecksLogger(logsDir)
 
 	return gceHealthChecks.RunAllHealthChecks(logger)
 }
 
 func (srv *service) runHealthChecks() {
-	healthCheckResults := getHealthCheckResults()
+	healthCheckResults := getHealthCheckResults(srv.uc.Global.GetOtlpExporter())
 	logger := logs.WindowsServiceLogger{EventID: EngineEventID, Logger: srv.log}
 	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
 	srv.log.Info(EngineEventID, "Startup checks finished")
@@ -162,6 +163,7 @@ func (s *service) generateConfigs(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	s.uc = uc
 
 	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"]))
 	s.log.Info(EngineEventID, fmt.Sprintf("Merged config:\n%s\n", uc))

@@ -241,8 +241,8 @@ func writeCustomConfigToFile(req *pb.StartRequest, configPath string) error {
 	return nil
 }
 
-func runHealthChecks(healthCheckFileLogger logs.StructuredLogger) {
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+func runHealthChecks(healthCheckFileLogger logs.StructuredLogger, otlpExporterEnabled bool) {
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory(otlpExporterEnabled)
 
 	// Log health check results to health-checks.log log file.
 	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)

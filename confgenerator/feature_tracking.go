@@ -22,8 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 )
 
 var (
@@ -78,9 +76,10 @@ type CustomFeatures interface {
 // tag will be used instead of value from UnifiedConfig.
 func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Feature, error) {
 	allFeatures := getOverriddenDefaultPipelines(userUc)
+
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
-	allFeatures = append(allFeatures, getOtlpExporterExperimentConfig(ctx)...)
+	allFeatures = append(allFeatures, getOtlpExporterFeatureConfig(mergedUc)...)
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -509,9 +508,9 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	return feature
 }
 
-func getOtlpExporterExperimentConfig(ctx context.Context) []Feature {
+func getOtlpExporterFeatureConfig(uc *UnifiedConfig) []Feature {
 	featureEnabled := "false"
-	if experiments.FromContext(ctx)["otlp_exporter"] {
+	if uc.Global.GetOtlpExporter() {
 		featureEnabled = "true"
 	}
 

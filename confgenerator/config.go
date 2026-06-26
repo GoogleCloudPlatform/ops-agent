@@ -860,6 +860,7 @@ type TracesService struct {
 
 func (uc *UnifiedConfig) Validate(ctx context.Context) error {
 	if uc.Logging != nil {
+
 		if err := uc.ValidateLogging(); err != nil {
 			return err
 		}
