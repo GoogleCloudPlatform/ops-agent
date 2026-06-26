@@ -128,7 +128,7 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 		}
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "dcgm",
 			Config: map[string]interface{}{
@@ -205,7 +205,7 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 			),
 		},
 		},
-	}, ctx)}, nil
+	}}, nil
 }
 
 func init() {

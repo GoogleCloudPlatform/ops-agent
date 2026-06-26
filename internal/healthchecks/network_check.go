@@ -30,21 +30,29 @@ type networkRequest struct {
 	url              string
 	successMessage   string
 	healthCheckError HealthCheckError
+	successCodes     []int
+}
+
+func (r networkRequest) isSuccess(statusCode int) bool {
+	if len(r.successCodes) == 0 {
+		return statusCode == http.StatusOK
+	}
+	for _, code := range r.successCodes {
+		if statusCode == code {
+			return true
+		}
+	}
+	return false
 }
 
 var (
 	commonRequests = []networkRequest{
 		{
-			name:             "Logging API",
-			url:              "https://logging.googleapis.com/$discovery/rest",
-			successMessage:   "Request to the Logging API was successful.",
-			healthCheckError: LogApiConnErr,
-		},
-		{
-			name:             "Monitoring API",
-			url:              "https://monitoring.googleapis.com/$discovery/rest",
-			successMessage:   "Request to the Monitoring API was successful.",
-			healthCheckError: MonApiConnErr,
+			name:             "Telemetry API",
+			url:              "https://telemetry.googleapis.com/$discovery/rest",
+			successMessage:   "Request to the Telemetry API was successful.",
+			healthCheckError: TelApiConnErr,
+			successCodes:     []int{http.StatusOK, http.StatusForbidden},
 		},
 		{
 			name: "Packages API",
@@ -73,11 +81,13 @@ var (
 )
 
 func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
+	var response *http.Response
+	var err error
+
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
-
-	response, err := client.Get(r.url)
+	response, err = client.Get(r.url)
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
 			return r.healthCheckError
@@ -86,10 +96,9 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	}
 	defer response.Body.Close()
 	logger.Infof("%s response status: %s", r.name, response.Status)
-	switch response.StatusCode {
-	case http.StatusOK:
+	if r.isSuccess(response.StatusCode) {
 		logger.Infof(r.successMessage)
-	default:
+	} else {
 		return r.healthCheckError
 	}
 	return nil

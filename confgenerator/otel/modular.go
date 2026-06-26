@@ -30,47 +30,18 @@ import (
 const MetricsPort = 20201
 const ExperimentalMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_OTEL_METRICS_PORT"
 
-type ExporterType int
 type ResourceDetectionMode int
 
-const (
-	// N.B. Every ExporterType increases the QPS and thus quota
-	// consumption in consumer projects; think hard before adding
-	// another exporter type.
-	OTel ExporterType = iota
-	System
-	GMP
-	OTLP_Metrics
-	OTLP_Logs
-	Logging
-)
 const (
 	Override ResourceDetectionMode = iota
 	SetIfMissing
 	None
 )
 
-func (t ExporterType) Name() string {
-	if t == System || t == GMP {
-		// The collector's OTel and GMP exporters have different types so can share the empty string.
-		return ""
-	} else if t == OTel {
-		return "otel"
-	} else if t == Logging {
-		return "logging"
-	} else if t == OTLP_Metrics {
-		return "otlp_metrics"
-	} else if t == OTLP_Logs {
-		return "otlp_logs"
-	} else {
-		panic("unknown ExporterType")
-	}
-}
-
 type ExporterComponents struct {
-	Exporter         Component
-	ProcessorsByType map[string][]Component
-	UsedExtensions   []string
+	Exporter       Component
+	Processors     []Component
+	UsedExtensions []string
 }
 
 // ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
@@ -81,8 +52,6 @@ type ReceiverPipeline struct {
 	// Processors is a map with processors for each pipeline type ("metrics" or "traces").
 	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
 	Processors map[string][]Component
-	// ExporterTypes indicates if the pipeline outputs special data (either Prometheus or system metrics) that need to be handled with a special exporter.
-	ExporterTypes map[string]ExporterType
 	// ResourceDetectionModes indicates whether the resource should be forcibly set, set only if not already present, or never set.
 	// If a data type is not present, it will assume the zero value (Override).
 	ResourceDetectionModes map[string]ResourceDetectionMode
@@ -132,7 +101,7 @@ type ModularConfig struct {
 	LogLevel          string
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
-	Exporters         map[ExporterType]ExporterComponents
+	Exporters         map[string]ExporterComponents
 	Extensions        map[string]Component
 	MetricsPort       uint16
 
@@ -158,7 +127,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
 	extensions := map[string]interface{}{}
-	exporterNames := map[ExporterType]string{}
+	exporterNames := map[string]string{}
 	pipelines := map[string]interface{}{}
 	service := map[string]interface{}{
 		// service::telemetry::metrics::address setting is ignored in otel v0.123.0.
@@ -265,18 +234,18 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			processors[name] = resourceDetectionProcessors[rdm].Config
 		}
 
-		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
-		exporter := c.Exporters[exporterType]
-		if _, ok := exporterNames[exporterType]; !ok {
-			name := exporter.Exporter.name(exporterType.Name())
-			exporterNames[exporterType] = name
+		suffix := "otlp_" + pipeline.Type
+		exporter := c.Exporters[pipeline.Type]
+		if _, ok := exporterNames[pipeline.Type]; !ok {
+			name := exporter.Exporter.name(suffix)
+			exporterNames[pipeline.Type] = name
 			exporters[name] = exporter.Exporter.Config
 			for _, name := range exporter.UsedExtensions {
 				extensions[name] = c.Extensions[name].Config
 			}
 		}
-		for i, processor := range exporter.ProcessorsByType[pipeline.Type] {
-			name := processor.name(fmt.Sprintf("%s_%s_%d", exporterNames[exporterType], pipeline.Type, i))
+		for i, processor := range exporter.Processors {
+			name := processor.name(fmt.Sprintf("%s_%s_%d", exporterNames[pipeline.Type], pipeline.Type, i))
 			processorNames = append(processorNames, name)
 			if _, ok := processors[name]; !ok {
 				processors[name] = processor.Config
@@ -286,7 +255,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
-			"exporters":  []string{exporterNames[exporterType]},
+			"exporters":  []string{exporterNames[pipeline.Type]},
 		}
 	}
 

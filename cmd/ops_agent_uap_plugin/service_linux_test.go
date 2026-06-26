@@ -23,8 +23,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -270,13 +268,10 @@ func Test_runSubAgentCommand_CancelContextAndSetPluginErrorWhenCmdExitsWithError
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	pluginServer := &OpsAgentPluginServer{}
 	pluginServer.cancel = cancel
 
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand)
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
@@ -295,10 +290,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T)
 
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand)
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
@@ -314,24 +306,24 @@ func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.
 
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_KILL_BY_SIGNALS=1"}
-	var wg sync.WaitGroup
-	wg.Add(1)
 
-	mockRunCommandFunc := func(cmd *exec.Cmd) (string, error) {
-		if err := cmd.Start(); err != nil {
-			t.Errorf("the command %s did not start successfully", cmd.Args)
+	// Terminate the command asynchronously using signals once it starts
+	go func() {
+		for {
+			if cmd.Process != nil {
+				cmd.Process.Signal(os.Interrupt)
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
 		}
-		cmd.Process.Signal(syscall.SIGABRT)
-		err := cmd.Wait()
-		return "", err
-	}
+	}()
 
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommandFunc, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand)
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")
 	}
 	if pluginServer.pluginError == nil {
-		t.Errorf("runSubAgentCommand() did not set pluginError but should")
+		t.Fatalf("runSubAgentCommand() did not set pluginError but should")
 	}
 	if !pluginServer.pluginError.ShouldRestart {
 		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
@@ -345,12 +337,17 @@ func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
 
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
-	var wg sync.WaitGroup
-	wg.Add(1)
+	mockRunCommand := func(cmd *exec.Cmd) (string, error) {
+		time.Sleep(10 * time.Second)
+		return runCommand(cmd)
+	}
 
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
-	time.Sleep(3 * time.Second)
-	cancel()
+	go func() {
+		time.Sleep(2 * time.Second)
+		cancel()
+	}()
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommand)
 
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")
@@ -368,8 +365,8 @@ func Test_runSubagents_TerminatesWhenSpawnedGoRoutinesReturn(t *testing.T) {
 	mockCmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	mockCmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 
-	mockRunSubAgentCmd := func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, _ *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
-		runSubAgentCommand(ctx, cancel, mockCmd, runCommand, wg)
+	mockRunSubAgentCmd := func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, _ *exec.Cmd, runCommand RunCommandFunc) {
+		runSubAgentCommand(ctx, cancel, mockCmd, runCommand)
 	}
 	runSubagents(ctx, pluginServer.cancelAndSetPluginError, "", "", mockRunSubAgentCmd, runCommand)
 }

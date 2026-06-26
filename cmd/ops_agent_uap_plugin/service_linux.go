@@ -28,7 +28,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"syscall"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
@@ -39,13 +38,9 @@ import (
 const (
 	OpsAgentConfigLocationLinux = "/etc/google-cloud-ops-agent/config.yaml"
 	ConfGeneratorBinary         = "libexec/google_cloud_ops_agent_engine"
-	AgentWrapperBinary          = "libexec/google_cloud_ops_agent_wrapper"
-	FluentbitBinary             = "subagents/fluent-bit/bin/fluent-bit"
 	OtelBinary                  = "subagents/opentelemetry-collector/otelopscol"
 
 	LogsDirectory               = "log/google-cloud-ops-agent"
-	FluentBitStateDiectory      = "state/fluent-bit"
-	FluentBitRuntimeDirectory   = "run/google-cloud-ops-agent-fluent-bit"
 	OtelStateDiectory           = "state/opentelemetry-collector"
 	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
 	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin"
@@ -139,30 +134,12 @@ func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPlug
 		cancelAndSetError(&OpsAgentPluginError{Message: fmt.Sprintf("Received signal: %s, stopping the Ops Agent", s.String()), ShouldRestart: true})
 	})
 
-	var wg sync.WaitGroup
-
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, OtelRuntimeDirectory, "otel.yaml"),
 	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
-
-	// Starting FluentBit
-	runFluentBitCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, AgentWrapperBinary),
-		"-config_path", OpsAgentConfigLocationLinux,
-		"-log_path", path.Join(pluginStateDirectory, LogsDirectory, "subagents/logging-module.log"),
-		path.Join(pluginInstallDirectory, FluentbitBinary),
-		"--config", path.Join(pluginStateDirectory, FluentBitRuntimeDirectory, "fluent_bit_main.conf"),
-		"--parser", path.Join(pluginStateDirectory, FluentBitRuntimeDirectory, "fluent_bit_parser.conf"),
-		"--storage_path", path.Join(pluginStateDirectory, FluentBitStateDiectory, "buffers"),
-	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancelAndSetError, runFluentBitCmd, runCommand, &wg)
-
-	wg.Wait()
+	runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand)
 }
 
 // sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the
@@ -207,7 +184,6 @@ func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, plu
 	confGeneratorBinaryFullPath := path.Join(pluginInstallDirectory, ConfGeneratorBinary)
 	otelConfigGenerationCmd := exec.CommandContext(ctx,
 		confGeneratorBinaryFullPath,
-		"-service", "otel",
 		"-in", OpsAgentConfigLocationLinux,
 		"-out", path.Join(pluginStateDirectory, OtelRuntimeDirectory),
 		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
@@ -217,17 +193,6 @@ func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, plu
 		return fmt.Errorf("failed to generate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
 	}
 
-	fluentBitConfigGenerationCmd := exec.CommandContext(ctx,
-		confGeneratorBinaryFullPath,
-		"-service", "fluentbit",
-		"-in", OpsAgentConfigLocationLinux,
-		"-out", path.Join(pluginStateDirectory, FluentBitRuntimeDirectory),
-		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
-		"-state", path.Join(pluginStateDirectory, FluentBitStateDiectory))
-
-	if output, err := runCommand(fluentBitConfigGenerationCmd); err != nil {
-		return fmt.Errorf("failed to generate Fluntbit config:\ncommand output: %s\ncommand error: %s", output, err)
-	}
 	return nil
 }
 

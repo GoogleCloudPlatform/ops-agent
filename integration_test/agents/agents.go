@@ -39,7 +39,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 
 	"github.com/blang/semver"
@@ -110,13 +109,7 @@ func AgentServices(t *testing.T, imageSpec string, pkgs []AgentPackage) []AgentS
 				// This service doesn't currently have an uptime metric.
 				UptimeMetricName: "",
 			},
-			{
-				ServiceName: "google-cloud-ops-agent-fluent-bit",
-				PackageName: "google-cloud-ops-agent-fluent-bit",
-				// TODO(b/170138116): Enable this metric once it is being uploaded for
-				// Fluent-Bit.
-				UptimeMetricName: "",
-			},
+
 			{
 				ServiceName:      "google-cloud-ops-agent-opentelemetry-collector",
 				PackageName:      "google-cloud-ops-agent-opentelemetry-collector",
@@ -145,15 +138,9 @@ func AgentServices(t *testing.T, imageSpec string, pkgs []AgentPackage) []AgentS
 			)
 		case OpsAgentType:
 			services = append(services,
+
 				AgentService{
-					ServiceName: "google-cloud-ops-agent-fluent-bit",
-					PackageName: "google-cloud-ops-agent",
-					// TODO(b/170138116): Enable this check once the uptime metric is
-					// being uploaded for Fluent-Bit.
-					UptimeMetricName: "",
-				},
-				AgentService{
-					ServiceName:      "google-cloud-ops-agent-opentelemetry-collector",
+					ServiceName:      "google-cloud-ops-agent",
 					PackageName:      "google-cloud-ops-agent",
 					UptimeMetricName: "google-cloud-ops-agent-metrics",
 				},
@@ -201,10 +188,8 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	// hang, so give them a shorter timeout to avoid hanging the whole test.
 	metricsCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	fbPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-fluent-bit -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20202; fi; curl -s localhost:$PORT/metrics'`, fluentbit.ExperimentalMetricsPortEnv)
-	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, fbPortCmd)
 
-	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-opentelemetry-collector -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, otel.ExperimentalMetricsPortEnv)
+	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, otel.ExperimentalMetricsPortEnv)
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, otelPortCmd)
 
 	isUAPPlugin := gce.IsOpsAgentUAPPlugin()
@@ -232,11 +217,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 			"~/uap_plugin_ps.log",
 			"~/uap_plugin_ports.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/nvidia-installer.log",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
@@ -246,14 +228,11 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		gce.SyslogLocation(imageSpec),
 		OpsAgentConfigPath(imageSpec),
 		"/var/log/google-cloud-ops-agent/health-checks.log",
-		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
 		"/var/log/nvidia-installer.log",
-		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
-		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
-		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
-		"/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
-		"/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
+		"/run/google-cloud-ops-agent/otel.yaml",
+		"/run/google-cloud-ops-agent/feature_tracking_otlp.json",
+		"/run/google-cloud-ops-agent/enabled_receivers_otlp.json",
 	}
 }
 
@@ -273,13 +252,11 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 		gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
 	}
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
-	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\logging-module.log`))
+	gce.RunRemotely(ctx, logger.ToFile("logging_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\logging-module.log`))
 	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\health-checks.log`))
 
 	for _, conf := range []string{
 		OpsAgentConfigPath(vm.ImageSpec),
-		stateDir + `generated_configs\fluentbit\fluent_bit_main.conf`,
-		stateDir + `generated_configs\fluentbit\fluent_bit_parser.conf`,
 		stateDir + `generated_configs\otel\otel.yaml`,
 		stateDir + `generated_configs\otel\feature_tracking_otlp.json`,
 		stateDir + `generated_configs\otel\enabled_receivers_otlp.json`,
@@ -1081,6 +1058,13 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	}
 	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
+	if !gce.IsWindows(vm.ImageSpec) {
+		// Disable snap auto-refresh to prevent gcloud disappearing during tests.
+		// Only try if snap is available.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "which snap && sudo snap set system refresh.hold=$(date --date='tomorrow' +%Y-%m-%dT%H:%M:%S%:z)"); err != nil {
+			logger.ToMainLog().Printf("Warning: failed to hold snap refresh: %v", err)
+		}
+	}
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
@@ -1130,56 +1114,61 @@ func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.V
 //
 // gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
 func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
-		return err
+	tryInstall := func() error {
+		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
+			return err
+		}
+
+		if gce.IsWindows(vm.ImageSpec) {
+			if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin -Force"); err != nil {
+				return err
+			}
+
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gcloud storage cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
+				return fmt.Errorf("error copying down agent package from GCS: %v", err)
+			}
+
+			if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
+				return err
+			}
+			if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "C:\agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 -Expand FullName | ForEach-Object { if ($_){ & tar -xzf $_ -C "C:\"} }`); err != nil {
+				return err
+			}
+			// Print the contents of the home dir into the logs.
+			if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin; ls C:\\"); err != nil {
+				return err
+			}
+
+		} else {
+			if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentPlugin"); err != nil {
+				return err
+			}
+
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+				return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
+			}
+
+			// Print the contents of /tmp/agentPlugin into the logs.
+			if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
+				return err
+			}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo find /tmp/agentPlugin -maxdepth 1 -name \"google-cloud-ops-agent-plugin*.tar.gz\" -print0 | xargs -0 -I {} sudo tar -xzf {} --no-overwrite-dir -C ~/ && ls -la"); err != nil {
+				return err
+			}
+			// Print the contents of the home dir into the logs.
+			if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
+				return err
+			}
+		}
+
+		if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
+			return err
+		}
+		return StartOpsAgentPluginServer(ctx, logger, vm, OpsAgentPluginServerPort)
 	}
 
-	if gce.IsWindows(vm.ImageSpec) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin"); err != nil {
-			return err
-		}
-
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gcloud storage cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
-			return fmt.Errorf("error copying down agent package from GCS: %v", err)
-		}
-
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
-			return err
-		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "C:\agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 -Expand FullName | ForEach-Object { if ($_){ & tar -xzf $_ -C "C:\"} }`); err != nil {
-			return err
-		}
-		// Print the contents of the home dir into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin; ls C:\\"); err != nil {
-			return err
-		}
-
-	} else {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentPlugin"); err != nil {
-			return err
-		}
-
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
-			return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
-		}
-
-		// Print the contents of /tmp/agentPlugin into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
-			return err
-		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo find /tmp/agentPlugin -maxdepth 1 -name \"google-cloud-ops-agent-plugin*.tar.gz\" -print0 | xargs -0 -I {} sudo tar -xzf {} --no-overwrite-dir -C ~/ && ls -la"); err != nil {
-			return err
-		}
-		// Print the contents of the home dir into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
-			return err
-		}
-	}
-
-	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
-		return err
-	}
-	return StartOpsAgentPluginServer(ctx, logger, vm, OpsAgentPluginServerPort)
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 3), ctx)
+	return backoff.Retry(tryInstall, backoffPolicy)
 }
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
@@ -1234,7 +1223,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
 func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Path %s", windowsAgentGCSDownloadPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Path %s -Force", windowsAgentGCSDownloadPath)); err != nil {
 		return err
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo %s", gcsPath, windowsAgentGCSDownloadPath)); err != nil {
@@ -1266,60 +1255,9 @@ func GetOtelConfigPath(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
 	}
-	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+	return "/var/run/google-cloud-ops-agent/otel.yaml"
 }
 
-const (
-	OtelLoggingFeatureFlag      = "otel_logging"
-	OTLPLoggingFeatureFlag      = "otlp_logging"
-	OtlpHttpExporterFeatureFlag = "otlp_exporter"
-	DefaultFeatureFlag          = "default"
-)
-
-// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
-func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
-	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
-}
-
-// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
-func defaultOtelLoggingConfig() string {
-	return `logging:
-  service:
-    experimental_otel_logging: true
-`
-}
-
-// setExperimentalOtelLoggingInConfig in an Ops Agent config
-func setExperimentalOtelLoggingInConfig(config string) string {
-	return strings.Replace(
-		config,
-		"service:\n",
-		"service:\n    experimental_otel_logging: true\n",
-		1,
-	)
-}
-
-// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
-func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
-	if feature == "" || feature == DefaultFeatureFlag {
-		return SetupOpsAgent(ctx, logger, vm, config)
-	}
-
-	if strings.Contains(feature, OtelLoggingFeatureFlag) {
-		if config == "" {
-			config = defaultOtelLoggingConfig()
-		} else {
-			config = setExperimentalOtelLoggingInConfig(config)
-		}
-	}
-
-	// Set experimental feature environment variable.
-	if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
-		return err
-	}
-
-	return SetupOpsAgent(ctx, logger, vm, config)
-}
 
 func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !IsRPMBased(vm.ImageSpec) {

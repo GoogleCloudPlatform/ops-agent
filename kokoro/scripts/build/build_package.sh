@@ -43,7 +43,10 @@ export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 ARCH="$(docker info --format '{{.Architecture}}')"
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
 docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
-CACHE="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}_${ARCH}"
+# TODO(b/522876997): Revert this shared cache tag hack before merging 3.0 to master.
+# We remove "${DISTRO}_" to share the identical `go-build` stage cache across
+# parallel distro build VMs, skipping Go compilation for all but the first job.
+CACHE="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:shared_3.0_${ARCH}"
 
 build_params=()
 if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then  # Per-PR cache

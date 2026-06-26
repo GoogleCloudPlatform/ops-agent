@@ -28,7 +28,6 @@ import (
 
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -73,20 +72,6 @@ var expectedFeatureBase = []confgenerator.Feature{
 		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
 	},
-	{
-		Module: "metrics",
-		Kind:   "exporters",
-		Type:   "otlp",
-		Key:    []string{"otlp_exporter"},
-		Value:  "false",
-	},
-	{
-		Module: "logging",
-		Kind:   "exporters",
-		Type:   "otlp",
-		Key:    []string{"otlp_exporter"},
-		Value:  "false",
-	},
 }
 
 var expectedMetricsPipelineOverriden = []confgenerator.Feature{
@@ -117,20 +102,6 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 		Type:   "otel_logging",
 		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
-	},
-	{
-		Module: "metrics",
-		Kind:   "exporters",
-		Type:   "otlp",
-		Key:    []string{"otlp_exporter"},
-		Value:  "false",
-	},
-	{
-		Module: "logging",
-		Kind:   "exporters",
-		Type:   "otlp",
-		Key:    []string{"otlp_exporter"},
-		Value:  "false",
 	},
 	{
 		Module: "metrics",
@@ -178,20 +149,6 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Value:  "true",
 	},
 	{
-		Module: "metrics",
-		Kind:   "exporters",
-		Type:   "otlp",
-		Key:    []string{"otlp_exporter"},
-		Value:  "false",
-	},
-	{
-		Module: "logging",
-		Kind:   "exporters",
-		Type:   "otlp",
-		Key:    []string{"otlp_exporter"},
-		Value:  "false",
-	},
-	{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverFoo",
@@ -199,65 +156,6 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Value:  "true",
 	},
 }
-
-var expectedOtelLoggingNotSupported = []confgenerator.Feature{
-	{
-		Module: "logging",
-		Kind:   "service",
-		Type:   "pipelines",
-		Key:    []string{"default_pipeline_overridden"},
-		Value:  "false",
-	},
-	{
-		Module: "metrics",
-		Kind:   "service",
-		Type:   "pipelines",
-		Key:    []string{"default_pipeline_overridden"},
-		Value:  "false",
-	},
-	{
-		Module: "global",
-		Kind:   "default",
-		Type:   "self_log",
-		Key:    []string{"default_self_log_file_collection"},
-		Value:  "true",
-	},
-	{
-		Module: "logging",
-		Kind:   "service",
-		Type:   "otel_logging",
-		Key:    []string{"otel_logging_supported_config"},
-		Value:  "false",
-	},
-	{
-		Module: "metrics",
-		Kind:   "exporters",
-		Type:   "otlp",
-		Key:    []string{"otlp_exporter"},
-		Value:  "false",
-	},
-	{
-		Module: "logging",
-		Kind:   "exporters",
-		Type:   "otlp",
-		Key:    []string{"otlp_exporter"},
-		Value:  "false",
-	},
-	{
-		Module: "logging",
-		Kind:   "service",
-		Type:   "service",
-		Key:    []string{"pipelines", "__length"},
-		Value:  "1",
-	},
-
-	{
-		Module: "logging",
-		Kind:   "service",
-		Type:   "service",
-		Key:    []string{"pipelines", "[0]", "processors", "__length"},
-		Value:  "1",
-	}}
 
 func testContext() context.Context {
 	pl := platform.Platform{
@@ -852,53 +750,6 @@ func TestOtelLoggingSupported(t *testing.T) {
 	}
 
 	if d := cmp.Diff(features, expectedFeatureBase); d != "" {
-		t.Fatalf("got (-)/want (+):\n%s", d)
-	}
-}
-
-type LoggingReceiverNoOtelSupport struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-}
-
-func (l LoggingReceiverNoOtelSupport) Type() string {
-	return "no_otel_support"
-}
-
-func (l LoggingReceiverNoOtelSupport) Components(ctx context.Context, tag string) []fluentbit.Component {
-	return nil
-}
-
-func TestOtelLoggingNotSupported(t *testing.T) {
-	NoOtelLoggingSupportPipeline := &confgenerator.Logging{
-		Receivers: map[string]confgenerator.LoggingReceiver{
-			"no_otel_support_receiver": &LoggingReceiverNoOtelSupport{},
-		},
-		Service: &confgenerator.LoggingService{
-			Pipelines: map[string]*confgenerator.Pipeline{
-				"no_otel_support_pipeline": {
-					ProcessorIDs: []string{"no_otel_support_receiver"},
-				},
-			},
-		},
-	}
-
-	userUc := confgenerator.UnifiedConfig{
-		Logging: NoOtelLoggingSupportPipeline,
-	}
-	mergedUc := &confgenerator.UnifiedConfig{
-		Logging: NoOtelLoggingSupportPipeline,
-		Metrics: builtInConfLinux.Metrics,
-	}
-	ctx, cancel := context.WithCancel(testContext())
-	defer cancel()
-	features, err := confgenerator.ExtractFeatures(ctx, &userUc, mergedUc)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fmt.Println(features)
-
-	if d := cmp.Diff(features, expectedOtelLoggingNotSupported); d != "" {
 		t.Fatalf("got (-)/want (+):\n%s", d)
 	}
 }

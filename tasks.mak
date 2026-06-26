@@ -36,17 +36,12 @@ install_tools:
 
 .PHONY: build
 build:
-	cd submodules/fluent-bit/build && find . ! -name ".empty" -type f -delete
 	mkdir -p /tmp/google-cloud-ops-agent
 	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
 
 .PHONY: rebuild_submodules
-rebuild_submodules: clean_submodules fluent_bit_local otelopscol_local
+rebuild_submodules: clean_submodules otelopscol_local
 
-.PHONY: fluent_bit_local
-fluent_bit_local: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit
-
-SKIP_JAVA ?= true
 .PHONY: otelopscol_local
 otelopscol_local: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
 
@@ -125,15 +120,13 @@ endif
 	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME)/golden
 	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
 
-dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit:
-	bash ./builds/fluent_bit.sh $(PWD)/dist
+
 
 dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
-	SKIP_OTEL_JAVA=${SKIP_JAVA} GO_BIN=$(shell which go) bash ./builds/otel.sh $(PWD)/dist
+	GO_BIN=$(shell which go) bash ./builds/otel.sh $(PWD)/dist
 
 .PHONY: transformation_test
-transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
-	FLB=$(PWD)/dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit \
+transformation_test: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
 	OTELOPSCOL=$(PWD)/dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol \
 	go test ./transformation_test $(if $(UPDATE),-update,)
 

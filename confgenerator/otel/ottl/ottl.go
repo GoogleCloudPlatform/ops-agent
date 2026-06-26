@@ -113,6 +113,24 @@ func (a LValue) SetIf(b, condition Value) Statements {
 	statements = statements.Append(
 		statementsf(`set(%s, %s)%s`, a, b, condStr),
 	)
+	if slices.Equal(a, LValue{"attributes", "gcp.source_location"}) {
+		// LogEntry's `sourceLocation.line` field is strictly expected to be an int64 integer by GCM.
+		// However, legacy configurations or parsed logs may represent it as a string (e.g. "1").
+		// If present, convert it to an integer inside OTel cache before exporting to prevent JSON unmarshal dropping.
+		statements = statements.Append(
+			statementsf(`set(%s["line"], Int(%s["line"])) where %s["line"] != nil`, a, a, a),
+		)
+	}
+	if slices.Equal(a, LValue{"attributes", "gcp.http_request"}) {
+		// HTTPRequest fields status, responseSize, requestSize, cacheFillBytes must be integers.
+		// If present, convert them to integers to prevent export failures.
+		statements = statements.Append(
+			statementsf(`set(%s["status"], Int(%s["status"])) where %s["status"] != nil`, a, a, a),
+			statementsf(`set(%s["responseSize"], Int(%s["responseSize"])) where %s["responseSize"] != nil`, a, a, a),
+			statementsf(`set(%s["requestSize"], Int(%s["requestSize"])) where %s["requestSize"] != nil`, a, a, a),
+			statementsf(`set(%s["cacheFillBytes"], Int(%s["cacheFillBytes"])) where %s["cacheFillBytes"] != nil`, a, a, a),
+		)
+	}
 	if (slices.Equal(a, LValue{"severity_text"})) {
 		// As a special case for severity_text, we need to zero out severity_number to make sure the text takes effect.
 		// TODO: Add a unit test for this.

@@ -18,25 +18,18 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"path/filepath"
 	"reflect"
-	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
-	"github.com/kardianos/osext"
 	promconfig "github.com/prometheus/prometheus/config"
 	"go.uber.org/multierr"
 )
@@ -69,10 +62,6 @@ func (uc *UnifiedConfig) HasTraces() bool {
 
 func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
-}
-
-func (uc *UnifiedConfig) GetFluentBitMetricsPort() uint16 {
-	return portutil.GetPortFromEnv(fluentbit.ExperimentalMetricsPortEnv, fluentbit.MetricsPort)
 }
 
 func (uc *UnifiedConfig) GetOtelMetricsPort() uint16 {
@@ -543,14 +532,7 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
-	InternalLoggingReceiver
-}
-
-// InternalLoggingReceiver implements all the methods required to describe a logging receiver pipeline.
-type InternalLoggingReceiver interface {
-	// Components returns fluentbit components that implement this receiver.
-	// tag is the log tag that is assigned to the collected logs.
-	Components(ctx context.Context, tag string) []fluentbit.Component
+	OTelReceiver
 }
 
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
@@ -580,14 +562,7 @@ func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
 
 type LoggingProcessor interface {
 	Component
-	InternalLoggingProcessor
-}
-
-// InternalLoggingProcessor implements the methods required to define a logging processor pipeline.
-type InternalLoggingProcessor interface {
-	// Components returns fluentbit components that implement this processor.
-	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
-	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
+	OTelProcessor
 }
 
 var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
@@ -636,12 +611,6 @@ type MetricsProcessorMerger interface {
 	// It returns the new receiver; and true if the processor has been merged
 	// into the receiver completely
 	MergeMetricsProcessor(p MetricsProcessor) (MetricsReceiver, bool)
-}
-
-type InternalLoggingProcessorMerger interface {
-	// MergeInternalLoggingProcessor attempts to merge p into the current receiver.
-	// It returns the new receiver; and a potentially modified processor or nil.
-	MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, InternalLoggingProcessor)
 }
 
 type MetricsReceiver interface {
@@ -696,102 +665,6 @@ func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]int
 	}
 
 	return tls
-}
-
-type MetricsReceiverSharedJVM struct {
-	MetricsReceiverShared `yaml:",inline"`
-
-	Endpoint       string        `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
-	Username       string        `yaml:"username" validate:"required_with=Password"`
-	Password       secret.String `yaml:"password" validate:"required_with=Username"`
-	AdditionalJars []string      `yaml:"additional_jars" validate:"omitempty,dive,file"`
-}
-
-// WithDefaultEndpoint overrides the MetricReceiverSharedJVM's Endpoint if it is empty.
-// It then returns a new MetricReceiverSharedJVM with this change.
-func (m MetricsReceiverSharedJVM) WithDefaultEndpoint(defaultEndpoint string) MetricsReceiverSharedJVM {
-	if m.Endpoint == "" {
-		m.Endpoint = defaultEndpoint
-	}
-
-	return m
-}
-
-// WithDefaultAdditionalJars overrides the MetricReceiverSharedJVM's AdditionalJars if it is empty.
-// It then returns a new MetricReceiverSharedJVM with this change.
-func (m MetricsReceiverSharedJVM) WithDefaultAdditionalJars(defaultAdditionalJars ...string) MetricsReceiverSharedJVM {
-	if len(m.AdditionalJars) == 0 {
-		m.AdditionalJars = defaultAdditionalJars
-	}
-
-	return m
-}
-
-// ConfigurePipelines sets up a Receiver using the MetricsReceiverSharedJVM and the targetSystem.
-// This is used alongside the passed in processors to return a single Pipeline in an array.
-func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) ([]otel.ReceiverPipeline, error) {
-	jarPath, err := FindJarPath()
-	if err != nil {
-		return nil, fmt.Errorf("failed to discover the location of the JMX metrics exporter: %w", err)
-	}
-	ctx := context.Background()
-	config := map[string]interface{}{
-		"target_system":       targetSystem,
-		"collection_interval": m.CollectionIntervalString(),
-		"endpoint":            m.Endpoint,
-		"jar_path":            jarPath,
-	}
-
-	if len(m.AdditionalJars) > 0 {
-		config["additional_jars"] = m.AdditionalJars
-	}
-
-	// Only set the username & password fields if provided
-	if m.Username != "" {
-		config["username"] = m.Username
-	}
-	secretPassword := m.Password.SecretValue()
-	if secretPassword != "" {
-		config["password"] = secretPassword
-	}
-
-	return []otel.ReceiverPipeline{ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
-		Receiver: otel.Component{
-			Type:   "jmx",
-			Config: config,
-		},
-		Processors: map[string][]otel.Component{"metrics": processors},
-	}, ctx)}, nil
-}
-
-type MetricsReceiverSharedCollectJVM struct {
-	CollectJVMMetrics *bool `yaml:"collect_jvm_metrics"`
-}
-
-func (m MetricsReceiverSharedCollectJVM) TargetSystemString(targetSystem string) string {
-	if m.ShouldCollectJVMMetrics() {
-		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
-	}
-	return targetSystem
-}
-
-func (m MetricsReceiverSharedCollectJVM) ShouldCollectJVMMetrics() bool {
-	return m.CollectJVMMetrics == nil || *m.CollectJVMMetrics
-}
-
-var FindJarPath = func() (string, error) {
-	jarName := "opentelemetry-java-contrib-jmx-metrics.jar"
-
-	executableDir, err := osext.ExecutableFolder()
-	if err != nil {
-		return jarName, fmt.Errorf("could not determine binary path for jvm receiver: %w", err)
-	}
-
-	// TODO(djaglowski) differentiate behavior via build tags
-	if runtime.GOOS != "windows" {
-		return filepath.Join(executableDir, "../subagents/opentelemetry-collector/", jarName), nil
-	}
-	return filepath.Join(executableDir, jarName), nil
 }
 
 type MetricsReceiverSharedCluster struct {
@@ -999,7 +872,6 @@ type pipelineBackend int
 
 const (
 	BackendOTel pipelineBackend = iota
-	BackendFluentBit
 )
 
 type PipelineInstance struct {
@@ -1103,22 +975,13 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	if err != nil {
 		return nil, err
 	}
-	platformDefaultConfig := BuiltInConfStructs[platform.FromContext(ctx).Name()].Logging
-	exp_otlp := experiments.FromContext(ctx)["otlp_logging"]
-	force_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
-		defaultP, ok := platformDefaultConfig.Service.Pipelines[pID]
-		isDefaultPipeline := ok && slices.Equal(p.ReceiverIDs, defaultP.ReceiverIDs) && slices.Equal(p.ProcessorIDs, defaultP.ProcessorIDs)
 		for _, rID := range p.ReceiverIDs {
 			receiver, ok := receivers[rID]
 			if !ok {
 				return nil, fmt.Errorf("logging receiver %q not found", rID)
-			}
-			defaultReceiver, ok := platformDefaultConfig.Receivers[rID]
-			if !ok || !reflect.DeepEqual(receiver, defaultReceiver) {
-				isDefaultPipeline = false
 			}
 			var processors []struct {
 				ID string
@@ -1140,16 +1003,11 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 			}
 			instance := PipelineInstance{
 				PipelineType: "logs",
-				Backend:      BackendFluentBit,
+				Backend:      BackendOTel,
 				PID:          pID,
 				RID:          rID,
 				Receiver:     receiver,
 				Processors:   processors,
-			}
-			if (force_otel != nil && *force_otel) || // User asked for OTel logging
-				(force_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
-				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
-				instance.Backend = BackendOTel
 			}
 			out = append(out, instance)
 		}
@@ -1250,16 +1108,11 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 		if err := validateComponentKeys(m.Processors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if receiverCounts, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+		if _, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
-		} else {
-			if err := validateIncompatibleJVMReceivers(receiverCounts); err != nil {
-				return err
-			}
-
-			if err := validateSSLConfig(receivers, ctx); err != nil {
-				return err
-			}
+		}
+		if err := validateSSLConfig(receivers, ctx); err != nil {
+			return err
 		}
 
 		if _, err := validateComponentTypeCounts(m.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
@@ -1431,20 +1284,6 @@ func stringContainedInSliceCaseInsensitive(str string, slice []string) bool {
 		}
 	}
 	return false
-}
-
-func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
-	jvmReceivers := []string{"jvm", "activemq", "cassandra", "tomcat"}
-	jvmReceiverCount := 0
-	for _, receiverType := range jvmReceivers {
-		jvmReceiverCount += typeCounts[receiverType]
-	}
-
-	if jvmReceiverCount > 1 {
-		return fmt.Errorf("at most one metrics receiver of JVM types [%s] is allowed: JVM based receivers currently conflict, and only one can be configured", strings.Join(jvmReceivers, ", "))
-	}
-
-	return nil
 }
 
 func validateSSLConfig(receivers metricsReceiverMap, ctx context.Context) error {

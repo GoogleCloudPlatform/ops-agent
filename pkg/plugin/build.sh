@@ -24,7 +24,7 @@ echo 'Creating plugin'
 ls .
 PLUGIN_DIR=$WS/ops-agent-plugin/
 mkdir -p ${PLUGIN_DIR}/subagents/opentelemetry-collector
-mkdir -p ${PLUGIN_DIR}/subagents/fluent-bit/bin/
+
 mkdir -p ${PLUGIN_DIR}/libexec
 mkdir -p ${PLUGIN_DIR}/THIRD_PARTY_LICENSES
 
@@ -32,11 +32,10 @@ touch ${PLUGIN_DIR}/THIRD_PARTY_LICENSES/license.txt
 
 cp /work/google_cloud_ops_agent_engine ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_engine
 cp $WS/opt/google-cloud-ops-agent/ops_agent ${PLUGIN_DIR}/ops_agent
-cp $WS/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_wrapper ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_wrapper
+
 
 cp $WS/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol ${PLUGIN_DIR}/subagents/opentelemetry-collector/otelopscol
-cp $WS/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar ${PLUGIN_DIR}/subagents/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar
-cp $WS/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit ${PLUGIN_DIR}/subagents/fluent-bit/bin/fluent-bit
+
 cp $WS/OPS_AGENT_VERSION ${PLUGIN_DIR}/OPS_AGENT_VERSION
 
 tar -cvzf /google-cloud-ops-agent-plugin_${PKG_VERSION}-${TARGET_NAME}-$TARGETARCH.tar.gz -C $PLUGIN_DIR/ .

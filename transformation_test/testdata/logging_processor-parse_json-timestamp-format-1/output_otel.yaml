@@ -1,43 +1,88 @@
-- entries:
-  - jsonPayload:
-      level: info
-      message: start
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2023-01-02T11:04:05.123456789Z
-  - jsonPayload:
-      level: error
-      message: failed to connect
-      time: 2024-06-15T14:30:00.987654321Z
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  - jsonPayload:
-      level: warning
-      message: low disk space
-      time: 2022-12-31T23:59:59.000000000-0800
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  partialSuccess: true
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: gcp.use_legacy_mapping
+        value:
+          stringValue: "true"
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: info
+            - key: message
+              value:
+                stringValue: start
+        observedTimeUnixNano: now
+        timeUnixNano: "1672657445123456789"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: failed to connect
+            - key: time
+              value:
+                stringValue: 2024-06-15T14:30:00.987654321Z
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: warning
+            - key: message
+              value:
+                stringValue: low disk space
+            - key: time
+              value:
+                stringValue: 2022-12-31T23:59:59.000000000-0800
+        observedTimeUnixNano: now
+      scope: {}
 - collector_errors:
   - caller: ottl@v0.154.0/parser.go:410
     error: "parsing time \"2024-06-15T14:30:00.987654321Z\": extra text: \"Z\""

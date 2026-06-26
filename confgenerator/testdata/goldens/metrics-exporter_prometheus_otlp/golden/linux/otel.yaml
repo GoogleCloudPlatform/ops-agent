@@ -1,8 +1,4 @@
 exporters:
-  googlemanagedprometheus:
-    metric:
-      add_metric_suffixes: false
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   otlp_grpc/otlp_logs:
     auth:
       authenticator: googleclientauth
@@ -40,29 +36,11 @@ processors:
     send_batch_max_size: 200
     send_batch_size: 200
     timeout: 200ms
-  cumulativetodelta/loggingmetrics_4:
-    include:
-      match_type: strict
-      metrics:
-      - otel_log_entry_count
-      - otel_log_entry_retry_count
-      - otel_request_count
-      - fluentbit_log_entry_count
-      - fluentbit_log_entry_retry_count
-      - fluentbit_request_count
-    initial_value: drop
-  deltatocumulative/loggingmetrics_7: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/fluentbit_0:
-    metrics:
-      include:
-        match_type: strict
-        metric_names:
-        - fluentbit_uptime
   filter/hostmetrics_1:
     metrics:
       exclude:
@@ -81,9 +59,6 @@ processors:
       include:
         match_type: strict
         metric_names:
-        - fluentbit_stackdriver_requests_total
-        - fluentbit_stackdriver_proc_records_total
-        - fluentbit_stackdriver_retried_records_total
         - otelcol_exporter_sent_log_records
         - otelcol_exporter_send_failed_log_records
         - rpc.client.call.duration_count
@@ -101,28 +76,10 @@ processors:
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
         - rpc.client.call.duration_count
-  interval/loggingmetrics_8:
+  interval/loggingmetrics_5:
     interval: 1m
   metric_start_time/otlp_grpc/otlp_metrics_metrics_1:
     strategy: subtract_initial_point
-  metricstransform/fluentbit_1:
-    transforms:
-    - action: update
-      include: fluentbit_uptime
-      new_name: agent/uptime
-      operations:
-      - action: toggle_scalar_data_type
-      - action: add_label
-        new_label: version
-        new_value: google-cloud-ops-agent-logging/latest-build_distro
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - version
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
   metricstransform/hostmetrics_2:
     transforms:
     - action: update
@@ -399,21 +356,9 @@ processors:
       new_name: agent.googleapis.com/$${1}
   metricstransform/loggingmetrics_3:
     transforms:
-    - action: update
-      include: fluentbit_stackdriver_retried_records_total
-      new_name: fluentbit_log_entry_retry_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
     - action: insert
       include: otelcol_exporter_send_failed_log_records
-      new_name: otel_log_entry_retry_count
+      new_name: agent/log_entry_retry_count
       operations:
       - action: toggle_scalar_data_type
       - action: add_label
@@ -424,20 +369,8 @@ processors:
         label_set:
         - response_code
     - action: update
-      include: fluentbit_stackdriver_requests_total
-      new_name: fluentbit_request_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-    - action: update
       include: rpc.client.call.duration_count
-      new_name: otel_request_count
+      new_name: agent/request_count
       operations:
       - action: update_label
         label: rpc.response.status_code
@@ -535,20 +468,8 @@ processors:
         label_set:
         - response_code
     - action: update
-      include: fluentbit_stackdriver_proc_records_total
-      new_name: fluentbit_log_entry_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-    - action: update
       include: otelcol_exporter_sent_log_records
-      new_name: otel_log_entry_count
+      new_name: agent/log_entry_count
       operations:
       - action: toggle_scalar_data_type
       - action: add_label
@@ -560,7 +481,7 @@ processors:
         - response_code
     - action: update
       include: otelcol_exporter_send_failed_log_records
-      new_name: otel_log_entry_count
+      new_name: agent/log_entry_count
       operations:
       - action: toggle_scalar_data_type
       - action: add_label
@@ -571,18 +492,6 @@ processors:
         label_set:
         - response_code
     - action: combine
-      include: ^otel_log_entry_count$$
-      match_type: regexp
-      new_name: otel_log_entry_count
-      operations:
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-      submatch_case: lower
-  metricstransform/loggingmetrics_6:
-    transforms:
-    - action: combine
       include: ^agent/log_entry_count$
       match_type: regexp
       new_name: agent/log_entry_count
@@ -592,27 +501,7 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-    - action: combine
-      include: ^agent/log_entry_retry_count$
-      match_type: regexp
-      new_name: agent/log_entry_retry_count
-      operations:
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-      submatch_case: lower
-    - action: combine
-      include: ^agent/request_count$
-      match_type: regexp
-      new_name: agent/request_count
-      operations:
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-      submatch_case: lower
-  metricstransform/loggingmetrics_9:
+  metricstransform/loggingmetrics_6:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -788,6 +677,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/prometheus_2:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: prometheus.googleapis.com/$${1}
   resource/otlp_grpc/otlp_logs_logs_0:
     attributes:
     - action: insert
@@ -851,21 +746,11 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "rpc.client.call.duration"
-  transform/loggingmetrics_5:
+  transform/loggingmetrics_4:
     metric_statements:
     - context: metric
       statements:
       - set(unit, "1")
-    - context: datapoint
-      statements:
-      - set(time, Now())
-      - set(start_time_unix_nano, 0)
-      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
-      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -918,6 +803,14 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
+  transform/prometheus_1:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
+      - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
+      - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
   transform/syslog_0:
     error_mode: ignore
     log_statements:
@@ -985,15 +878,10 @@ receivers:
     - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
+    start_at: beginning
   prometheus/agent_prometheus:
     config:
       scrape_configs:
-      - job_name: logging-collector
-        metrics_path: /metrics
-        scrape_interval: 1m
-        static_configs:
-        - targets:
-          - 0.0.0.0:20202
       - job_name: otel-collector
         scrape_interval: 1m
         static_configs:
@@ -1099,21 +987,6 @@ service:
       - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - hostmetrics/hostmetrics
-    metrics/fluentbit:
-      exporters:
-      - otlp_grpc/otlp_metrics
-      processors:
-      - transform/agent_prometheus_0
-      - transform/agent_prometheus_1
-      - transform/agent_prometheus_2
-      - filter/fluentbit_0
-      - metricstransform/fluentbit_1
-      - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
-      receivers:
-      - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
       - otlp_grpc/otlp_metrics
@@ -1125,12 +998,9 @@ service:
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
       - metricstransform/loggingmetrics_3
-      - cumulativetodelta/loggingmetrics_4
-      - transform/loggingmetrics_5
+      - transform/loggingmetrics_4
+      - interval/loggingmetrics_5
       - metricstransform/loggingmetrics_6
-      - deltatocumulative/loggingmetrics_7
-      - interval/loggingmetrics_8
-      - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
@@ -1169,9 +1039,14 @@ service:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
       exporters:
-      - googlemanagedprometheus
+      - otlp_grpc/otlp_metrics
       processors:
       - transform/prometheus_0
+      - transform/prometheus_1
+      - metricstransform/prometheus_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/prometheus
   telemetry:

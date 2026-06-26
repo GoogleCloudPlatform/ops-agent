@@ -44,30 +44,13 @@ func ReadUnifiedConfigFromFile(ctx context.Context, path string) (*UnifiedConfig
 	return uc, nil
 }
 
-func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, logsDir, stateDir, outDir string) error {
-	switch service {
-	case "": // Validate-only.
-		return nil
-	case "fluentbit":
-		files, err := uc.GenerateFluentBitConfigs(ctx, logsDir, stateDir)
-		if err != nil {
-			return fmt.Errorf("can't parse configuration: %w", err)
-		}
-		for name, contents := range files {
-			if err = WriteConfigFile([]byte(contents), filepath.Join(outDir, name)); err != nil {
-				return err
-			}
-		}
-	case "otel":
-		otelConfig, err := uc.GenerateOtelConfig(ctx, outDir, stateDir)
-		if err != nil {
-			return fmt.Errorf("can't parse configuration: %w", err)
-		}
-		if err = WriteConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unknown service %q", service)
+func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, logsDir, stateDir, outDir string) error {
+	otelConfig, err := uc.GenerateOtelConfig(ctx, outDir, stateDir)
+	if err != nil {
+		return fmt.Errorf("can't parse configuration: %w", err)
+	}
+	if err = WriteConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
+		return err
 	}
 	return nil
 }

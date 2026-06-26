@@ -22,13 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"cloud.google.com/go/logging"
-	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
-	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
-	"github.com/googleapis/gax-go/v2/apierror"
 	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
@@ -36,14 +31,12 @@ import (
 	metricsprpb "go.opentelemetry.io/proto/otlp/metrics/v1"
 	resourcepb "go.opentelemetry.io/proto/otlp/resource/v1"
 	"golang.org/x/oauth2/google"
-	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/oauth"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -51,37 +44,6 @@ const (
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
 )
-
-func createMonitoringPingRequest(resource resourcedetector.Resource) *monitoringpb.CreateTimeSeriesRequest {
-	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
-	now := &timestamppb.Timestamp{
-		Seconds: time.Now().Unix(),
-	}
-	value := &monitoringpb.TypedValue{
-		Value: &monitoringpb.TypedValue_Int64Value{
-			Int64Value: int64(0),
-		},
-	}
-	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + resource.ProjectName(),
-		TimeSeries: []*monitoringpb.TimeSeries{{
-			MetricKind: metricpb.MetricDescriptor_GAUGE,
-			ValueType:  metricpb.MetricDescriptor_INT64,
-			Metric: &metricpb.Metric{
-				Type: metricType,
-			},
-			Resource: resource.MonitoredResource(),
-			Points: []*monitoringpb.Point{{
-				Interval: &monitoringpb.TimeInterval{
-					StartTime: now,
-					EndTime:   now,
-				},
-				Value: value,
-			}},
-		}},
-	}
-	return req
-}
 
 func createTelemetryMetricsRequest(resource resourcedetector.Resource) *metricspb.ExportMetricsServiceRequest {
 	return &metricspb.ExportMetricsServiceRequest{
@@ -171,104 +133,6 @@ func createTelemetryLogsRequest(resource resourcedetector.Resource) *collogspb.E
 			},
 		},
 	}
-}
-
-// monitoringPing reports whether the client's connection to the monitoring service and the
-// authentication configuration are valid. To accomplish this, monitoringPing writes a
-// time series point with empty values to an Ops Agent specific metric.
-// This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
-func monitoringPing(ctx context.Context, client monitoring.MetricClient, resource resourcedetector.Resource) error {
-	return client.CreateTimeSeries(ctx, createMonitoringPingRequest(resource))
-}
-
-func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// New Logging Client
-	logClient, err := logging.NewClient(ctx, resource.ProjectName())
-	if err != nil {
-		return err
-	}
-	defer logClient.Close()
-	logger.Infof("logging client was created successfully")
-
-	if err := logClient.Ping(ctx); err != nil {
-		logger.Infof(err.Error())
-		var apiErr *apierror.APIError
-		if errors.As(err, &apiErr) {
-			switch apiErr.Reason() {
-			case ServiceDisabled:
-				return LogApiDisabledErr
-			case AccessTokenScopeInsufficient:
-				return LogApiScopeErr
-			case IamPermissionDenied:
-				return LogApiPermissionErr
-			}
-
-			switch apiErr.GRPCStatus().Code() {
-			case codes.PermissionDenied:
-				return LogApiPermissionErr
-			case codes.Unauthenticated:
-				return LogApiUnauthenticatedErr
-			case codes.DeadlineExceeded:
-				return LogApiConnErr
-			case codes.Unavailable:
-				return LogApiConnErr
-			}
-		}
-		if errors.Is(err, context.DeadlineExceeded) {
-			return LogApiConnErr
-		}
-		return err
-	}
-
-	return nil
-}
-
-func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// New Monitoring Client
-	monClient, err := monitoring.NewMetricClient(ctx)
-	if err != nil {
-		return err
-	}
-	defer monClient.Close()
-	logger.Infof("monitoring client was created successfully")
-
-	if err := monitoringPing(ctx, *monClient, resource); err != nil {
-		logger.Infof(err.Error())
-		var apiErr *apierror.APIError
-		if errors.As(err, &apiErr) {
-			switch apiErr.Reason() {
-			case ServiceDisabled:
-				return MonApiDisabledErr
-			case AccessTokenScopeInsufficient:
-				return MonApiScopeErr
-			case IamPermissionDenied:
-				return MonApiPermissionErr
-			}
-
-			switch apiErr.GRPCStatus().Code() {
-			case codes.PermissionDenied:
-				return MonApiPermissionErr
-			case codes.Unauthenticated:
-				return MonApiUnauthenticatedErr
-			case codes.DeadlineExceeded:
-				return MonApiConnErr
-			case codes.Unavailable:
-				return MonApiConnErr
-			}
-		}
-		if errors.Is(err, context.DeadlineExceeded) {
-			return MonApiConnErr
-		}
-		return err
-	}
-
-	return nil
 }
 
 func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
@@ -402,27 +266,15 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	var wg sync.WaitGroup
 
 	wg.Add(2)
-	if experiments.FromContext(context.Background())["otlp_exporter"] {
-		logger.Infof("Running Telemetry API checks")
-		go func() {
-			defer wg.Done()
-			monOrTelErr = runTelemetryMetricsCheck(logger, resource)
-		}()
-		go func() {
-			defer wg.Done()
-			logOrTelLogsErr = runTelemetryLogsCheck(logger, resource)
-		}()
-	} else {
-		logger.Infof("Running legacy API checks")
-		go func() {
-			defer wg.Done()
-			monOrTelErr = runMonitoringCheck(logger, resource)
-		}()
-		go func() {
-			defer wg.Done()
-			logOrTelLogsErr = runLoggingCheck(logger, resource)
-		}()
-	}
+	logger.Infof("Running Telemetry API checks")
+	go func() {
+		defer wg.Done()
+		monOrTelErr = runTelemetryMetricsCheck(logger, resource)
+	}()
+	go func() {
+		defer wg.Done()
+		logOrTelLogsErr = runTelemetryLogsCheck(logger, resource)
+	}()
 	wg.Wait()
 
 	return errors.Join(monOrTelErr, logOrTelLogsErr)

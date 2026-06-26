@@ -15,14 +15,6 @@
   key: otel_logging_supported_config
   value: "true"
 - module: metrics
-  feature: exporters:otlp
-  key: otlp_exporter
-  value: "false"
-- module: logging
-  feature: exporters:otlp
-  key: otlp_exporter
-  value: "false"
-- module: metrics
   feature: service:service
   key: pipelines.__length
   value: "1"

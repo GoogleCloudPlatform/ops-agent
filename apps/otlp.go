@@ -87,9 +87,12 @@ func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component 
 	}
 }
 
-func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
+func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ResourceDetectionMode, []otel.Component) {
 	if r.MetricsMode != "googlecloudmonitoring" {
-		return otel.GMP, otel.None, r.gmpResourceProcessors(ctx)
+		processors := r.gmpResourceProcessors(ctx)
+		processors = append(processors, otel.MetricUnknownCounter())
+		processors = append(processors, otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
+		return otel.None, processors
 	}
 	var knownDomainsRegexEscaped []string
 	for _, knownDomain := range knownDomains {
@@ -118,14 +121,13 @@ func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ExporterType,
 	// a processor and replace all of this stuff with that processor.
 	//
 	// [1] https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/config.go#L158
-	return otel.OTel, otel.SetIfMissing, []otel.Component{
+	return otel.SetIfMissing, []otel.Component{
 		otel.MetricsTransform(
 			otel.RegexpRename(`^(.*)$`, `A${1}`),
 			otel.RegexpRename(fmt.Sprintf(`^A((?:[a-z]+\.)*(?:%s)/.+)$`, strings.Join(knownDomainsRegexEscaped, "|")), `B${1}`),
 			otel.RegexpRename(`^A(.*)$`, `Aworkload.googleapis.com/${1}`),
 			otel.RegexpRename(`^[AB](.*)$`, `${1}`),
 		),
-		// N.B. We don't touch the instrumentation_scope fields here, so we can pass through the incoming strings.
 	}
 }
 
@@ -135,18 +137,9 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 		endpoint = defaultGRPCEndpoint
 	}
 
-	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors(ctx)
+	metricsRDM, metricsProcessors := r.metricsProcessors(ctx)
 
-	converter := confgenerator.ConvertGCMOtelExporterToOtlpExporter
-	if r.MetricsMode != "googlecloudmonitoring" {
-		converter = confgenerator.ConvertPrometheusExporterToOtlpExporter
-	}
-	return []otel.ReceiverPipeline{converter(otel.ReceiverPipeline{
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": receiverPipelineType,
-			"traces":  otel.OTel,
-			"logs":    otel.Logging,
-		},
+	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "otlp",
 			Config: map[string]interface{}{
@@ -167,7 +160,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 			"traces":  otel.SetIfMissing,
 			"logs":    otel.SetIfMissing,
 		},
-	}, ctx)}, nil
+	}}, nil
 }
 
 func init() {

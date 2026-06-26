@@ -22,7 +22,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 )
 
 // AgentSelfMetrics provides the agent.googleapis.com/agent/ metrics.
@@ -30,8 +29,6 @@ import (
 // Therefore, it does not need to implement any interfaces.
 type AgentSelfMetrics struct {
 	MetricsVersionLabel string
-	LoggingVersionLabel string
-	FluentBitPort       int
 	OtelPort            int
 	OtelRuntimeDir      string
 }
@@ -95,12 +92,6 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 		Processors:           r.OtelPipelineProcessors(ctx),
 	}
 
-	pipelines["fluentbit"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "agent_prometheus",
-		Processors:           r.FluentBitPipelineProcessors(),
-	}
-
 	pipelines["loggingmetrics"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "agent_prometheus",
@@ -115,21 +106,13 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 }
 
 func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.ReceiverPipeline {
-	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
+	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
 				"config": map[string]interface{}{
 					"scrape_configs": []map[string]interface{}{
-						{
-							"job_name":        "logging-collector",
-							"scrape_interval": "1m",
-							"metrics_path":    "/metrics",
-							"static_configs": []map[string]interface{}{{
-								// TODO(b/196990135): Customization for the port number
-								"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.FluentBitPort)},
-							}},
-						},
+
 						{
 							"job_name":        "otel-collector",
 							"scrape_interval": "1m",
@@ -142,9 +125,6 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.Re
 				},
 			},
 		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
-		},
 		Processors: map[string][]otel.Component{
 			"metrics": {
 				otel.TransformationMetrics(
@@ -154,71 +134,47 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.Re
 					otel.DeleteMetricResourceAttribute("server.port"),
 					otel.DeleteMetricResourceAttribute("url.scheme"),
 				),
+				otel.MetricsRemoveInstrumentationLibraryLabelsAttributes(),
+				otel.MetricsRemoveServiceAttributes(),
 			},
 		},
-	}, ctx)
+	}
 }
 
 func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Component {
-	durationMetric := "grpc.client.attempt.duration"
-	durationCountMetric := "grpc.client.attempt.duration_count"
+	durationMetric := "rpc.client.call.duration"
+	durationCountMetric := "rpc.client.call.duration_count"
 	filteredMetrics := []string{
+		"otelcol_exporter_sent_metric_points",
+		"otelcol_exporter_send_failed_metric_points",
 		durationCountMetric,
-		"googlecloudmonitoring/point_count",
 	}
-	pointCountMetric := otel.RenameMetric("googlecloudmonitoring/point_count", "agent/monitoring/point_count",
-		// change data type from double -> int64
-		otel.ToggleScalarDataType,
-		// Remove service.version label
-		otel.AggregateLabels("sum", "status"),
-	)
+	extraTransforms := []map[string]interface{}{
+		otel.UpdateMetric("otelcol_exporter_sent_metric_points",
+			otel.ToggleScalarDataType,
+			otel.AddLabel("status", "OK"),
+			otel.AggregateLabels("sum", "status"),
+		),
+		otel.UpdateMetric("otelcol_exporter_send_failed_metric_points",
+			otel.ToggleScalarDataType,
+			otel.RenameLabel("error.type", "status"),
+			otel.RenameLabelValues("status", otelErrorTypeToStatus),
+			otel.AggregateLabels("sum", "status"),
+		),
+	}
+	// b/468059325: Factor in partial success after upstream bug is fixed.
+	pointCountMetric := otel.CombineMetrics("otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points", "agent/monitoring/point_count",
+		otel.AggregateLabels("sum", "status"))
 	apiRequestCount := otel.RenameMetric(durationCountMetric, "agent/api_request_count",
-		otel.RenameLabel("grpc.status", "state"),
-		// delete grpc_client_method dimension & service.version label, retaining only state
-		otel.AggregateLabels("sum", "state"),
-	)
+		otel.RenameLabelValues("rpc.response.status_code", otelErrorTypeToStatus),
+		otel.RenameLabel("rpc.response.status_code", "state"),
+		// delete all other labels, retaining only state
+		otel.AggregateLabels("sum", "state"))
+
 	metricFilter := otel.MetricsOTTLFilter([]string{}, []string{
-		// Filter out histogram datapoints where the grpc.target is not related to monitoring.
-		`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))`,
+		// Filter out histogram datapoints where the rpc.service is not related to monitoring.
+		`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.metrics.v1.MetricsService/Export"))`,
 	})
-
-	expOtlpExporter := experiments.FromContext(ctx)["otlp_exporter"]
-	var extraTransforms []map[string]interface{}
-	if expOtlpExporter {
-		durationMetric = "rpc.client.call.duration"
-		durationCountMetric = "rpc.client.call.duration_count"
-		filteredMetrics = []string{
-			"otelcol_exporter_sent_metric_points",
-			"otelcol_exporter_send_failed_metric_points",
-			durationCountMetric,
-		}
-		extraTransforms = []map[string]interface{}{
-			otel.UpdateMetric("otelcol_exporter_sent_metric_points",
-				otel.ToggleScalarDataType,
-				otel.AddLabel("status", "OK"),
-				otel.AggregateLabels("sum", "status"),
-			),
-			otel.UpdateMetric("otelcol_exporter_send_failed_metric_points",
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("error.type", "status"),
-				otel.RenameLabelValues("status", otelErrorTypeToStatus),
-				otel.AggregateLabels("sum", "status"),
-			),
-		}
-		// b/468059325: Factor in partial success after upstream bug is fixed.
-		pointCountMetric = otel.CombineMetrics("otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points", "agent/monitoring/point_count",
-			otel.AggregateLabels("sum", "status"))
-		apiRequestCount = otel.RenameMetric(durationCountMetric, "agent/api_request_count",
-			otel.RenameLabelValues("rpc.response.status_code", otelErrorTypeToStatus),
-			otel.RenameLabel("rpc.response.status_code", "state"),
-			// delete all other labels, retaining only state
-			otel.AggregateLabels("sum", "state"))
-
-		metricFilter = otel.MetricsOTTLFilter([]string{}, []string{
-			// Filter out histogram datapoints where the rpc.service is not related to monitoring.
-			`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.metrics.v1.MetricsService/Export"))`,
-		})
-	}
 
 	transforms := []map[string]interface{}{
 		otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
@@ -257,59 +213,21 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 	}
 }
 
-func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
-	return []otel.Component{
-		otel.MetricsFilter(
-			"include",
-			"strict",
-			"fluentbit_uptime",
-		),
-		otel.MetricsTransform(
-			otel.RenameMetric("fluentbit_uptime", "agent/uptime",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.AddLabel("version", r.LoggingVersionLabel),
-				// remove service.version label
-				otel.AggregateLabels("sum", "version"),
-			),
-			otel.AddPrefix("agent.googleapis.com"),
-		),
-	}
-}
-
 func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) []otel.Component {
-	durationMetric := "grpc.client.attempt.duration"
-	durationCountMetric := "grpc.client.attempt.duration_count"
+	durationMetric := "rpc.client.call.duration"
+	durationCountMetric := "rpc.client.call.duration_count"
 
 	metricFilter := otel.MetricsOTTLFilter([]string{}, []string{
-		// Filter out histogram datapoints where the grpc.target is not related to logging.
-		`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))`,
+		// Filter out histogram datapoints where the rpc.method is not related to logging.
+		`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.logs.v1.LogsService/Export"))`,
 	})
 
-	otelRequestCount := otel.RenameMetric(durationCountMetric, "otel_request_count",
-		otel.RenameLabel("grpc.status", "response_code"),
+	agentRequestCount := otel.RenameMetric(durationCountMetric, "agent/request_count",
+		otel.RenameLabelValues("rpc.response.status_code", otelErrorTypeToStatus),
+		otel.RenameLabel("rpc.response.status_code", "response_code"),
 		otel.RenameLabelValues("response_code", grpcToHTTPStatus),
-		// delete grpc_client_method dimension & service.version label, retaining only response_code
 		otel.AggregateLabels("sum", "response_code"),
 	)
-
-	expOtlpExporter := experiments.FromContext(ctx)["otlp_exporter"]
-	if expOtlpExporter {
-		durationMetric = "rpc.client.call.duration"
-		durationCountMetric = "rpc.client.call.duration_count"
-
-		metricFilter = otel.MetricsOTTLFilter([]string{}, []string{
-			// Filter out histogram datapoints where the rpc.method is not related to logging.
-			`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.logs.v1.LogsService/Export"))`,
-		})
-		otelRequestCount = otel.RenameMetric(durationCountMetric, "otel_request_count",
-			otel.RenameLabelValues("rpc.response.status_code", otelErrorTypeToStatus),
-
-			otel.RenameLabel("rpc.response.status_code", "response_code"),
-			otel.RenameLabelValues("response_code", grpcToHTTPStatus),
-			otel.AggregateLabels("sum", "response_code"),
-		)
-	}
 
 	return []otel.Component{
 		otel.Transform("metric", "metric",
@@ -319,95 +237,42 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 		otel.MetricsFilter(
 			"include",
 			"strict",
-			"fluentbit_stackdriver_requests_total",
-			"fluentbit_stackdriver_proc_records_total",
-			"fluentbit_stackdriver_retried_records_total",
 			"otelcol_exporter_sent_log_records",
 			"otelcol_exporter_send_failed_log_records",
 			durationCountMetric,
 		),
-		// Format fluentbit and otel logging metrics before aggregation.
+		// Format otel logging metrics directly to target agent.googleapis.com/agent/ metrics.
 		otel.MetricsTransform(
-			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "fluentbit_log_entry_retry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
-			otel.DuplicateMetric("otelcol_exporter_send_failed_log_records", "otel_log_entry_retry_count",
+			otel.DuplicateMetric("otelcol_exporter_send_failed_log_records", "agent/log_entry_retry_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,
 				otel.AddLabel("response_code", "400"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
-			otel.RenameMetric("fluentbit_stackdriver_requests_total", "fluentbit_request_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
-			otelRequestCount,
-			otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "fluentbit_log_entry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
-			otel.RenameMetric("otelcol_exporter_sent_log_records", "otel_log_entry_count",
+			agentRequestCount,
+			otel.RenameMetric("otelcol_exporter_sent_log_records", "agent/log_entry_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,
 				otel.AddLabel("response_code", "200"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
-			otel.RenameMetric("otelcol_exporter_send_failed_log_records", "otel_log_entry_count",
+			otel.RenameMetric("otelcol_exporter_send_failed_log_records", "agent/log_entry_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,
 				otel.AddLabel("response_code", "400"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
-			otel.CombineMetrics("^otel_log_entry_count$$", "otel_log_entry_count",
+			// Merge response_code dimensions under a single agent/log_entry_count metric object.
+			otel.CombineMetrics(`^agent/log_entry_count$`, "agent/log_entry_count",
 				otel.AggregateLabels("sum", "response_code")),
 		),
-		// Aggregating as delta metrics isolates data for only the most recent metric cumulative update.
-		// Set `initial_value: drop" to always store the "first point" as "anchor" to set the "start_time" and
-		// calculate next point values as difference with the "first point" value.
-		otel.CumulativeToDeltaWithInitialValue("drop",
-			"otel_log_entry_count", "otel_log_entry_retry_count", "otel_request_count",
-			"fluentbit_log_entry_count", "fluentbit_log_entry_retry_count", "fluentbit_request_count",
-		),
 		otel.TransformationMetrics(
-			// Set "start_time_unix_nano = 0" and "time = Now()" so "deltatocumulative" can sum all points
-			// without "out of order" or "older start" errors.
-			// TODO: b/445233472 - Update "deltatocumulative" processor with a new "strategy" for point aggreagation.
-			otel.TransformQuery{
-				Context:   otel.Datapoint,
-				Statement: `set(time, Now())`,
-			},
-			otel.TransformQuery{
-				Context:   otel.Datapoint,
-				Statement: `set(start_time_unix_nano, 0)`,
-			},
 			// Set unit = "1" to metrics who may not have it.
 			otel.TransformQuery{
 				Context:   otel.Metric,
 				Statement: `set(unit, "1")`,
 			},
-			// Rename metrics for aggregation by "deltatocumulative".
-			otel.SetName("fluentbit_log_entry_count", "agent/log_entry_count"),
-			otel.SetName("fluentbit_log_entry_retry_count", "agent/log_entry_retry_count"),
-			otel.SetName("fluentbit_request_count", "agent/request_count"),
-			otel.SetName("otel_log_entry_count", "agent/log_entry_count"),
-			otel.SetName("otel_log_entry_retry_count", "agent/log_entry_retry_count"),
-			otel.SetName("otel_request_count", "agent/request_count"),
 		),
-		otel.MetricsTransform(
-			otel.CombineMetrics(`^agent/log_entry_count$`, "agent/log_entry_count", otel.AggregateLabels("sum", "response_code")),
-			otel.CombineMetrics(`^agent/log_entry_retry_count$`, "agent/log_entry_retry_count", otel.AggregateLabels("sum", "response_code")),
-			otel.CombineMetrics(`^agent/request_count$`, "agent/request_count", otel.AggregateLabels("sum", "response_code")),
-		),
-		// DeltaToCumulative keeps in memory information of previous delta points
-		// to generate a valid cumulative monotonic metric.
-		otel.DeltaToCumulative(),
 		// The processor "interval" outputs the last point in each 1 minute interval.
 		otel.Interval("1m"),
 		otel.MetricsTransform(otel.AddPrefix("agent.googleapis.com")),
@@ -421,21 +286,21 @@ func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPip
 			filepath.Join(r.OtelRuntimeDir, "feature_tracking_otlp.json")},
 		"replay_file":   true,
 		"poll_interval": time.Duration(60 * time.Second).String(),
+		"start_at":      "beginning",
 	}
-	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
+	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "otlpjsonfile",
 			Config: receiverConfig,
 		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
-		},
 		Processors: map[string][]otel.Component{
 			"metrics": {
 				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
+				otel.MetricsRemoveInstrumentationLibraryLabelsAttributes(),
+				otel.MetricsRemoveServiceAttributes(),
 			},
 		},
-	}, ctx)
+	}
 }
 
 // intentionally not registered as a component because this is not created by users

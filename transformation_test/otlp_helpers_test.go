@@ -12,11 +12,11 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"google.golang.org/grpc"
+	_ "google.golang.org/grpc/encoding/gzip"
 )
 
 func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
@@ -27,8 +27,6 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 	pi := transformationConfig.pipelineInstance(abs)
 	pi.RID = "my-log-name"
 	pi.Backend = confgenerator.BackendOTel
-
-	ctx = experiments.ContextWithExperiments(ctx, map[string]bool{"otlp_exporter": true})
 
 	rps, pls, err := pi.OTelComponents(ctx)
 	if err != nil {
@@ -41,18 +39,16 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 		LogLevel:          "debug",
 		ReceiverPipelines: rps,
 		Pipelines:         pls,
-		Exporters: map[otel.ExporterType]otel.ExporterComponents{
-			otel.OTLP_Logs: {
-				ProcessorsByType: map[string][]otel.Component{
+		Exporters: map[string]otel.ExporterComponents{
+			"logs": {
+				Processors: []otel.Component{
 					// Batch with 1.5s timeout to group in the same log request
 					// all late entries flushed from a multiline parser after 1s.
-					"logs": {
-						otel.GCPProjectID("fake-project"),
-						otel.DisableOtlpRoundTrip(),
-						otel.PreserveInstrumentationScope(),
-						otel.CopyServiceResourceLabels(),
-						otel.BatchProcessor(500, 500, "1500ms"),
-					},
+					otel.GCPProjectID("fake-project"),
+					otel.DisableOtlpRoundTrip(),
+					otel.PreserveInstrumentationScope(),
+					otel.CopyServiceResourceLabels(),
+					otel.BatchProcessor(500, 500, "1500ms"),
 				},
 				Exporter: otel.Component{
 					Type: "otlp_grpc",
@@ -99,9 +95,9 @@ func otlpOnGRPCServer(ln net.Listener) (*mockOTLPServer, <-chan plogotlp.ExportR
 	return s, ch
 }
 
-func (transformationConfig transformationTest) runOtelOTLPExporterTest(t *testing.T, name string) {
-	got := transformationConfig.runOTelTestInner(t, name, true)
-	checkOutput(t, filepath.Join(name, "output_otel_otlpexporter.yaml"), got)
+func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
+	got := transformationConfig.runOTelTestInner(t, name)
+	checkOutput(t, filepath.Join(name, "output_otel.yaml"), got)
 }
 
 func sanitizeOTLPExportRequest(t *testing.T, r plogotlp.ExportRequest, testStartTime time.Time) map[string]any {

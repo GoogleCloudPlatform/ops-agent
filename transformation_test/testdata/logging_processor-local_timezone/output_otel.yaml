@@ -1,30 +1,68 @@
-- entries:
-  - jsonPayload:
-      key1: 12345
-      key2: abc
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2006-07-28T20:22:00Z
-  - jsonPayload:
-      key1: 12345
-      key2: abc
-      time: unparsable time
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  partialSuccess: true
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: gcp.use_legacy_mapping
+        value:
+          stringValue: "true"
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: key1
+              value:
+                doubleValue: 12345
+            - key: key2
+              value:
+                stringValue: abc
+        observedTimeUnixNano: now
+        timeUnixNano: "1154118120000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: key1
+              value:
+                doubleValue: 12345
+            - key: key2
+              value:
+                stringValue: abc
+            - key: time
+              value:
+                stringValue: unparsable time
+        observedTimeUnixNano: now
+      scope: {}
 - collector_errors:
   - caller: ottl@v0.154.0/parser.go:410
     error: "parsing time \"unparsable time\" as \"%Y-%m-%dT%H:%M\": cannot parse \"unparsable time\" as \"%Y\""

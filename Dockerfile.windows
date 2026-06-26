@@ -10,9 +10,7 @@ FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
 #
 # Basic setup
 #
-RUN setx /M PATH "%PATH%;C:\Go\bin;C:\Java\bin"
-
-RUN setx /M JAVA_HOME "C:\Java"
+RUN setx /M PATH "%PATH%;C:\Go\bin"
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
@@ -21,155 +19,7 @@ RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /work/out/bin; `
     New-Item -Type Directory -Path /work/out/config;
 
-###############################################################################
-# Install build prerequisites
-###############################################################################
-
 WORKDIR /local
-
-#
-# Install Visual Studio Build Tools 2019 (MSVS_VERSION=16) / 2022 (MSVS_VERSION=17, requires WINDOWS_VERSION=ltsc2022)
-# Based on https://github.com/fluent/fluent-bit/blob/v4.0.7/dockerfiles/Dockerfile.windows
-#
-ARG MSVS_VERSION="17"
-ENV MSVS_BUILD_TOOLS_VERSION="$MSVS_VERSION" `
-    MSVS_BUILD_TOOLS_DOWNLOAD_URL="https://aka.ms/vs" `
-    MSVS_HOME="C:\BuildTools"
-
-RUN $msvs_build_tools_dist_name=\"vs_buildtools.exe\"; `
-    $msvs_build_tools_dist=\"${env:TMP}\${msvs_build_tools_dist_name}\"; `
-    $msvs_build_tools_channel=\"C:\local\VisualStudio.chman\"; `
-    $msvs_build_tools_dist_url=\"${env:MSVS_BUILD_TOOLS_DOWNLOAD_URL}/${env:MSVS_BUILD_TOOLS_VERSION}/release/${msvs_build_tools_dist_name}\"; `
-    $msvs_build_tools_channel_url=\"${env:MSVS_BUILD_TOOLS_DOWNLOAD_URL}/${env:MSVS_BUILD_TOOLS_VERSION}/release/channel\"; `
-    Write-Host \"Downloading Visual Studio Build Tools...\"; `
-    Write-Host \"${msvs_build_tools_dist_url} -> ${msvs_build_tools_dist}\"; `
-    Write-Host \"${msvs_build_tools_channel_url} -> ${msvs_build_tools_channel}\"; `
-    Invoke-WebRequest -OutFile \"${msvs_build_tools_dist}\" \"${msvs_build_tools_dist_url}\"; `
-    Invoke-WebRequest -OutFile \"${msvs_build_tools_channel}\" \"${msvs_build_tools_channel_url}\"; `
-    Write-Host \"Installing Visual Studio Build Tools into ${env:MSVS_HOME}...\"; `
-    Start-Process \"${msvs_build_tools_dist}\" `
-      -ArgumentList '--quiet ', '--wait ', '--norestart ', '--nocache', `
-      \"--installPath ${env:MSVS_HOME}\", `
-      \"--channelUri ${msvs_build_tools_channel}\", `
-      \"--installChannelUri ${msvs_build_tools_channel}\", `
-      '--add Microsoft.VisualStudio.Workload.VCTools', `
-      '--includeRecommended'  -NoNewWindow -Wait; `
-    Remove-Item -Force \"${msvs_build_tools_dist}\"; `
-    Remove-Item -Path \"${msvs_build_tools_channel}\" -Force;
-
-#
-# Install compatible CMake
-#
-ENV CMAKE_HOME="C:\cmake"
-ARG CMAKE_VERSION="3.31.6"
-ARG CMAKE_URL="https://github.com/Kitware/CMake/releases/download"
-
-RUN if ([System.Version] \"${env:CMAKE_VERSION}\" -ge [System.Version] \"3.20.0\") { `
-      $cmake_dist_base_name=\"cmake-${env:CMAKE_VERSION}-windows-x86_64\" `
-    } else { `
-      if ([System.Version] \"${env:CMAKE_VERSION}\" -ge [System.Version] \"3.6.0\") { `
-        $cmake_dist_base_name=\"cmake-${env:CMAKE_VERSION}-win64-x64\" `
-      } else { `
-        $cmake_dist_base_name=\"cmake-${env:CMAKE_VERSION}-win32-x86\" `
-      } `
-    }; `
-    $cmake_dist_name=\"${cmake_dist_base_name}.zip\"; `
-    $cmake_dist=\"${env:TMP}\${cmake_dist_name}\"; `
-    $cmake_download_url=\"${env:CMAKE_URL}/v${env:CMAKE_VERSION}/${cmake_dist_name}\"; `
-    Write-Host \"Downloading CMake...\"; `
-    Write-Host \"${cmake_download_url} -> ${cmake_dist}\"; `
-    Invoke-WebRequest -OutFile \"${cmake_dist}\" \"${cmake_download_url}\"; `
-    $cmake_temp_dir=\"${env:TMP}\${cmake_dist_base_name}\"; `
-    Write-Host \"Extracting CMake...\"; `
-    Write-Host \"${cmake_dist} -> ${cmake_temp_dir}\"; `
-    Expand-Archive \"${cmake_dist}\" -Destination \"${env:TMP}\"; `
-    Remove-Item -Force \"${cmake_dist}\"; `
-    Write-Host \"Moving CMake...\"; `
-    Write-Host \"${cmake_temp_dir} -> ${env:CMAKE_HOME}\"; `
-    [System.IO.Directory]::Move(\"${cmake_temp_dir}\", \"${env:CMAKE_HOME}\"); `
-    $env:PATH=\"${env:PATH};${env:CMAKE_HOME}\bin\"; `
-    Write-Host \"Setting PATH...\"; `
-    Write-Host \"${env:PATH}\"; `
-    [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine);
-
-#
-# Install WinFlexBison
-#
-ENV WIN_FLEX_BISON_VERSION="2.5.22" `
-    WIN_FLEX_BISON_HOME="C:\WinFlexBison" `
-    WIN_FLEX_BISON_DOWNLOAD_URL="https://github.com/lexxmark/winflexbison/releases/download"
-
-RUN $win_flex_bison_dist_base_name=\"win_flex_bison-${env:WIN_FLEX_BISON_VERSION}\"; `
-    $win_flex_bison_dist_name=\"${win_flex_bison_dist_base_name}.zip\"; `
-    $win_flex_bison_dist=\"${env:TMP}\${win_flex_bison_dist_name}\"; `
-    $win_flex_bison_url=\"${env:WIN_FLEX_BISON_DOWNLOAD_URL}/v${env:WIN_FLEX_BISON_VERSION}/${win_flex_bison_dist_name}\"; `
-    Write-Host \"Downloading WinFlexBison...\"; `
-    Write-Host \"${win_flex_bison_url} -> ${win_flex_bison_dist}\"; `
-    Invoke-WebRequest -OutFile \"${win_flex_bison_dist}\" \"${win_flex_bison_url}\"; `
-    Write-Host \"Extracting WinFlexBison...\"; `
-    Write-Host \"${win_flex_bison_dist} -> ${env:WIN_FLEX_BISON_HOME}\"; `
-    Expand-Archive \"${win_flex_bison_dist}\" -Destination \"${env:WIN_FLEX_BISON_HOME}\"; `
-    Remove-Item -Force \"${win_flex_bison_dist}\"; `
-    Write-Host \"Copying...\"; `
-    Write-Host \"${env:WIN_FLEX_BISON_HOME}\win_bison.exe -> ${env:WIN_FLEX_BISON_HOME}\bison.exe\"; `
-    Copy-Item -Path \"${env:WIN_FLEX_BISON_HOME}\win_bison.exe\" \"${env:WIN_FLEX_BISON_HOME}\bison.exe\"; `
-    Write-Host \"Copying...\"; `
-    Write-Host \"${env:WIN_FLEX_BISON_HOME}\win_flex.exe -> ${env:WIN_FLEX_BISON_HOME}\flex.exe\"; `
-    Copy-Item -Path \"${env:WIN_FLEX_BISON_HOME}\win_flex.exe\" \"${env:WIN_FLEX_BISON_HOME}\flex.exe\"; `
-    $env:PATH=\"${env:PATH};${env:WIN_FLEX_BISON_HOME}\"; `
-    Write-Host \"Setting PATH...\"; `
-    Write-Host \"${env:PATH}\"; `
-    [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine);
-
-#
-# Install VCPKG
-#
-# https://github.com/microsoft/vcpkg/blob/2024.12.16/scripts/bootstrap.ps1
-ENV VCPKG_VERSION=2024.12.16 `
-    VCPKG_DOWNLOAD_URL="https://github.com/microsoft/vcpkg/archive/refs/tags" `
-    VCPKG_DISABLE_METRICS="ON" `
-    VCPKG_ROOT=/dev/vcpkg
-
-WORKDIR /dev
-
-RUN $vcpkg_dist_base_name=\"vcpkg-${env:VCPKG_VERSION}\"; `
-    $vcpkg_dist=\"${env:TMP}\${vcpkg_dist_base_name}.zip\"; `
-    $vcpkg_url=\"${env:VCPKG_DOWNLOAD_URL}/${env:VCPKG_VERSION}.zip\"; `
-    Write-Host \"Downloading vcpkg...\"; `
-    Write-Host \"${vcpkg_url} -> ${vcpkg_dist}\"; `
-    Invoke-WebRequest -OutFile \"${vcpkg_dist}\" \"${vcpkg_url}\"; `
-    $vcpkg_temp_dir=\"${env:TMP}\${vcpkg_dist_base_name}\"; `
-    Write-Host \"Extracting vcpkg...\"; `
-    Write-Host \"${vcpkg_dist} -> ${vcpkg_temp_dir}\"; `
-    Expand-Archive \"${vcpkg_dist}\" -Destination \"${env:TMP}\"; `
-    Remove-Item -Force \"${vcpkg_dist}\"; `
-    $vcpkg_home_dir=\"${env:VCPKG_ROOT}\" -replace \"/\", \"\\\"; `
-    $vcpkg_home_dir=\"C:${vcpkg_home_dir}\"; `
-    Write-Host \"Moving vcpkg...\"; `
-    Write-Host \"${vcpkg_temp_dir} -> ${vcpkg_home_dir}\"; `
-    [System.IO.Directory]::Move(\"${vcpkg_temp_dir}\", \"${vcpkg_home_dir}\"); `
-    $env:PATH=\"${env:PATH};${vcpkg_home_dir}\"; `
-    Write-Host \"Setting PATH...\"; `
-    Write-Host \"${env:PATH}\"; `
-    [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine); `
-    Write-Host \"Bootstrapping vcpkg...\"; `
-    & \"${vcpkg_home_dir}\bootstrap-vcpkg.bat\";
-
-# Ensure we only attempt to build release and static linking
-ENV VCPKG_BUILD_TYPE=release `
-    VCPKG_LIBRARY_LINKAGE=static
-
-#
-# Install OpenSSL and LibYAML
-#
-RUN vcpkg install --recurse openssl --triplet x64-windows-static; `
-    vcpkg install --recurse libyaml --triplet x64-windows-static;
-
-# Technique from https://github.com/StefanScherer/dockerfiles-windows/blob/master/mongo/3.6/Dockerfile
-WORKDIR /work/out/bin/
-RUN Copy-Item -Path C:\Windows\System32\msvcp140.dll -Destination /work/out/bin/; `
-    Copy-Item -Path C:\Windows\System32\vccorlib140.dll -Destination /work/out/bin/; `
-    Copy-Item -Path C:\Windows\System32\vcruntime140.dll -Destination /work/out/bin/;
 
 #
 # Install Golang
@@ -194,117 +44,8 @@ RUN go install github.com/google/googet/v2/goopack@v2.18.4;
 
 ENV GO_BIN_PATH="C:\Go\bin"
 
-###############################################################################
-# Build fluent-bit
-###############################################################################
 
-COPY submodules/fluent-bit /work/submodules/fluent-bit
 
-WORKDIR /work/submodules/fluent-bit/build
-
-RUN cmake --version;
-
-SHELL ["cmd", "/S", "/C"]
-RUN call "%MSVS_HOME%\VC\Auxiliary\Build\vcvars64.bat" && `
-    cmake -G "NMake Makefiles" `
-    -DOPENSSL_ROOT_DIR='C:\dev\vcpkg\packages\openssl_x64-windows-static' `
-    -DFLB_LIBYAML_DIR='C:\dev\vcpkg\packages\libyaml_x64-windows-static' `
-    -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
-    -DFLB_WINDOWS_DEFAULTS=Off `
-    -DFLB_REGEX=On `
-    -DFLB_BACKTRACE=Off `
-    -DFLB_CONFIG_YAML=Off `
-    -DFLB_LUAJIT=On `
-    -DFLB_EXAMPLES=On `
-    -DFLB_PARSER=On `
-    -DFLB_TLS=On `
-    -DFLB_HTTP_SERVER=On `
-    -DFLB_METRICS=On `
-    -DFLB_WASM=Off `
-    -DFLB_WAMRC=Off `
-    -DFLB_KAFKA=Off `
-    -DFLB_IN_CPU=Off `
-    -DFLB_IN_DISK=Off `
-    -DFLB_IN_EXEC=On `
-    -DFLB_IN_EXEC_WASI=Off `
-    -DFLB_IN_FORWARD=On `
-    -DFLB_IN_HEALTH=Off `
-    -DFLB_IN_HTTP=On `
-    -DFLB_IN_MEM=Off `
-    -DFLB_IN_KMSG=Off `
-    -DFLB_IN_LIB=On `
-    -DFLB_IN_RANDOM=On `
-    -DFLB_IN_SERIAL=Off `
-    -DFLB_IN_STDIN=Off `
-    -DFLB_IN_SYSLOG=On `
-    -DFLB_IN_TAIL=On `
-    -DFLB_IN_TCP=On `
-    -DFLB_IN_MQTT=Off `
-    -DFLB_IN_HEAD=Off `
-    -DFLB_IN_PROC=Off `
-    -DFLB_IN_SYSTEMD=Off `
-    -DFLB_IN_DUMMY=On `
-    -DFLB_IN_NETIF=Off `
-    -DFLB_IN_WINLOG=On `
-    -DFLB_IN_WINSTAT=On `
-    -DFLB_IN_WINEVTLOG=On `
-    -DFLB_IN_COLLECTD=Off `
-    -DFLB_IN_STATSD=On `
-    -DFLB_IN_STORAGE_BACKLOG=On `
-    -DFLB_IN_EMITTER=On `
-    -DFLB_IN_PODMAN_METRICS=Off `
-    -DFLB_OUT_BIGQUERY=Off `
-    -DFLB_OUT_COUNTER=On `
-    -DFLB_OUT_EXIT=Off `
-    -DFLB_OUT_FORWARD=On `
-    -DFLB_OUT_GELF=On `
-    -DFLB_OUT_HTTP=On `
-    -DFLB_OUT_NATS=Off `
-    -DFLB_OUT_PLOT=Off `
-    -DFLB_OUT_FILE=On `
-    -DFLB_OUT_TD=Off `
-    -DFLB_OUT_RETRY=Off `
-    -DFLB_OUT_STACKDRIVER=On `
-    -DFLB_OUT_STDOUT=On `
-    -DFLB_OUT_LIB=On `
-    -DFLB_OUT_NULL=On `
-    -DFLB_OUT_FLOWCOUNTER=On `
-    -DFLB_FILTER_GREP=On `
-    -DFLB_FILTER_MODIFY=On `
-    -DFLB_FILTER_STDOUT=On `
-    -DFLB_FILTER_PARSER=On `
-    -DFLB_FILTER_THROTTLE=On `
-    -DFLB_FILTER_THROTTLE_SIZE=On `
-    -DFLB_FILTER_NEST=On `
-    -DFLB_FILTER_LUA=On `
-    -DFLB_FILTER_RECORD_MODIFIER=On `
-    -DFLB_FILTER_REWRITE_TAG=On `
-    -DFLB_FILTER_WASM=Off ..\ && `
-    cmake --build . --config Release
-
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
-
-RUN Copy-Item -Path bin/fluent-bit.exe -Destination /work/out/bin/; `
-    Copy-Item -Path bin/fluent-bit.dll -Destination /work/out/bin/; `
-    Copy-Item -Path bin/fluent-bit.pdb -Destination /work/out/bin/; `
-    Copy-Item -Path bin/fluent-bit.dll.pdb -Destination /work/out/bin/;
-
-# TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
-
-###############################################################################
-# Build JMX Project here so it can be hashed for
-# a required build flag to support jmx receiver in operations-collector
-###############################################################################
-
-ADD https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.msi /local/jdk-17-windows-x64.msi
-RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-17-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
-
-COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
-
-WORKDIR /work/submodules/opentelemetry-java-contrib
-
-RUN ./gradlew --no-daemon :jmx-metrics:build; `
-    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build OT collector
@@ -314,7 +55,7 @@ COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetr
 
 WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
-RUN & ./build.ps1 -outDir /work/out/bin -jmxHash (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower()
+RUN & ./build.ps1 -outDir /work/out/bin
 
 ###############################################################################
 # Config generator/service installer
@@ -332,15 +73,7 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     Copy-Item -Path confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
 
 ###############################################################################
-# Build agent wrapping tool
-###############################################################################
 
-WORKDIR /work
-
-COPY . /work
-
-RUN go build -o bin/google-cloud-ops-agent-wrapper.exe ./cmd/agent_wrapper; `
-    Copy-Item -Path bin/google-cloud-ops-agent-wrapper.exe -Destination /work/out/bin/;
 
 
 ###############################################################################

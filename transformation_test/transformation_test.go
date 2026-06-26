@@ -31,11 +31,8 @@ import (
 	"testing"
 	"time"
 
-	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/goccy/go-yaml"
@@ -43,22 +40,15 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	_ "google.golang.org/grpc/encoding/gzip"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gotest.tools/v3/golden"
 )
 
 const (
-	flbMainConf          = "fluent_bit_main.conf"
-	flbParserConf        = "fluent_bit_parser.conf"
-	transformationInput  = "input.log"
-	transformationOutput = "output_fluentbit.yaml"
-	flbTag               = "transformation_test"
+	transformationInput = "input.log"
+	flbTag              = "transformation_test"
 )
 
 var (
-	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 
 	multilineTestPatterns = newTestMatchPatterns([]string{
@@ -124,106 +114,13 @@ func TestTransformationTests(t *testing.T) {
 			if err != nil {
 				t.Fatal("failed to unmarshal config:", err)
 			}
-			t.Run("fluent-bit", func(t *testing.T) {
-				t.Parallel()
-				transformationConfig.runFluentBitTest(t, dir.Name())
-			})
+
 			t.Run("otel", func(t *testing.T) {
 				t.Parallel()
 				transformationConfig.runOTelTest(t, dir.Name())
 			})
-			t.Run("otel-otlpexporter", func(t *testing.T) {
-				t.Parallel()
-				transformationConfig.runOtelOTLPExporterTest(t, dir.Name())
-			})
 		})
 	}
-}
-
-func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
-	ctx, cancel := context.WithCancel(testContext())
-	defer cancel()
-
-	if isMultilineTest(name) {
-		ctx = contextWithFlbMultilineTest(ctx)
-	}
-
-	// Generate config files
-	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
-	if err != nil {
-		t.Fatalf("failed to generate config files: %v", err)
-	}
-
-	if len(*flbPath) == 0 {
-		t.Skip("--flb not supplied")
-	}
-
-	// Write config files in temp directory
-	tempPath := t.TempDir()
-	for k, v := range genFiles {
-		err := confgenerator.WriteConfigFile([]byte(v), filepath.Join(tempPath, k))
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("generated file %q\n%s", k, v)
-	}
-
-	testStartTime := time.Now()
-
-	// Start Fluent-bit
-	cmd := exec.Command(
-		*flbPath,
-		"-v",
-		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
-		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
-
-	// unmarshal output
-	data := []map[string]any{}
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		t.Log(stderr.String())
-		t.Log("Failed to run command:", err)
-		data = append(data, map[string]any{"exit_error": err.Error()})
-		sanitizedStderr := sanitizeFluentBitStderr(t, stderr.String())
-		data = append(data, map[string]any{"collector_errors": map[string]any{"stderr": sanitizedStderr}})
-	}
-	t.Logf("stderr: %s\n", stderr.Bytes())
-
-	dec := json.NewDecoder(strings.NewReader(stdout.String()))
-	for {
-		var req map[string]any
-		// decode an array value (Message)
-		if err := dec.Decode(&req); err == io.EOF {
-			break
-		} else if err != nil {
-			t.Fatal(err)
-		}
-		data = append(data, req)
-	}
-
-	// transform timestamp of actual results
-	for _, req := range data {
-		// Only search for entries if stdout is not null
-		if val, ok := req["entries"].([]any); ok {
-			for _, e := range val {
-				entry := e.(map[string]interface{})
-				date := entry["timestamp"].(string)
-				timestamp, err := time.Parse(time.RFC3339Nano, date)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if timestamp.After(testStartTime) {
-					entry["timestamp"] = "now"
-				}
-			}
-		}
-	}
-
-	checkOutput(t, filepath.Join(name, transformationOutput), data)
 }
 
 func checkOutput(t *testing.T, name string, got []map[string]any) {
@@ -301,74 +198,6 @@ func (t transformationTest) pipelineInstance(path string) confgenerator.Pipeline
 	}
 }
 
-func generateFluentBitConfigs(ctx context.Context, name string, transformationTest transformationTest) (map[string]string, error) {
-	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
-	if err != nil {
-		return nil, err
-	}
-
-	components := []fluentbit.Component{}
-
-	if contextHasFlbMulttilineTest(ctx) {
-		service := fluentbit.Component{
-			Kind: "SERVICE",
-			Config: map[string]string{
-				// The combination of Exit_On_Eof on a tail receiver with a multiline parser causes
-				// the last log in a file to be dropped. See :
-				// - https://github.com/fluent/fluent-bit/issues/8623
-				// - https://github.com/fluent/fluent-bit/issues/8353
-				// - https://github.com/fluent/fluent-bit/issues/3926
-				// Some attempts of a solution have been implemented :
-				// - https://github.com/fluent/fluent-bit/pull/8545
-				// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
-				// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
-
-				// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
-				// Set the "Flush" time to 10s, which fixes a race condition in multiline tests that
-				// would sometimes perform a final flush and cause the last line to appear.
-				// (Started in Fluent Bit 4.0.13)
-				//
-				// These settings in combination forces the last log line from any multiline parser
-				// to always be dropped.
-				"Grace": "0",
-				"Flush": "10",
-			},
-		}
-
-		components = append(components, service)
-	}
-
-	pi := transformationTest.pipelineInstance(abs)
-	fbSource, err := pi.FluentBitComponents(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	output := fluentbit.Component{
-		Kind: "OUTPUT",
-		Config: map[string]string{
-			"Match":                         "*",
-			"Name":                          "stackdriver",
-			"Retry_Limit":                   "3",
-			"http_request_key":              "logging.googleapis.com/httpRequest",
-			"net.connect_timeout_log_error": "False",
-			"resource":                      "gce_instance",
-			"stackdriver_agent":             "Google-Cloud-Ops-Agent-Logging/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)",
-			"storage.total_limit_size":      "2G",
-			"tls":                           "On",
-			"tls.verify":                    "Off",
-			"workers":                       "8",
-			"test_log_entry_format":         "true",
-			"export_to_project_id":          "my-project",
-		},
-	}
-	components = append(components, fbSource.Components...)
-	components = append(components, output)
-	return fluentbit.ModularConfig{
-		Components: components,
-	}.Generate()
-}
-
 func testContext() context.Context {
 	pl := platform.Platform{
 		Type: platform.Linux,
@@ -389,96 +218,8 @@ func testContext() context.Context {
 
 // generateOTelConfig attempts to generate an OTel config file for the test case.
 // It calls t.Fatal if there is something wrong with the test case, or returns an error if the config is invalid.
-func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
-	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
-	if err != nil {
-		t.Fatal(err)
-	}
-	pi := transformationConfig.pipelineInstance(abs)
-	pi.RID = "my-log-name"
-	pi.Backend = confgenerator.BackendOTel
-	rps, pls, err := pi.OTelComponents(ctx)
-	if err != nil {
-		return "", err
-	}
 
-	return otel.ModularConfig{
-		DisableMetrics:    true,
-		JSONLogs:          true,
-		LogLevel:          "debug",
-		ReceiverPipelines: rps,
-		Pipelines:         pls,
-		Exporters: map[otel.ExporterType]otel.ExporterComponents{
-			otel.Logging: {
-				ProcessorsByType: map[string][]otel.Component{
-					// Batch with 1.5s timeout to group in the same log request
-					// all late entries flushed from a multiline parser after 1s.
-					"logs": {
-						otel.BatchProcessor(500, 500, "1500ms"),
-					},
-				},
-				Exporter: otel.Component{
-					Type: "googlecloud",
-					Config: map[string]any{
-						"project": "my-project",
-						"sending_queue": map[string]any{
-							"enabled": false,
-						},
-						"log": map[string]any{
-							"default_log_name": "my-log-name",
-							"endpoint":         addr,
-							"use_insecure":     true,
-						},
-					},
-				},
-			},
-		},
-	}.Generate(ctx)
-}
-
-type mockLoggingServer struct {
-	logpb.UnimplementedLoggingServiceV2Server
-	srv       *grpc.Server
-	requestCh chan<- *logpb.WriteLogEntriesRequest
-}
-
-func (s *mockLoggingServer) WriteLogEntries(
-	ctx context.Context,
-	request *logpb.WriteLogEntriesRequest,
-) (*logpb.WriteLogEntriesResponse, error) {
-	s.requestCh <- request
-	return &logpb.WriteLogEntriesResponse{}, nil
-}
-
-func (s *mockLoggingServer) GracefulStop() {
-	// Also closes the connection.
-	s.srv.GracefulStop()
-	close(s.requestCh)
-}
-
-func cloudLoggingOnGRPCServer(ln net.Listener) (*mockLoggingServer, <-chan *logpb.WriteLogEntriesRequest) {
-	ch := make(chan *logpb.WriteLogEntriesRequest)
-	s := &mockLoggingServer{
-		srv:       grpc.NewServer(),
-		requestCh: ch,
-	}
-
-	// Now run it as a gRPC server
-	logpb.RegisterLoggingServiceV2Server(s.srv, s)
-	go func() {
-		_ = s.srv.Serve(ln)
-	}()
-
-	return s, ch
-}
-
-func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
-	got := transformationConfig.runOTelTestInner(t, name, false)
-
-	checkOutput(t, filepath.Join(name, "output_otel.yaml"), got)
-}
-
-func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, name string, isOTLP bool) []map[string]any {
+func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, name string) []map[string]any {
 	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
 
@@ -488,35 +229,20 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
 	}
 
-	var s interface{ GracefulStop() }
-	var requestChWriteLogEntries <-chan *logpb.WriteLogEntriesRequest
 	var requestChOTLP <-chan plogotlp.ExportRequest
 
-	if isOTLP {
-		var mockS *mockOTLPServer
-		mockS, requestChOTLP = otlpOnGRPCServer(ln)
-		s = mockS
-	} else {
-		var mockS *mockLoggingServer
-		mockS, requestChWriteLogEntries = cloudLoggingOnGRPCServer(ln)
-		s = mockS
-	}
+	mockS, requestChOTLP := otlpOnGRPCServer(ln)
 
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		<-ctx.Done()
-		s.GracefulStop()
+		mockS.GracefulStop()
 		return nil
 	})
 
 	got := []map[string]any{}
 
-	var config string
-	if isOTLP {
-		config, err = transformationConfig.generateOTelOTLPExporterConfig(ctx, t, name, ln.Addr().String())
-	} else {
-		config, err = transformationConfig.generateOTelConfig(ctx, t, name, ln.Addr().String())
-	}
+	config, err := transformationConfig.generateOTelOTLPExporterConfig(ctx, t, name, ln.Addr().String())
 	if err != nil {
 		got = append(got, map[string]any{"config_error": err.Error()})
 		return got
@@ -633,14 +359,8 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 
 	// Read and sanitize requests.
 	eg.Go(func() error {
-		if isOTLP {
-			for r := range requestChOTLP {
-				got = append(got, sanitizeOTLPExportRequest(t, r, testStartTime))
-			}
-		} else {
-			for r := range requestChWriteLogEntries {
-				got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
-			}
+		for r := range requestChOTLP {
+			got = append(got, sanitizeOTLPExportRequest(t, r, testStartTime))
 		}
 		return nil
 	})
@@ -657,48 +377,6 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 		got = append(got, map[string]any{"collector_errors": errors})
 	}
 	return got
-}
-
-func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesRequest, testStartTime time.Time) map[string]any {
-	b, err := protojson.Marshal(r)
-	if err != nil {
-		t.Logf("failed to marshal request: %v", err)
-		return nil
-	}
-	var req map[string]any
-	if err := yaml.Unmarshal(b, &req); err != nil {
-		t.Log(string(b))
-		t.Fatal(err)
-	}
-	// Replace entries[].timestamp with a human-readable timestamp
-	if v, ok := req["entries"].([]any); ok {
-		for _, v := range v {
-			v1, _ := v.(map[string]any)
-			// Convert timestamp to "now" or a human-readable timestamp
-			if dateStr, ok := v1["timestamp"].(string); ok {
-				date, err := time.Parse(time.RFC3339Nano, dateStr)
-				if err != nil {
-					t.Logf("failed to parse %q: %v", dateStr, err)
-					return nil
-				}
-				if date.After(testStartTime) {
-					v1["timestamp"] = "now"
-				}
-			}
-		}
-	}
-	return req
-}
-
-func sanitizeFluentBitStderr(t *testing.T, input string) string {
-	// We need to remove non-deterministic information from fluent-bit stderr so the goldens don't keep changing.
-	// Only keep "[error]" lines.
-	result := strings.Join(regexp.MustCompile(`(?m)^.*\[error\].*$`).FindAllString(input, -1), "\n")
-	// Remove timestamps
-	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}(?:.\d+)?`).ReplaceAllString(result, "YYYY/MM/DD HH:MM:SS")
-
-	result = strings.ReplaceAll(result, "\t", "  ")
-	return result
 }
 
 func sanitizeOtelStacktrace(t *testing.T, input string) string {
@@ -742,6 +420,5 @@ func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV2{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogRawXML{} })
-	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroActiveDirectoryDS]()
 	confgenerator.ReplaceLoggingProcessorMacro[apps.LoggingProcessorMacroIisAccess]()
 }

@@ -19,114 +19,19 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
-// TODO: Add a validation check that will allow only one unique language exceptions that focus in one specific language.
-type ParseMultilineGroup struct {
-	Type     string `yaml:"type" validate:"required,oneof=language_exceptions"`
-	Language string `yaml:"language" validate:"required,oneof=java python go"`
-}
-
-type ParseMultiline struct {
-	ConfigComponent `yaml:",inline"`
-
-	// Make this a list so that it's forward compatible to support more `parse_multiline` type other than the build-in language exceptions.
-	MultilineGroups []*ParseMultilineGroup `yaml:"match_any" validate:"required,min=1,max=3,unique"`
-}
-
-func (r ParseMultiline) Type() string {
-	return "parse_multiline"
-}
-
-var multilineRulesLanguageMap = map[string][]MultilineRule{
-	// Below is the working java rules provided by fluentbit team: https://github.com/fluent/fluent-bit/issues/4611
-	// Move to built-in java support, when upstream fixes the issue
-	"java": []MultilineRule{
-		{"start_state, java_start_exception", `/(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]/`, "java_after_exception"},
-		{"java_nested_exception", `/(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]/`, "java_after_exception"},
-		{"java_after_exception", `/^[\t ]*nested exception is:[\\t ]*/`, "java_nested_exception"},
-		{"java_after_exception", `/^[\r\n]*$/`, "java_after_exception"},
-		{"java_after_exception", `/^[\t ]+(?:eval )?at /`, "java_after_exception"},
-		{"java_after_exception", `/^[\t ]+--- End of inner exception stack trace ---$/`, "java_after_exception"},
-		{"java_after_exception", `/^--- End of stack trace from previous (?x:)location where exception was thrown ---$/`, "java_after_exception"},
-		{"java_after_exception", `/^[\t ]*(?:Caused by|Suppressed):/`, "java_after_exception"},
-		{"java_after_exception", `/^[\t ]*... \d+ (?:more|common frames omitted)/`, "java_after_exception"},
-	},
-	"python": []MultilineRule{
-		{"start_state, python_start_exception", `/Traceback \(most recent call last\):$/`, "python"},
-		{"python", `/^[\t ]+File /`, "python_code"},
-		{"python_code", `/[^\t ]/`, "python"},
-		{"python", `/^(?:[^\s.():]+\.)*[^\s.():]+:/`, "python_start_exception"},
-	},
-	"go": []MultilineRule{
-		{"start_state", `/\bpanic: /`, "go_after_panic"},
-		{"start_state", `/http: panic serving/`, "go_goroutine"},
-		{"go_after_panic", `/^$/`, "go_goroutine"},
-		{"go_after_panic, go_after_signal, go_frame_1", `/^$/`, "go_goroutine"},
-		{"go_after_panic", `/^\[signal /`, "go_after_signal"},
-		{"go_goroutine", `/^goroutine \d+ \[[^\]]+\]:$/`, "go_frame_1"},
-		{"go_frame_1", `/^(?:[^\s.:]+\.)*[^\s.():]+\(|^created by /`, "go_frame_2"},
-		{"go_frame_2", `/^\s/`, "go_frame_1"},
-	},
-}
-
-func (p ParseMultiline) CombinedRules() []MultilineRule {
-	var combinedRules []MultilineRule
-	for _, g := range p.MultilineGroups {
-		if g.Type == "language_exceptions" {
-			combinedRules = append(combinedRules, multilineRulesLanguageMap[g.Language]...)
-		}
-	}
-	return combinedRules
-}
-
-func (p ParseMultiline) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	// Fluent Bit multiline parser currently can't export using `message` as key.
-	// Thus we need to add one renaming component per pipeline
-	// Remove the rename component when https://github.com/fluent/fluent-bit/issues/4795 is fixed
-	parserName := fmt.Sprintf("multiline.%s.%s", tag, uid)
-	parserComponent := fluentbit.ParseMultilineComponent(parserName, p.CombinedRules())
-	filter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":                  "multiline",
-			"Match":                 tag,
-			"Multiline.Key_Content": "message",
-			"Multiline.Parser":      parserName,
-		},
-	}
-	// TODO: Refactor to share an implementation with LoggingReceiverFilesMixin.Components
-	return []fluentbit.Component{
-		filter,
-		parserComponent,
-		modify.NewRenameOptions("log", "message").Component(tag),
-	}
-}
-
-func init() {
-	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &ParseMultiline{} })
-}
-
-// ParserShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
+// ParserShared holds common parameters that are used by all processors that are implemented with parser filter.
 type ParserShared struct {
 	TimeKey    string `yaml:"time_key,omitempty" validate:"required_with=TimeFormat,omitempty,fieldlegacy"` // by default does not parse timestamp
 	TimeFormat string `yaml:"time_format,omitempty" validate:"required_with=TimeKey"`                       // must be provided if time_key is present
 	// Types allows parsing the extracted fields.
 	// Not exposed to users for now, but can be used by app receivers.
-	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
-	// According to docs, this is only supported with `ltsv`, `logfmt`, and `regex` parsers.
 	Types map[string]string `yaml:"-" validate:"dive,oneof=string integer bool float hex"`
-}
-
-func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
-	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
 }
 
 func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
@@ -142,8 +47,6 @@ func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 		return nil, err
 	}
 	flag := ottl.LValue{"cache", "__time_valid"}
-	// Replicate fluent-bit behavior of preserving the existing field if the time is unparsable.
-	// The result of `ToTime` cannot be stored in `cache`, so instead we store a boolean flag.
 	return ottl.NewStatements(
 		flag.Set(ottl.False()),
 		flag.SetIf(ottl.True(), ottl.And(
@@ -157,7 +60,6 @@ func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 
 func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 	var out ottl.Statements
-	// Sort map keys to always get the same statements order and error message.
 	for _, field := range GetSortedKeys(p.Types) {
 		fieldType := p.Types[field]
 		m, err := filter.NewMemberLegacy(field)
@@ -168,7 +70,6 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 		if err != nil {
 			return nil, err
 		}
-		// See OTTL docs at https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs
 		switch fieldType {
 		case "string":
 			out = out.Append(a.Set(ottl.ToString(a)))
@@ -179,10 +80,6 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 		case "float":
 			out = out.Append(a.Set(ottl.ToFloat(a)))
 		case "hex":
-			// The strtoull C function is used in Fluent Bit to parse hexadecimal strings: https://github.com/fluent/fluent-bit/blob/a20a127f1b5ae70706bac0dac45fbc6abde4ad27/src/flb_parser.c#L1319
-			// strtoull parses strings into an unsigned long long integer, which is equivalent to an uint64 in Go. It also accepts hexadecimal strings with a leading "0x" prefix and trailing whitespace. Additionally, it accepts a leading "+" or "-" sign.
-			// However, ottl.ParseInt(a, 16) only parses hexadecimal strings without a leading "0x" prefix (e.g., "AF111", "-123F") and does not allow trailing whitespace. It does accept a leading "+" or "-" sign.
-			// ottl.ParseInt parses the string to an int64.
 			out = out.Append(a.Set(ottl.ParseInt(a, 16)))
 		default:
 			return nil, fmt.Errorf("type %q not supported for field %s", fieldType, m)
@@ -192,8 +89,8 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 }
 
 // Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
-func (p ParserShared) FluentBitSpecialFieldsStatements(ctx context.Context) ottl.Statements {
-	fields := filter.FluentBitSpecialFields()
+func (p ParserShared) SpecialFieldsStatements(ctx context.Context) ottl.Statements {
+	fields := filter.SpecialFields()
 	var names []string
 	for f := range fields {
 		if fields[f] == "labels" {
@@ -204,7 +101,6 @@ func (p ParserShared) FluentBitSpecialFieldsStatements(ctx context.Context) ottl
 	sort.Strings(names)
 	labels := ottl.LValue{"body", "logging.googleapis.com/labels"}
 	statements := ottl.NewStatements(
-		// Do labels first so other fields can override it.
 		ottl.LValue{"attributes"}.MergeMaps(labels, "upsert"),
 		labels.Delete(),
 	)
@@ -215,11 +111,19 @@ func (p ParserShared) FluentBitSpecialFieldsStatements(ctx context.Context) ottl
 			},
 		}}.statements(ctx)
 		if err != nil {
-			// Should be impossible
 			panic(err)
 		}
 		statements = statements.Append(s)
 	}
+
+	funcOld := ottl.LValue{"attributes", "gcp.source_location", "function"}
+	funcNew := ottl.LValue{"attributes", "gcp.source_location", "func"}
+
+	statements = statements.Append(ottl.NewStatements(
+		funcNew.SetIf(funcOld, funcOld.IsPresent()),
+		funcOld.DeleteIf(funcNew.IsPresent()),
+	))
+
 	return statements
 }
 
@@ -232,16 +136,6 @@ type LoggingProcessorParseJson struct {
 
 func (r LoggingProcessorParseJson) Type() string {
 	return "parse_json"
-}
-
-func (p LoggingProcessorParseJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	parser, parserName := p.ParserShared.Component(tag, uid)
-	parser.Config["Format"] = "json"
-
-	parserFilters := []fluentbit.Component{}
-	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, false)...)
-	parserFilters = append(parserFilters, parser)
-	return parserFilters
 }
 
 func (p LoggingProcessorParseJson) Processors(ctx context.Context) ([]otel.Component, error) {
@@ -278,7 +172,7 @@ func (p LoggingProcessorParseJson) Processors(ctx context.Context) ([]otel.Compo
 	}
 	statements = statements.Append(ts)
 
-	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
+	statements = statements.Append(p.SpecialFieldsStatements(ctx))
 
 	return []otel.Component{otel.Transform(
 		"log", "log",
@@ -291,7 +185,6 @@ func init() {
 }
 
 // A LoggingProcessorParseRegex applies a regex to the specified field, storing the named capture groups as keys in the log record.
-// This was maintained in addition to the parse_regex_complex to ensure backward compatibility with any existing configurations
 type LoggingProcessorParseRegex struct {
 	ConfigComponent `yaml:",inline"`
 	ParserShared    `yaml:",inline"`
@@ -303,17 +196,6 @@ type LoggingProcessorParseRegex struct {
 
 func (r LoggingProcessorParseRegex) Type() string {
 	return "parse_regex"
-}
-
-func (p LoggingProcessorParseRegex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	parser, parserName := p.ParserShared.Component(tag, uid)
-	parser.Config["Format"] = "regex"
-	parser.Config["Regex"] = p.Regex
-
-	parserFilters := []fluentbit.Component{}
-	parserFilters = append(parserFilters, parser)
-	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, p.PreserveKey)...)
-	return parserFilters
 }
 
 func (p LoggingProcessorParseRegex) ListAllFeatures() ([]string, bool) {
@@ -332,7 +214,6 @@ func (p LoggingProcessorParseRegex) ExtractFeatures() ([]CustomFeature, bool, er
 		},
 	}, false, nil
 }
-
 func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Component, error) {
 	from := p.Field
 	if from == "" {
@@ -350,7 +231,6 @@ func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Comp
 
 	cachedParsedRegex := ottl.LValue{"cache", "__parsed_regex"}
 	statements := ottl.NewStatements(
-		// Set `OmitEmptyValues : true` to have the same behaviour as fluent-bit `parse_regex` with `Skip_Empty_Values: true`.
 		cachedParsedRegex.SetIf(ottl.ExtractPatternsRubyRegex(fromAccessor, p.Regex, true), ottl.And(
 			fromAccessor.IsPresent(),
 			ottl.IsMatchRubyRegex(fromAccessor, p.Regex),
@@ -371,284 +251,16 @@ func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Comp
 	}
 	statements = statements.Append(ts)
 
-	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
+	statements = statements.Append(p.SpecialFieldsStatements(ctx))
 
 	return []otel.Component{otel.Transform(
 		"log", "log",
 		statements,
 	)}, nil
-}
-
-type RegexParser struct {
-	Regex  string
-	Parser ParserShared
-}
-
-// A LoggingProcessorParseRegexComplex applies a set of regexes to the specified field, storing the named capture groups as keys in the log record.
-type LoggingProcessorParseRegexComplex struct {
-	Field   string
-	Parsers []RegexParser
-}
-
-func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	if len(p.Parsers) == 0 {
-		return []fluentbit.Component{}
-	}
-
-	components := []fluentbit.Component{}
-	parserNames := []string{}
-
-	for idx, parserConfig := range p.Parsers {
-		parser, parserName := parserConfig.Parser.Component(tag, fmt.Sprintf("%s.%d", uid, idx))
-		parser.Config["Format"] = "regex"
-		parser.Config["Regex"] = parserConfig.Regex
-		components = append(components, parser)
-		parserNames = append(parserNames, parserName)
-	}
-
-	components = append(components, fluentbit.ParserFilterComponents(tag, p.Field, parserNames, false)...)
-	return components
-}
-
-func (p LoggingProcessorParseRegexComplex) Processors(ctx context.Context) ([]otel.Component, error) {
-	processors := []otel.Component{}
-	for _, parserConfig := range p.Parsers {
-		parseRegex := LoggingProcessorParseRegex{
-			ParserShared: parserConfig.Parser,
-			Regex:        parserConfig.Regex,
-			Field:        p.Field,
-		}
-		parseRegexProcessors, err := parseRegex.Processors(ctx)
-		if err != nil {
-			return nil, err
-		}
-		processors = append(processors, parseRegexProcessors...)
-	}
-	return processors, nil
-}
-
-type MultilineRule = fluentbit.MultilineRule
-
-// A LoggingProcessorParseMultilineRegex applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
-//
-//	#
-//	# Regex rules for multiline parsing
-//	# ---------------------------------
-//	#
-//	# configuration hints:
-//	#
-//	#  - first state always has the name: start_state
-//	#  - every field in the rule must be inside double quotes
-//	#
-//	# rules |   state name  | regex pattern                  | next state
-//	# ------|---------------|--------------------------------------------
-//	rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
-//	rule      "cont"          "/^\s+at.*/"                     "cont"
-type LoggingProcessorParseMultilineRegex struct {
-	LoggingProcessorParseRegexComplex
-	Rules []MultilineRule
-}
-
-func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	multilineParserName := fmt.Sprintf("%s.%s.multiline", tag, uid)
-
-	filter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":                  "multiline",
-			"Match":                 tag,
-			"Multiline.Key_Content": "message",
-			"Multiline.Parser":      multilineParserName,
-		},
-	}
-
-	if p.Field != "" {
-		filter.Config["Multiline.Key_Content"] = p.Field
-	}
-
-	return append(
-		[]fluentbit.Component{
-			filter,
-			fluentbit.ParseMultilineComponent(multilineParserName, p.Rules),
-		},
-		p.LoggingProcessorParseRegexComplex.Components(ctx, tag, uid)...,
-	)
-}
-
-func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]otel.Component, error) {
-	var exprParts []string
-	for _, r := range p.Rules {
-		// The current "recombine" operator multiline support only supports setting a "start_state" ("is_first_entry").
-		// TODO: b/459877163 - Update implementation when opentelemetry supports "state-machine" multiline parsing.
-		if r.StateName == "start_state" {
-			exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r.Regex))
-		}
-	}
-	isFirstEntryExpr := strings.Join(exprParts, " or ")
-
-	logsTransform := []otel.Component{
-		{
-			Type: "logstransform",
-			Config: map[string]any{
-				"operators": []map[string]any{
-					{
-						"type":  "add",
-						"field": "attributes.__source_identifier",
-						"value": `EXPR(attributes["agent.googleapis.com/log_file_path"] ?? "")`,
-					},
-					{
-						"type":           "recombine",
-						"combine_field":  "body.message",
-						"is_first_entry": isFirstEntryExpr,
-						// Take the timestamp and other attributes from the first entry.
-						"overwrite_with": "oldest",
-						// Use the log file path to disambiguate if present.
-						"source_identifier": `attributes.__source_identifier`,
-						// Set time interval (same as fluent-bit "flush_timeout") to wait for secondary logs to be appended.
-						"force_flush_period": "1000ms",
-					},
-					{
-						"type":  "remove",
-						"field": "attributes.__source_identifier",
-					},
-				},
-			},
-		},
-	}
-
-	parseRegexComplexComponents, err := p.LoggingProcessorParseRegexComplex.Processors(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return append(logsTransform, parseRegexComplexComponents...), nil
 }
 
 func init() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorParseRegex{} })
-}
-
-type LoggingProcessorNestWildcard struct {
-	Wildcard     string
-	NestUnder    string
-	RemovePrefix string
-}
-
-func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	filter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      p.Wildcard,
-			"Nest_under":    p.NestUnder,
-			"Remove_prefix": p.RemovePrefix,
-		},
-	}
-
-	return []fluentbit.Component{
-		filter,
-	}
-}
-
-type LoggingProcessorRemoveField struct {
-	Field string
-}
-
-func (p LoggingProcessorRemoveField) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	filter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":   "modify",
-			"Match":  tag,
-			"Remove": p.Field,
-		},
-	}
-	return []fluentbit.Component{filter}
-}
-
-func (p LoggingProcessorRemoveField) Processors(ctx context.Context) ([]otel.Component, error) {
-	fromMember, err := filter.NewMemberLegacy(p.Field)
-	if err != nil {
-		return nil, err
-	}
-	fromAccessor, err := fromMember.OTTLAccessor()
-	if err != nil {
-		return nil, err
-	}
-
-	// delete only if the field exists
-	statements := ottl.NewStatements(
-		fromAccessor.DeleteIf(fromAccessor.IsPresent()),
-	)
-
-	return []otel.Component{otel.Transform(
-		"log", "log",
-		statements,
-	)}, nil
-
-}
-
-type LoggingProcessorParseTimestamp struct {
-	ParserShared `yaml:",inline"`
-}
-
-func (p LoggingProcessorParseTimestamp) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	parser, parserName := p.ParserShared.Component(tag, uid)
-
-	parser.Config["Format"] = "regex"
-	parser.Config["Regex"] = fmt.Sprintf("^(?<%s>.*)$", p.TimeKey)
-
-	components := []fluentbit.Component{}
-	components = append(components, parser)
-
-	components = append(components,
-		fluentbit.ParserFilterComponents(tag, p.TimeKey, []string{parserName}, false)...,
-	)
-
-	return components
-}
-
-type LoggingProcessorRenameIfExists struct {
-	Field   string
-	NewName string
-}
-
-func (p LoggingProcessorRenameIfExists) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	return []fluentbit.Component{modify.NewHardRenameOptions(p.Field, p.NewName).Component(tag)}
-}
-
-func (p LoggingProcessorRenameIfExists) Processors(ctx context.Context) ([]otel.Component, error) {
-	fromMember, err := filter.NewMemberLegacy(p.Field)
-	if err != nil {
-		return nil, err
-	}
-	fromAccessor, err := fromMember.OTTLAccessor()
-	if err != nil {
-		return nil, err
-	}
-
-	toMember, err := filter.NewMemberLegacy(p.NewName)
-	if err != nil {
-		return nil, err
-	}
-	toAccessor, err := toMember.OTTLAccessor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Rename only if the source field exists
-	statements := ottl.NewStatements(
-		toAccessor.SetIf(fromAccessor, fromAccessor.IsPresent()),
-		fromAccessor.DeleteIf(fromAccessor.IsPresent()),
-	)
-
-	return []otel.Component{otel.Transform(
-		"log", "log",
-		statements,
-	)}, nil
-
 }
 
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
@@ -748,26 +360,6 @@ func (p LoggingProcessorExcludeLogs) filters() ([]*filter.Filter, error) {
 		filters = append(filters, filter)
 	}
 	return filters, nil
-}
-
-func (p LoggingProcessorExcludeLogs) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	filters, err := p.filters()
-	if err != nil {
-		panic(err)
-	}
-	components, lua := filter.AllFluentConfig(tag, map[string]*filter.Filter{
-		"match": filter.MatchesAny(filters),
-	})
-	components = append(components, fluentbit.LuaFilterComponents(
-		tag, "process", fmt.Sprintf(`
-function process(tag, timestamp, record)
-%s
-  if match then
-    return -1, 0, 0
-  end
-  return 2, 0, record
-end`, lua))...)
-	return components
 }
 
 func (p LoggingProcessorExcludeLogs) Processors(ctx context.Context) ([]otel.Component, error) {

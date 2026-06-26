@@ -19,13 +19,10 @@ package filter
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/parser"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
@@ -68,8 +65,6 @@ func (m Member) Equals(m2 Member) bool {
 	return m.Target.Equals(m2.Target)
 }
 
-var LuaQuote = ast.LuaQuote
-
 type Filter struct {
 	expr ast.Expression
 }
@@ -85,11 +80,6 @@ func NewFilter(f string) (*Filter, error) {
 		return &Filter{out}, nil
 	}
 	return nil, fmt.Errorf("not an expression: %+v", out)
-}
-
-// innerFluentConfig returns components that are intended to be positioned between corresponding nest/lift filters and a Lua expression to evaluate.
-func (f *Filter) innerFluentConfig(tag, prefix string) ([]fluentbit.Component, string) {
-	return f.expr.FluentConfig(tag, prefix)
 }
 
 func (f Filter) OTTLExpression() (ottl.Value, error) {
@@ -113,58 +103,6 @@ func MatchesAny(filters []*Filter) *Filter {
 	return &Filter{expr: d}
 }
 
-// AllFluentConfig returns components (if any) and Lua code that sets a Boolean local variable for each filter to indicate if that filter matched.
-func AllFluentConfig(tag string, filters map[string]*Filter) ([]fluentbit.Component, string) {
-	var c []fluentbit.Component
-	var lua strings.Builder
-	var vars []string
-	for k := range filters {
-		vars = append(vars, k)
-	}
-	sort.Strings(vars)
-
-	for i, k := range vars {
-		prefix := fmt.Sprintf("__match_%d", i)
-		filter := filters[k]
-		filterComponents, filterExpr := filter.innerFluentConfig(tag, prefix)
-		c = append(c, filterComponents...)
-		lua.WriteString(fmt.Sprintf("local %s = %s;\n", k, filterExpr))
-	}
-	if len(c) == 0 {
-		// If we didn't need any filters, just return the Lua code.
-		return nil, lua.String()
-	}
-	out := []fluentbit.Component{{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":       "nest",
-			"Match":      tag,
-			"Operation":  "nest",
-			"Nest_under": "record",
-			"Wildcard":   "*",
-		},
-	}}
-	out = append(out, c...)
-	out = append(out, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":         "nest",
-			"Match":        tag,
-			"Operation":    "lift",
-			"Nested_under": "record",
-		},
-	})
-	// Remove match keys
-	lua.WriteString(`
-for k, v in pairs(record) do
-  if string.match(k, "^__match_.+") then
-    record[k] = nil
-  end
-end
-`)
-	return out, lua.String()
-}
-
-func FluentBitSpecialFields() map[string]string {
-	return ast.FluentBitSpecialFields()
+func SpecialFields() map[string]string {
+	return ast.SpecialFields()
 }

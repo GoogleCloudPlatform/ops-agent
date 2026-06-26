@@ -22,8 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 )
 
 var (
@@ -80,7 +78,6 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 	allFeatures := getOverriddenDefaultPipelines(userUc)
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
-	allFeatures = append(allFeatures, getOtlpExporterExperimentConfig(ctx)...)
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -507,30 +504,6 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	}
 
 	return feature
-}
-
-func getOtlpExporterExperimentConfig(ctx context.Context) []Feature {
-	featureEnabled := "false"
-	if experiments.FromContext(ctx)["otlp_exporter"] {
-		featureEnabled = "true"
-	}
-
-	return []Feature{
-		{
-			Module: "metrics",
-			Kind:   "exporters",
-			Type:   "otlp",
-			Key:    []string{"otlp_exporter"},
-			Value:  featureEnabled,
-		},
-		{
-			Module: "logging",
-			Kind:   "exporters",
-			Type:   "otlp",
-			Key:    []string{"otlp_exporter"},
-			Value:  featureEnabled,
-		},
-	}
 }
 
 func getOverriddenDefaultPipelines(uc *UnifiedConfig) []Feature {
