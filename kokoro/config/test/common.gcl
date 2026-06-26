@@ -40,6 +40,10 @@ template config go_test = common {
       // Using the internal IP address also avoids issues with the firewall.
       USE_INTERNAL_IP = 'true'
 
+      // Cap integration test parallelism to prevent runner memory exhaustion (OOM)
+      // and regional GCE quota exhaustion.
+      TEST_PARALLEL = '150'
+
       // TRANSFERS_BUCKET and SERVICE_EMAIL are always modified as a pair.
       // when the build is running trusted (reviewed) code, it's OK to set
       // this to 'stackdriver-test-143416-file-transfers' and use

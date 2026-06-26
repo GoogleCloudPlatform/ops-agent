@@ -28,6 +28,10 @@
   value: "true"
 - module: logging
   feature: processors:parse_regex
+  key: "[1].has_ruby_regex"
+  value: "false"
+- module: logging
+  feature: processors:parse_regex
   key: "[1].enabled"
   value: "true"
 - module: logging
