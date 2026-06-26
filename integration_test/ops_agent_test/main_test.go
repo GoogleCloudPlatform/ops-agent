@@ -5428,9 +5428,26 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	logger.Println("Waiting for network block to propagate...")
-	checkCmd := "curl -s -m 5 https://telemetry.googleapis.com > /dev/null"
+	// The deny egress firewall rule is eventually consistent. We want to wait
+	// until ALL key endpoints are blocked before proceeding, to ensure the health
+	// checks consistently detect the block.
+	checkCmd := `if curl -s -m 5 https://telemetry.googleapis.com > /dev/null || \
+   curl -s -m 5 https://dl.google.com > /dev/null || \
+   curl -s -m 5 https://packages.cloud.google.com > /dev/null; then
+  exit 0
+else
+  exit 1
+fi`
 	if gce.IsWindows(vm.ImageSpec) {
-		checkCmd = "if ((Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded) { exit 0 } else { exit 1 }"
+		checkCmd = `if (
+  (Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection dl.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection packages.cloud.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded
+) {
+  exit 0
+} else {
+  exit 1
+}`
 	}
 
 	timeout := time.After(5 * time.Minute)
@@ -5446,10 +5463,10 @@ func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) er
 		case <-tick.C:
 			_, err := gce.RunRemotely(ctx, logger, vm, checkCmd)
 			if err != nil {
-				logger.Printf("Network check failed as expected (network block propagated): %v", err)
+				logger.Printf("Network check failed as expected (all endpoints blocked): %v", err)
 				return nil
 			}
-			logger.Println("Network check still succeeded, waiting...")
+			logger.Println("At least one network endpoint is still reachable, waiting...")
 		}
 	}
 }
