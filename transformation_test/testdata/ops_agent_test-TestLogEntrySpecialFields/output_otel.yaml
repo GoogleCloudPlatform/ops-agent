@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 - resourceLogs:
   - resource:
       attributes:
@@ -78,32 +77,3 @@
         spanId: facefeedb0bacafe
         traceId: deadcafedeadc0defacefeedb0bacafe
       scope: {}
-=======
-- entries:
-  - jsonPayload:
-      logging.googleapis.com/operation:
-        first: true
-        id: id
-        last: true
-        producer: producer
-      normal_field: value
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      label1: value1
-      label2: value2
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    severity: WARNING
-    sourceLocation:
-      file: file
-      function: function
-      line: "1"
-    spanId: facefeedb0bacafe
-    timestamp: now
-    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
-  partialSuccess: true
->>>>>>> master
