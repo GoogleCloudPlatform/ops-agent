@@ -8,7 +8,9 @@ sudo zypper --non-interactive install -y kernel-default-devel=$(uname -r | sed '
 # less errors on installation; fallback to the runfile method if the package
 # manager's package is not working or not compitible with the GPU model
 DISTRIBUTION=$(. /etc/os-release;echo $ID$VERSION_ID | sed -e 's/\.[0-9]//')
-echo "Installing latest version of NVIDIA CUDA and driver"
+if [[ "$DISTRIBUTION" == "sles16" ]]; then
+  DISTRIBUTION="sles15"
+fi
 sudo zypper --non-interactive ar http://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-${DISTRIBUTION}.repo
 sudo zypper --gpg-auto-import-keys --non-interactive refresh
 sudo zypper --non-interactive install -y nvidia-compute-utils-G06

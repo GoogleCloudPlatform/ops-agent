@@ -16,7 +16,7 @@ else
   mysql_repo_pkg_name=''
   if [[ "${SUSE_VERSION}" == 12 ]]; then
     mysql_repo_pkg_name=mysql80-community-release-sles12.rpm
-  elif [[ "${SUSE_VERSION}" == 15 ]]; then
+  elif [[ "${SUSE_VERSION}" == 15 ]] || [[ "${SUSE_VERSION}" == 16 ]]; then
     mysql_repo_pkg_name=mysql80-community-release-sl15.rpm
   fi
 
@@ -33,7 +33,7 @@ fi
 
 if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo zypper -n install libmysqlclient18
-elif [[ "${SUSE_VERSION}" == 15 ]]; then
+elif [[ "${SUSE_VERSION}" == 15 ]] || [[ "${SUSE_VERSION}" == 16 ]]; then
   sudo zypper -n install libmariadb3
 fi
 

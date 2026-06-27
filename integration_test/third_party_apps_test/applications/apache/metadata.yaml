@@ -64,6 +64,7 @@ expected_metrics:
       - suse-cloud:sles-12
       - suse-cloud:sles-15
       - suse-cloud:sles-15-arm64
+      - suse-cloud:sles-16-0-x86-64
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
     kind: CUMULATIVE

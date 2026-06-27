@@ -61,6 +61,7 @@ platforms_to_skip:
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
+  - suse-cloud:sles-16-0-x86-64 # Missing install script for SLES
   - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   - rocky-linux-cloud:rocky-linux-8-arm64
   - rhel-cloud:rhel-8-arm64

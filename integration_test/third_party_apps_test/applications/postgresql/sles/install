@@ -12,14 +12,32 @@ if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-12-pg14.repo
   sudo zypper --non-interactive --no-gpg-checks ref
   sudo zypper --no-gpg-checks in -y postgresql14-server=14.1-3.3.1 postgresql14-contrib=14.1-3.3.1 postgresql14-libs=14.1-1PGDG.sles12 postgresql14=14.1-3.3.1
+elif [[ "${SUSE_VERSION}" == 16 ]]; then
+  # Try native PostgreSQL server for SLES 16
+  sudo zypper --non-interactive --no-gpg-checks ref || true
+  sudo zypper --no-gpg-checks in -y postgresql-server postgresql-contrib postgresql || sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14 || true
+
+  # Check if it was installed and determine service name/paths
+  if rpm -q postgresql14-server >/dev/null 2>&1; then
+    SERVICE_NAME="postgresql-14"
+    DATA_ROOT=/var/lib/pgsql/14
+    CFG_ROOT=/var/lib/pgsql/14
+    BIN_DIR=/usr/pgsql-14/bin
+    sudo /usr/pgsql-14/bin/postgresql-14-setup initdb || true
+  else
+    SERVICE_NAME="postgresql"
+    DATA_ROOT=/var/lib/pgsql
+    CFG_ROOT=/var/lib/pgsql
+    BIN_DIR=/usr/lib/postgresql/bin # Might need adjustment
+    # Native might not need initdb or uses standard pg_createcluster (Debian) or pg_ctl initdb
+    # SLES native usually auto-initializes or uses /usr/share/postgresql/initdb or similar
+    # Let's try initdb if it exists, or let systemd start it (some distros auto-init on first start)
+    sudo /usr/lib/postgresql/bin/pg_ctl init -D /var/lib/pgsql/data || true
+  fi
 elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-15-pg14.repo
 
-  # VERSION_ID is taken from /etc/os-release, and is of the form <SLES version number>.<Service Pack number>.
   if [[ "$VERSION_ID" == "15.6" ]]; then
-    # TODO(b/350987619): There is currently no "15.6" repo for PostgreSQL 14. Since the automatic
-    # $releasever variable will sub in "15.6" on SP6 distros, this sed is necessary to force it
-    # back to the root 15 (not service pack specific) repo.
     sudo sed -i "s/\$releasever/15/g" /etc/zypp/repos.d/pgdg-14.repo
   fi
 

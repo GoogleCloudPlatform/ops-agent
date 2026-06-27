@@ -9,8 +9,12 @@ if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
-sudo zypper install -y \
-    curl java-11-openjdk java-11-openjdk-devel
+
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo zypper install -y curl java-17-openjdk java-17-openjdk-devel
+else
+  sudo zypper install -y curl java-11-openjdk java-11-openjdk-devel
+fi
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o \
@@ -27,6 +31,12 @@ id -u activemq || sudo useradd -s /bin/bash -d /opt/activemq activemq -g activem
 
 sudo chown -R activemq:activemq /opt/activemq
 
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+else
+  JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
+fi
+
 cat <<EOF | sudo tee /etc/systemd/system/activemq.service
 [Unit]
 Description=Apache ActiveMQ Messaging Server
@@ -35,6 +45,7 @@ After=network.target
 Type=forking
 User=activemq
 Group=activemq
+Environment="JAVA_HOME=$JAVA_HOME"
 ExecStart=/opt/activemq/bin/activemq start
 ExecStop=/opt/activemq/bin/activemq stop
 [Install]

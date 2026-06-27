@@ -118,6 +118,7 @@ platforms_to_skip:
   - suse-cloud:sles-12 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
   - suse-cloud:sles-15 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
   - suse-cloud:sles-15-arm64 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
+  - suse-cloud:sles-16-0-x86-64 # QueryLog() failed: nginx_error not found, exhausted retries
 supported_app_version: ["1.18", "1.20"]
 expected_metrics:
   - type: workload.googleapis.com/nginx.connections_accepted

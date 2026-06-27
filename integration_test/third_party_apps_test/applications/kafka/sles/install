@@ -9,7 +9,12 @@ if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
-sudo zypper install -y curl java-11-openjdk
+
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo zypper install -y curl java-17-openjdk
+else
+  sudo zypper install -y curl java-11-openjdk
+fi
 sudo mkdir -p /opt/kafka/stage
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 sudo curl "https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/kafka/3.0.1/kafka_2.12-3.0.1.tgz" -o /opt/kafka/stage/kafka.tgz

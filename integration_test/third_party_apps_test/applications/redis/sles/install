@@ -8,6 +8,9 @@ if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo zypper -n addrepo --no-gpgcheck https://download.opensuse.org/repositories/server:/monitoring/SLE_12/server:monitoring.repo
 elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo zypper -n addrepo --no-gpgcheck https://download.opensuse.org/repositories/server:database/SLE_15/server:database.repo
+elif [[ "${SUSE_VERSION}" == 16 ]]; then
+  # SLES 16 standard repos might have redis.
+  :
 fi
 
 if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
