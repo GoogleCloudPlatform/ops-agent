@@ -143,6 +143,17 @@ if [[ -n "${PLATFORMS:-}" ]]; then
   IMAGE_SPECS="${PLATFORMS}"
 fi
 
+# TODO(b/502589964): force test VMs to run in the same zone as the kokoro worker.
+# The worker is not guaranteed to run in a zone where ARM machines are available,
+# so don't do this for ARM tests.
+if [[ "${ARCH:-}" != "aarch64" ]]; then
+  ZONE_METADATA=$(curl -s -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/zone)
+  if [[ $? -eq 0 ]] && [[ -n "$ZONE_METADATA" ]]; then
+    ZONE_METADATA="${ZONE_METADATA%/}"
+    export ZONES="${ZONE_METADATA##*/}"
+  fi
+fi
+
 set_image_specs
 set_zones
 
