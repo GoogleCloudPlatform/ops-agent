@@ -341,6 +341,7 @@ func (p LoggingProcessorMacroMysqlSlow) Expand(ctx context.Context) []confgenera
 		`(?:\s+Sort_scan_count:\s(?<sortScanCount>\d+))?`,
 		`(?:\s+Created_tmp_disk_tables:\s(?<createdTmpDiskTables>\d+))?`,
 		`(?:\s+Created_tmp_tables:\s(?<createdTmpTables>\d+))?`,
+		`(?:\s+Count_hit_tmp_table_size:\s\d+)?`,
 		`(?:\s+Start:\s(?<startTime>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z))?`,
 		`(?:\s+End:\s(?<endTime>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z))?`,
 	}, "")
