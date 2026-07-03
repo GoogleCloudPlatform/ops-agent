@@ -47,7 +47,7 @@ func (r MetricsReceiverFlink) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.UpdateMetric("flink.jvm.gc.collections.count", otel.RenameLabel("name", "garbage_collector_name")),
 				otel.UpdateMetric("flink.jvm.gc.collections.time", otel.RenameLabel("name", "garbage_collector_name")),

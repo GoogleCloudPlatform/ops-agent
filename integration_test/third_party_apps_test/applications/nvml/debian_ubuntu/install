@@ -1,6 +1,9 @@
 set -e
 source /etc/os-release
 
+sudo apt update
+sudo apt install -y build-essential git
+
 # Check if need to install the driver - Ubuntu DLVM has CUDA/driver pre-installed 
 if command -v nvidia-smi > /dev/null 2>&1; then
     echo "NVIDIA driver already installed. Skipping..."
@@ -8,7 +11,7 @@ if command -v nvidia-smi > /dev/null 2>&1; then
     exit 0
 fi
 
-sudo apt update
+
 KERNEL_VERSION=`uname -r`
 sudo apt install -y wget
 
@@ -49,7 +52,7 @@ else
     wget "$BASE_URL/$PKG_COMMON" "$BASE_URL/$PKG_ARCH" "$BASE_URL/$PKG_KBUILD" "$BASE_URL/$PKG_COMPILER"
     sudo apt-get install -y "./$PKG_COMMON" "./$PKG_ARCH" "./$PKG_KBUILD" "./$PKG_COMPILER"
 fi
-sudo apt install -y software-properties-common pciutils gcc make dkms git
+sudo apt install -y software-properties-common pciutils dkms
 
 # Install CUDA and driver together, since the `exercise` script needs to run a
 # CUDA sample app to generating GPU process metrics

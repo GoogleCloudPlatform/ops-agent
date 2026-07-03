@@ -1,44 +1,27 @@
-- collector_errors:
-  - caller: internal/base_exporter.go:118
-    error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
-    level: error
-    msg: Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.
-    otelcol.component.id: googlecloud/logging
-    otelcol.component.kind: exporter
-    otelcol.signal: logs
-    rejected_items: 1.0
+- entries:
+  - jsonPayload:
+      logging.googleapis.com/operation:
+        first: true
+        id: id
+        last: true
+        producer: producer
+      normal_field: value
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      label1: value1
+      label2: value2
+    logName: projects/my-project/logs/my-log-name
     resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.151.0
-    stacktrace: |-
-      go.opentelemetry.io/collector/exporter/exporterhelper/internal.(*BaseExporter).Send
-        go.opentelemetry.io/collector/exporter/exporterhelper@v0.151.0/internal/base_exporter.go:118
-      go.opentelemetry.io/collector/exporter/exporterhelper/internal.NewLogsRequest.newConsumeLogs.func1
-        go.opentelemetry.io/collector/exporter/exporterhelper@v0.151.0/internal/new_request.go:70
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v1.57.0/logs.go:27
-      go.opentelemetry.io/collector/service/internal/refconsumer.refLogs.ConsumeLogs
-        go.opentelemetry.io/collector/service@v0.151.0/internal/refconsumer/logs.go:29
-      go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
-        go.opentelemetry.io/collector/internal/fanoutconsumer@v0.151.0/logs.go:62
-      go.opentelemetry.io/collector/processor/batchprocessor.(*batchLogs).export
-        go.opentelemetry.io/collector/processor/batchprocessor@v0.151.0/batch_processor.go:547
-      go.opentelemetry.io/collector/processor/batchprocessor.(*shard[...]).sendItems
-        go.opentelemetry.io/collector/processor/batchprocessor@v0.151.0/batch_processor.go:270
-      go.opentelemetry.io/collector/processor/batchprocessor.(*shard[...]).startLoop
-        go.opentelemetry.io/collector/processor/batchprocessor@v0.151.0/batch_processor.go:213
-      sync.(*WaitGroup).Go.func1
-        /usr/local/go/src/sync/waitgroup.go:239
-  - caller: batchprocessor@v0.151.0/batch_processor.go:272
-    error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
-    level: warn
-    msg: Sender failed
-    otelcol.component.id: batch/googlecloud/logging_logs_0
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.151.0
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    sourceLocation:
+      file: file
+      function: function
+      line: "1"
+    spanId: facefeedb0bacafe
+    timestamp: now
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
+  partialSuccess: true

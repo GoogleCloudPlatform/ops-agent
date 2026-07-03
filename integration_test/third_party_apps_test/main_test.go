@@ -1109,7 +1109,7 @@ func TestThirdPartyApps(t *testing.T) {
 					// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
 					// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
 					// do our retries, we preemptively delete the VM now.
-					if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
+					if deleteErr := gce.DeleteInstance(ctx, logger.ToMainLog(), vm); deleteErr != nil {
 						t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
 					}
 				}

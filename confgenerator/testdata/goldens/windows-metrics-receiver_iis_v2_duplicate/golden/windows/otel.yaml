@@ -37,11 +37,6 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  casttosum/iis_1:
-    metrics:
-    - agent.googleapis.com/iis/network/transferred_bytes_count
-    - agent.googleapis.com/iis/new_connection_count
-    - agent.googleapis.com/iis/request_count
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -53,7 +48,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: drop
-  deltatocumulative/loggingmetrics_6: {}
+  deltatocumulative/loggingmetrics_7: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -113,8 +108,12 @@ processors:
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
   groupbyattrs/iis__v2_3: {}
-  interval/loggingmetrics_7:
+  interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/iis_2:
+    strategy: subtract_initial_point
+  metric_start_time/iis__v2_5:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -589,7 +588,39 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/loggingmetrics_8:
+  metricstransform/loggingmetrics_6:
+    transforms:
+    - action: combine
+      include: ^agent/log_entry_count$
+      match_type: regexp
+      new_name: agent/log_entry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      include: ^agent/log_entry_retry_count$
+      match_type: regexp
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      include: ^agent/request_count$
+      match_type: regexp
+      new_name: agent/request_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+  metricstransform/loggingmetrics_9:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -655,20 +686,25 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/iis_2: {}
-  normalizesums/iis__v2_5: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
   transform/agent_prometheus_0:
     metric_statements:
+    - context: resource
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.version")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "server.port")
+      - delete_key(attributes, "url.scheme")
+  transform/iis_1:
+    metric_statements:
     - context: metric
       statements:
-      - delete_key(resource.attributes, "service.name")
-      - delete_key(resource.attributes, "service.version")
-      - delete_key(resource.attributes, "service.instance.id")
-      - delete_key(resource.attributes, "server.port")
-      - delete_key(resource.attributes, "url.scheme")
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/network/transferred_bytes_count"
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/new_connection_count"
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/request_count"
   transform/iis_3:
     metric_statements:
     - context: scope
@@ -1248,8 +1284,8 @@ service:
       - googlecloud
       processors:
       - metricstransform/iis_0
-      - casttosum/iis_1
-      - normalizesums/iis_2
+      - transform/iis_1
+      - metric_start_time/iis_2
       - transform/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
@@ -1284,7 +1320,7 @@ service:
       - transform/iis__v2_2
       - groupbyattrs/iis__v2_3
       - metricstransform/iis__v2_4
-      - normalizesums/iis__v2_5
+      - metric_start_time/iis__v2_5
       - resourcedetection/_global_0
       receivers:
       - iis/iis__v2
@@ -1299,9 +1335,10 @@ service:
       - metricstransform/loggingmetrics_3
       - cumulativetodelta/loggingmetrics_4
       - transform/loggingmetrics_5
-      - deltatocumulative/loggingmetrics_6
-      - interval/loggingmetrics_7
-      - metricstransform/loggingmetrics_8
+      - metricstransform/loggingmetrics_6
+      - deltatocumulative/loggingmetrics_7
+      - interval/loggingmetrics_8
+      - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus

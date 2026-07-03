@@ -69,7 +69,7 @@ func (r MetricsReceiverRedis) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				"redis.commands",
 				"redis.uptime",
 			),
-			otel.NormalizeSums(),
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),

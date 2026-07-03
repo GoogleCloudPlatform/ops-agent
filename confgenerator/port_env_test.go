@@ -10,10 +10,10 @@ import (
 
 func TestPortOverriddenByEnv(t *testing.T) {
 	// Set env vars
-	os.Setenv(ExperimentalFluentBitMetricsPortEnv, "40002")
-	os.Setenv(ExperimentalOtelMetricsPortEnv, "40001")
-	defer os.Unsetenv(ExperimentalFluentBitMetricsPortEnv)
-	defer os.Unsetenv(ExperimentalOtelMetricsPortEnv)
+	os.Setenv(fluentbit.ExperimentalMetricsPortEnv, "40002")
+	os.Setenv(otel.ExperimentalMetricsPortEnv, "40001")
+	defer os.Unsetenv(fluentbit.ExperimentalMetricsPortEnv)
+	defer os.Unsetenv(otel.ExperimentalMetricsPortEnv)
 
 	uc := &UnifiedConfig{}
 
@@ -28,8 +28,8 @@ func TestPortOverriddenByEnv(t *testing.T) {
 
 func TestPortDefaultWhenEnvEmpty(t *testing.T) {
 	// Ensure env vars are not set
-	os.Unsetenv(ExperimentalFluentBitMetricsPortEnv)
-	os.Unsetenv(ExperimentalOtelMetricsPortEnv)
+	os.Unsetenv(fluentbit.ExperimentalMetricsPortEnv)
+	os.Unsetenv(otel.ExperimentalMetricsPortEnv)
 
 	uc := &UnifiedConfig{}
 
@@ -44,10 +44,10 @@ func TestPortDefaultWhenEnvEmpty(t *testing.T) {
 
 func TestPortInvalidEnvFallbacksToDefault(t *testing.T) {
 	// Set invalid env vars
-	os.Setenv(ExperimentalFluentBitMetricsPortEnv, "invalid")
-	os.Setenv(ExperimentalOtelMetricsPortEnv, "65536") // Out of range for uint16
-	defer os.Unsetenv(ExperimentalFluentBitMetricsPortEnv)
-	defer os.Unsetenv(ExperimentalOtelMetricsPortEnv)
+	os.Setenv(fluentbit.ExperimentalMetricsPortEnv, "invalid")
+	os.Setenv(otel.ExperimentalMetricsPortEnv, "65536") // Out of range for uint16
+	defer os.Unsetenv(fluentbit.ExperimentalMetricsPortEnv)
+	defer os.Unsetenv(otel.ExperimentalMetricsPortEnv)
 
 	uc := &UnifiedConfig{}
 

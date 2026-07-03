@@ -14,9 +14,12 @@
 
 package fluentbit
 
-import "strconv"
+import (
+	"strconv"
+)
 
 const MetricsPort = 20202
+const ExperimentalMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_FLUENT_BIT_METRICS_PORT"
 
 func MetricsInputComponent() Component {
 	return Component{

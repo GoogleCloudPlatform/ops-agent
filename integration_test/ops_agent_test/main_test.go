@@ -65,11 +65,13 @@ import (
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/api/distribution"
@@ -5307,7 +5309,7 @@ metrics:
 }
 
 func isHealthCheckTestImage(imageSpec string) bool {
-	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-11")
+	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-12")
 }
 
 func healthCheckResultMessage(name string, result string, code string) string {
@@ -5387,6 +5389,8 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			var packages []string
 			if gce.IsCentOS(vm.ImageSpec) || gce.IsRHEL(vm.ImageSpec) {
 				packages = []string{"nc"}
+			} else if gce.IsDebianBased(vm.ImageSpec) {
+				packages = []string{"netcat-traditional"}
 			} else {
 				packages = []string{"netcat"}
 			}
@@ -5422,9 +5426,54 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	})
 }
 
+func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	logger.Println("Waiting for network block to propagate...")
+	// The deny egress firewall rule is eventually consistent. We want to wait
+	// until ALL key endpoints are blocked before proceeding, to ensure the health
+	// checks consistently detect the block.
+	checkCmd := `if curl -s -m 5 https://telemetry.googleapis.com > /dev/null || \
+   curl -s -m 5 https://dl.google.com > /dev/null || \
+   curl -s -m 5 https://packages.cloud.google.com > /dev/null; then
+  exit 0
+else
+  exit 1
+fi`
+	if gce.IsWindows(vm.ImageSpec) {
+		checkCmd = `if (
+  (Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection dl.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection packages.cloud.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded
+) {
+  exit 0
+} else {
+  exit 1
+}`
+	}
+
+	timeout := time.After(5 * time.Minute)
+	tick := time.NewTicker(10 * time.Second)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeout:
+			return fmt.Errorf("timeout waiting for network block to propagate")
+		case <-tick.C:
+			_, err := gce.RunRemotely(ctx, logger, vm, checkCmd)
+			if err != nil {
+				logger.Printf("Network check failed as expected (all endpoints blocked): %v", err)
+				return nil
+			}
+			logger.Println("At least one network endpoint is still reachable, waiting...")
+		}
+	}
+}
+
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !isHealthCheckTestImage(imageSpec) {
 			t.SkipNow()
@@ -5432,7 +5481,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5453,7 +5502,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.AddTagToVm(ctx, logger, vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(2 * time.Minute)
+		if err := waitForNetworkBlock(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
@@ -5470,8 +5521,12 @@ func TestNetworkHealthCheck(t *testing.T) {
 		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Network", "WARNING", "DLApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
+		if strings.Contains(feature, "otlp_exporter") {
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "TelApiConnErr")
+		} else {
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
+		}
 	})
 }
 
@@ -5988,13 +6043,29 @@ func TestAppHubLogLabels(t *testing.T) {
 			"--uri",
 		}
 
-		output, err := gce.RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
+		var migResourceString string
+
+		// AppHub discovery is asynchronous and can take several minutes. Retry for up to 3 minutes.
+		discoveryCtx, discoveryCancel := context.WithTimeout(ctx, 3*time.Minute)
+		defer discoveryCancel()
+
+		err := backoff.Retry(func() error {
+			out, err := gce.RunGcloud(discoveryCtx, logger, "", discoverMIGWorkloadArgs)
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(out.Stdout) == "" {
+				return fmt.Errorf("discovered workload for %s not found yet", migVM.ManagedInstanceGroupName())
+			}
+			migResourceString = strings.Replace(strings.TrimSpace(out.Stdout), "https://apphub.googleapis.com/v1/", "", 1)
+			return nil
+		}, backoff.WithContext(backoff.NewConstantBackOff(15*time.Second), discoveryCtx))
+
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("Failed to discover AppHub workload: %v", err)
 		}
 
 		// Setup Apphub #2 : Register Managed Instance Group as AppHub workload.
-		migResourceString := strings.Replace(output.Stdout, "https://apphub.googleapis.com/v1/", "", 1)
 		registerAppHubWorkloadArgs := []string{
 			"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
 			"--application=" + AppHubIntegrationTestApp,
@@ -6004,8 +6075,7 @@ func TestAppHubLogLabels(t *testing.T) {
 			"--format=json",
 		}
 
-		output, err = gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
-		if err != nil {
+		if _, err := gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs); err != nil {
 			t.Fatal(err)
 		}
 
@@ -6022,8 +6092,7 @@ func TestAppHubLogLabels(t *testing.T) {
 				"--format=json",
 			}
 
-			output, err = gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs)
-			if err != nil {
+			if _, err := gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -6150,14 +6219,14 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 		if gce.IsWindows(imageSpec) {
 			// Set environment variables via PowerShell
 			setEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", "40002", "Machine"); [Environment]::SetEnvironmentVariable("%s", "40001", "Machine")`,
-				confgenerator.ExperimentalFluentBitMetricsPortEnv, confgenerator.ExperimentalOtelMetricsPortEnv)
+				fluentbit.ExperimentalMetricsPortEnv, otel.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, setEnvCmd); err != nil {
 				t.Fatal(err)
 			}
 			// Cleanup env vars at the end of the test
 			t.Cleanup(func() {
 				unsetEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", $null, "Machine"); [Environment]::SetEnvironmentVariable("%s", $null, "Machine")`,
-					confgenerator.ExperimentalFluentBitMetricsPortEnv, confgenerator.ExperimentalOtelMetricsPortEnv)
+					fluentbit.ExperimentalMetricsPortEnv, otel.ExperimentalMetricsPortEnv)
 				gce.RunRemotely(ctx, logger, vm, unsetEnvCmd)
 			})
 			// Restart agent
@@ -6178,7 +6247,7 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 			}
 			fbOverrideContent := fmt.Sprintf(`[Service]
 Environment="%s=40002"
-`, confgenerator.ExperimentalFluentBitMetricsPortEnv)
+`, fluentbit.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", fbOverrideContent, fbOverrideFile)); err != nil {
 				t.Fatal(err)
 			}
@@ -6192,7 +6261,7 @@ Environment="%s=40002"
 			otelOverrideContent := fmt.Sprintf(`[Service]
 Environment="%s=40001"
 Environment="%s=40002"
-`, confgenerator.ExperimentalOtelMetricsPortEnv, confgenerator.ExperimentalFluentBitMetricsPortEnv)
+`, otel.ExperimentalMetricsPortEnv, fluentbit.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", otelOverrideContent, otelOverrideFile)); err != nil {
 				t.Fatal(err)
 			}

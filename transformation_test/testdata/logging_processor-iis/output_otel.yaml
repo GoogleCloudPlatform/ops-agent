@@ -1,6 +1,5 @@
 - entries:
   - httpRequest:
-      protocol: HTTP/1.1
       referer: http://localhost/
       remoteIp: "::1"
       requestMethod: GET
@@ -23,7 +22,6 @@
       type: gce_instance
     timestamp: 2022-03-11T01:26:30Z
   - httpRequest:
-      protocol: HTTP/1.1
       remoteIp: "::1"
       requestMethod: GET
       requestUrl: /
@@ -45,7 +43,6 @@
       type: gce_instance
     timestamp: 2022-03-11T01:26:30Z
   - httpRequest:
-      protocol: HTTP/1.1
       remoteIp: "::1"
       requestMethod: GET
       requestUrl: /favicon.ico
@@ -67,7 +64,6 @@
       type: gce_instance
     timestamp: 2022-03-11T01:26:32Z
   - httpRequest:
-      protocol: HTTP/1.1
       remoteIp: "::1"
       requestMethod: GET
       requestUrl: /forbidden?something=something

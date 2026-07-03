@@ -40,7 +40,7 @@
       type: gce_instance
     timestamp: 2022-03-03T10:12:45Z
   - httpRequest:
-      protocol: HTTP/1.1
+      protocol: HTTP/2.0
       remoteIp: 10.0.0.5
       requestMethod: GET
       requestUrl: /static/image.png

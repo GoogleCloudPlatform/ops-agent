@@ -47,7 +47,7 @@ require (
 	buf.build/go/protoyaml v0.3.1
 	cloud.google.com/go/secretmanager v1.15.0
 	github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228
-	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260421202551-6eb719ecb685
+	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260617143844-26502c3aa0b0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0
 	go.opentelemetry.io/collector/pdata v1.48.0
 	go.opentelemetry.io/proto/otlp v1.10.0
