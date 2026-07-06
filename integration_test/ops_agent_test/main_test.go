@@ -5432,6 +5432,8 @@ func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) er
 	// until ALL key endpoints are blocked before proceeding, to ensure the health
 	// checks consistently detect the block.
 	checkCmd := `if curl -s -m 5 https://telemetry.googleapis.com > /dev/null || \
+   curl -s -m 5 https://logging.googleapis.com > /dev/null || \
+   curl -s -m 5 https://monitoring.googleapis.com > /dev/null || \
    curl -s -m 5 https://dl.google.com > /dev/null || \
    curl -s -m 5 https://packages.cloud.google.com > /dev/null; then
   exit 0
@@ -5441,6 +5443,8 @@ fi`
 	if gce.IsWindows(vm.ImageSpec) {
 		checkCmd = `if (
   (Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection logging.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection monitoring.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
   (Test-NetConnection dl.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
   (Test-NetConnection packages.cloud.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded
 ) {
