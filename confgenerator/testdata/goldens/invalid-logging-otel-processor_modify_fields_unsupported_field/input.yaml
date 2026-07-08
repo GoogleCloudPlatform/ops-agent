@@ -24,8 +24,8 @@ logging:
     simple:
       type: modify_fields
       fields:
-        operation:
-          move_from: jsonPayload.operation
+        insertId:
+          move_from: jsonPayload.insert_id
   service:
     experimental_otel_logging: true
     pipelines:
