@@ -5479,7 +5479,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
-		if !isHealthCheckTestImage(imageSpec) {
+		if !isHealthCheckTestImage(imageSpec) || gce.IsOpsAgentUAPPlugin() {
 			t.SkipNow()
 		}
 
