@@ -5325,6 +5325,25 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
+func waitForExpectedHealthCheckResults(ctx context.Context, logger *log.Logger, vm *gce.VM, maxWait time.Duration, checks map[string]string) error {
+	ctx, cancel := context.WithTimeout(ctx, maxWait)
+	defer cancel()
+
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(5*time.Second), ctx)
+	return backoff.Retry(func() error {
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		if err != nil {
+			return err
+		}
+		for name, expected := range checks {
+			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(name, expected, "")) {
+				return fmt.Errorf("expected %s check to %s in service output:\n%s", name, expected, cmdOut.Stdout)
+			}
+		}
+		return nil
+	}, backoffPolicy)
+}
+
 func getRecentServiceOutputForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
@@ -5811,14 +5830,14 @@ func TestRestartVM(t *testing.T) {
 			}
 
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
+			// Ensure all healthchecks pass before the restart with backoff polling
+			if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+				"Network": "PASS",
+				"Ports":   "PASS",
+				"API":     "PASS",
+			}); err != nil {
+				t.Error(err)
 			}
-			// Ensure sure all healthchecks pass before the restart
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
 
 		logger.Printf(`Restarting instance. For details, see "VM_restart.txt".`)
@@ -5844,13 +5863,13 @@ func TestRestartVM(t *testing.T) {
 				t.Error("expected the plugin to be running after the VM restart, but is not running")
 			}
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
+			if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+				"Network": "PASS",
+				"Ports":   "PASS",
+				"API":     "PASS",
+			}); err != nil {
+				t.Error(err)
 			}
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
 	})
 }
