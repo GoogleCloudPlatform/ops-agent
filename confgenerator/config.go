@@ -1105,7 +1105,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	}
 	platformDefaultConfig := BuiltInConfStructs[platform.FromContext(ctx).Name()].Logging
 	exp_otlp := experiments.FromContext(ctx)["otlp_logging"]
-	force_otel := l.Service.OTelLogging
+	force_otel := true
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
@@ -1146,7 +1146,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				Receiver:     receiver,
 				Processors:   processors,
 			}
-			if (force_otel != nil && *force_otel) || // User asked for OTel logging
+			if (force_otel != nil && *force_otel && uc.OTelLoggingSupported()) || // User asked for OTel logging
 				(force_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
 				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
 				instance.Backend = BackendOTel
