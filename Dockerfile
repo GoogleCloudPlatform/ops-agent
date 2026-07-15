@@ -701,10 +701,10 @@ COPY --from=noble-build /google-cloud-ops-agent*.deb /
 COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
-# Build Ops Agent for ubuntu-questing
+# Build Ops Agent for ubuntu-resolute
 # ======================================
 
-FROM ubuntu:questing AS questing-build-base
+FROM ubuntu:resolute AS resolute-build-base
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
@@ -715,7 +715,7 @@ SHELL ["/bin/bash", "-c"]
 
 
 
-FROM questing-build-base AS questing-build-systemd
+FROM resolute-build-base AS resolute-build-systemd
 WORKDIR /work
 COPY ./systemd systemd
 COPY ./builds/systemd.sh .
@@ -724,7 +724,7 @@ RUN ./systemd.sh /work/cache/
 
 
 
-FROM questing-build-base AS questing-build
+FROM resolute-build-base AS resolute-build
 WORKDIR /work
 COPY . /work
 
@@ -734,20 +734,20 @@ COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
-COPY --from=questing-build-systemd /work/cache /work/cache
+COPY --from=resolute-build-systemd /work/cache /work/cache
 
 RUN ./pkg/deb/build.sh
 
 # Copy prebuilt plugin files to cache before packaging the plugin
 COPY --from=go-build /work/plugin-cache /work/cache
 
-RUN ./pkg/plugin/build.sh /work/cache questing
+RUN ./pkg/plugin/build.sh /work/cache resolute
 
 
-FROM scratch AS questing
-COPY --from=questing-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-questing.tgz
-COPY --from=questing-build /google-cloud-ops-agent*.deb /
-COPY --from=questing-build /google-cloud-ops-agent-plugin*.tar.gz /
+FROM scratch AS resolute
+COPY --from=resolute-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-resolute.tgz
+COPY --from=resolute-build /google-cloud-ops-agent*.deb /
+COPY --from=resolute-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 FROM scratch
 COPY --from=centos8 /* /
@@ -761,4 +761,4 @@ COPY --from=sles15 /* /
 COPY --from=sles16 /* /
 COPY --from=jammy /* /
 COPY --from=noble /* /
-COPY --from=questing /* /
+COPY --from=resolute /* /

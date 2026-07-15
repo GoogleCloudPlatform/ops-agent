@@ -195,14 +195,14 @@ RUN ln -fs /usr/lib/systemd /lib/systemd`,
 		package_extension: "deb",
 	},
 	{
-		from_image:  "ubuntu:questing",
-		target_name: "questing",
+		from_image:  "ubuntu:resolute",
+		target_name: "resolute",
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
 		file systemd-dev debhelper libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-questing",
+		tar_distro_name:   "ubuntu-resolute",
 		package_extension: "deb",
 	},
 }
