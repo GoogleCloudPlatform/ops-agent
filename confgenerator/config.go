@@ -1146,7 +1146,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				Receiver:     receiver,
 				Processors:   processors,
 			}
-			if (force_otel != nil && *force_otel && uc.OTelLoggingSupported()) || // User asked for OTel logging
+			if (force_otel != nil && *force_otel && uc.OTelLoggingSupported(ctx)) || // User asked for OTel logging
 				(force_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
 				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
 				instance.Backend = BackendOTel
