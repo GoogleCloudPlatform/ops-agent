@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -1104,22 +1103,15 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	if err != nil {
 		return nil, err
 	}
-	platformDefaultConfig := BuiltInConfStructs[platform.FromContext(ctx).Name()].Logging
 	exp_otlp := experiments.FromContext(ctx)["otlp_logging"]
 	force_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
-		defaultP, ok := platformDefaultConfig.Service.Pipelines[pID]
-		isDefaultPipeline := ok && slices.Equal(p.ReceiverIDs, defaultP.ReceiverIDs) && slices.Equal(p.ProcessorIDs, defaultP.ProcessorIDs)
 		for _, rID := range p.ReceiverIDs {
 			receiver, ok := receivers[rID]
 			if !ok {
 				return nil, fmt.Errorf("logging receiver %q not found", rID)
-			}
-			defaultReceiver, ok := platformDefaultConfig.Receivers[rID]
-			if !ok || !reflect.DeepEqual(receiver, defaultReceiver) {
-				isDefaultPipeline = false
 			}
 			var processors []struct {
 				ID string
@@ -1147,9 +1139,16 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				Receiver:     receiver,
 				Processors:   processors,
 			}
-			if (force_otel != nil && *force_otel) || // User asked for OTel logging
-				(force_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
-				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
+			use_otel := (force_otel != nil && *force_otel) || // User asked for OTel logging
+				(receiver.Type() == "otlp" && exp_otlp) // OTLP receiver
+			if force_otel == nil && !use_otel {
+				// If OTel isn't forced on or off, check if we can run this pipeline with OTel
+				_, _, err := instance.OTelComponents(ctx)
+				if err == nil {
+					use_otel = true
+				}
+			}
+			if use_otel {
 				instance.Backend = BackendOTel
 			}
 			out = append(out, instance)
