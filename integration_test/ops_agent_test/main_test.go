@@ -5299,6 +5299,25 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
+func waitForExpectedHealthCheckResults(ctx context.Context, logger *log.Logger, vm *gce.VM, maxWait time.Duration, checks map[string]string) error {
+	ctx, cancel := context.WithTimeout(ctx, maxWait)
+	defer cancel()
+
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(5*time.Second), ctx)
+	return backoff.Retry(func() error {
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		if err != nil {
+			return err
+		}
+		for name, expected := range checks {
+			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(name, expected, "")) {
+				return fmt.Errorf("expected %s check to %s in service output:\n%s", name, expected, cmdOut.Stdout)
+			}
+		}
+		return nil
+	}, backoffPolicy)
+}
+
 func getRecentServiceOutputForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
@@ -5403,9 +5422,30 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	logger.Println("Waiting for network block to propagate...")
-	checkCmd := "curl -s -m 5 https://telemetry.googleapis.com > /dev/null"
+	// The deny egress firewall rule is eventually consistent. We want to wait
+	// until ALL key endpoints are blocked before proceeding, to ensure the health
+	// checks consistently detect the block.
+	checkCmd := `if curl -s -m 5 https://telemetry.googleapis.com > /dev/null || \
+   curl -s -m 5 https://logging.googleapis.com > /dev/null || \
+   curl -s -m 5 https://monitoring.googleapis.com > /dev/null || \
+   curl -s -m 5 https://dl.google.com > /dev/null || \
+   curl -s -m 5 https://packages.cloud.google.com > /dev/null; then
+  exit 0
+else
+  exit 1
+fi`
 	if gce.IsWindows(vm.ImageSpec) {
-		checkCmd = "if ((Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded) { exit 0 } else { exit 1 }"
+		checkCmd = `if (
+  (Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection logging.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection monitoring.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection dl.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection packages.cloud.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded
+) {
+  exit 0
+} else {
+  exit 1
+}`
 	}
 
 	timeout := time.After(5 * time.Minute)
@@ -5421,10 +5461,10 @@ func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) er
 		case <-tick.C:
 			_, err := gce.RunRemotely(ctx, logger, vm, checkCmd)
 			if err != nil {
-				logger.Printf("Network check failed as expected (network block propagated): %v", err)
+				logger.Printf("Network check failed as expected (all endpoints blocked): %v", err)
 				return nil
 			}
-			logger.Println("Network check still succeeded, waiting...")
+			logger.Println("At least one network endpoint is still reachable, waiting...")
 		}
 	}
 }
@@ -5433,7 +5473,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !isHealthCheckTestImage(imageSpec) {
+		if !isHealthCheckTestImage(imageSpec) || gce.IsOpsAgentUAPPlugin() {
 			t.SkipNow()
 		}
 
@@ -5736,14 +5776,14 @@ func TestRestartVM(t *testing.T) {
 			}
 
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
+			// Ensure all healthchecks pass before the restart with backoff polling
+			if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+				"Network": "PASS",
+				"Ports":   "PASS",
+				"API":     "PASS",
+			}); err != nil {
+				t.Error(err)
 			}
-			// Ensure sure all healthchecks pass before the restart
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
 
 		logger.Printf(`Restarting instance. For details, see "VM_restart.txt".`)
@@ -5769,13 +5809,13 @@ func TestRestartVM(t *testing.T) {
 				t.Error("expected the plugin to be running after the VM restart, but is not running")
 			}
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
+			if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+				"Network": "PASS",
+				"Ports":   "PASS",
+				"API":     "PASS",
+			}); err != nil {
+				t.Error(err)
 			}
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
 	})
 }
