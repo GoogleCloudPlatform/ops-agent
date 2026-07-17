@@ -1,112 +1,95 @@
-- resourceLogs:
-  - resource:
-      attributes:
-      - key: cloud.availability_zone
-        value:
-          stringValue: test-zone
-      - key: cloud.platform
-        value:
-          stringValue: gcp_compute_engine
-      - key: cloud.project
-        value:
-          stringValue: my-project
-      - key: cloud.region
-        value:
-          stringValue: test-zone
-      - key: gcp.project_id
-        value:
-          stringValue: fake-project
-      - key: gcp.use_legacy_mapping
-        value:
-          stringValue: "true"
-      - key: host.id
-        value:
-          stringValue: test-instance-id
-    scopeLogs:
-    - logRecords:
-      - attributes:
-        - key: compute.googleapis.com/resource_name
-          value:
-            stringValue: hostname
-        - key: gcp.log_name
-          value:
-            stringValue: my-log-name
-        body:
-          kvlistValue:
-            values:
-            - key: level
-              value:
-                stringValue: info
-            - key: message
-              value:
-                stringValue: start
-        observedTimeUnixNano: now
-        timeUnixNano: "1672657445123456789"
-      - attributes:
-        - key: compute.googleapis.com/resource_name
-          value:
-            stringValue: hostname
-        - key: gcp.log_name
-          value:
-            stringValue: my-log-name
-        body:
-          kvlistValue:
-            values:
-            - key: level
-              value:
-                stringValue: error
-            - key: message
-              value:
-                stringValue: failed to connect
-            - key: time
-              value:
-                stringValue: 2024-06-15T14:30:00.987654321Z
-        observedTimeUnixNano: now
-      - attributes:
-        - key: compute.googleapis.com/resource_name
-          value:
-            stringValue: hostname
-        - key: gcp.log_name
-          value:
-            stringValue: my-log-name
-        body:
-          kvlistValue:
-            values:
-            - key: level
-              value:
-                stringValue: warning
-            - key: message
-              value:
-                stringValue: low disk space
-            - key: time
-              value:
-                stringValue: 2022-12-31T23:59:59.000000000-0800
-        observedTimeUnixNano: now
-      scope: {}
+- exit_error: exit status 2
 - collector_errors:
-  - caller: ottl@v0.154.0/parser.go:410
-    error: "parsing time \"2024-06-15T14:30:00.987654321Z\": extra text: \"Z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.154.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.154.0/parser.go:410
-    error: "parsing time \"2022-12-31T23:59:59.000000000-0800\": extra text: \"-0800\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.154.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - stderr: |
+      
+      panic: runtime error: index out of range [0] with length 0
+      
+      goroutine N [running]:
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func2(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:206 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:240 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func1(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:184 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func2(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:204 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:232 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func1(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:184 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func2(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:204 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:232 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func1(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:184 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func2(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:204 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:240 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func1(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:184 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func2(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:204 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:232 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func1(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:184 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func2(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:204 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:232 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func1(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:184 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse.func2(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:204 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.iterativeParse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:240 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt.Parse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/internal/ctimefmt/ctimefmt.go:136 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils.(*StrptimeParser).parse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/parser.go:46 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils.(*StrptimeParser).Parse(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/timeutils/parser.go:54 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs.Time[...].func1(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl@v0.156.0/ottlfuncs/func_time.go:79 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.Expr[...].Eval(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl@v0.156.0/expression.go:34
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.(*exprGetter[...]).Get(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl@v0.156.0/expression.go:76 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.(*comparisonExpr[...]).Eval(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl@v0.156.0/boolean_value.go:179 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.(*andExprs[...]).Eval(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl@v0.156.0/boolean_value.go:86 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.(*Statement[...]).Execute(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl@v0.156.0/parser.go:34 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.(*StatementSequence[...]).Execute(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl@v0.156.0/parser.go:416 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common.logStatements.ConsumeLogs(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor@v0.156.0/internal/common/logs.go:46 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs.(*Processor).ProcessLogs(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor@v0.156.0/internal/logs/processor.go:60 +0xX
+      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1(...)
+        go.opentelemetry.io/collector/processor/processorhelper@v0.156.0/logs.go:59 +0xX
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs(...)
+        go.opentelemetry.io/collector/consumer@v1.62.0/logs.go:27
+      go.opentelemetry.io/collector/service/internal/refconsumer.refLogs.ConsumeLogs(...)
+        go.opentelemetry.io/collector/service@v0.156.0/internal/refconsumer/logs.go:29 +0xX
+      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1(...)
+        go.opentelemetry.io/collector/processor/processorhelper@v0.156.0/logs.go:71 +0xX
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs(...)
+        go.opentelemetry.io/collector/consumer@v1.62.0/logs.go:27
+      go.opentelemetry.io/collector/service/internal/refconsumer.refLogs.ConsumeLogs(...)
+        go.opentelemetry.io/collector/service@v0.156.0/internal/refconsumer/logs.go:29 +0xX
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs(...)
+        go.opentelemetry.io/collector/consumer@v1.62.0/logs.go:27
+      go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs(...)
+        go.opentelemetry.io/collector/internal/fanoutconsumer@v0.156.0/logs.go:62 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.156.0/consumerretry/logs.go:37 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.156.0/adapter/receiver.go:62 +0xX
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher(...)
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.156.0/operator/helper/emitter.go:171 +0xX
+      created by github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).Start in goroutine N
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.156.0/operator/helper/emitter.go:93 +0xX
