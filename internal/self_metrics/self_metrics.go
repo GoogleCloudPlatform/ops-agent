@@ -39,6 +39,8 @@ const (
 	agentMetricNamespace       string = "agent.googleapis.com"
 	enabledReceiversMetricName string = "agent/ops_agent/enabled_receivers"
 	featureTrackingMetricName  string = "agent/internal/ops/feature_tracking"
+	loggingPingFileName        string = "logging_ping_otlp.json"
+	loggingPingContent         string = `{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"body":{"kvlistValue":{"values":[{"key":"code","value":{"stringValue":"LogPingOpsAgent"}},{"key":"severity","value":{"stringValue":"DEBUG"}}]}}}]}]}]}`
 )
 
 func getFullAgentMetricName(metricName string) string {
@@ -370,6 +372,18 @@ func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir str
 	}
 	if err = confgenerator.WriteConfigFile(enabledReceiverOTLPJSON, filepath.Join(outDir, "enabled_receivers_otlp.json")); err != nil {
 		return fmt.Errorf("failed to write enabled receivers metric otlp json file: %w", err)
+	}
+
+	if err = GenerateLoggingPingOTLPJSON(outDir); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GenerateLoggingPingOTLPJSON(outDir string) error {
+	pingContent := []byte(loggingPingContent)
+	if err := confgenerator.WriteConfigFile(pingContent, filepath.Join(outDir, loggingPingFileName)); err != nil {
+		return fmt.Errorf("failed to write logging ping otlp json file: %w", err)
 	}
 	return nil
 }
