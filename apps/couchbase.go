@@ -256,7 +256,7 @@ func (p LoggingProcessorMacroCouchbase) Expand(ctx context.Context) []confgenera
 						Regex: `^\[(?<type>[^:]*):(?<level>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):([^:]+):(?<source>[^\]]+)\](?<message>[\s\S]*)$`,
 						Parser: confgenerator.ParserShared{
 							TimeKey:    "timestamp",
-							TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+							TimeFormat: "%Y-%m-%dT%H:%M:%S.%LZ",
 						},
 					},
 				},
