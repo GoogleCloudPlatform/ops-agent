@@ -46,11 +46,9 @@
             - key: tid
               value:
                 intValue: "21763"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:21.123 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092861123000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -73,11 +71,9 @@
             - key: tid
               value:
                 intValue: "21763"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:21.124 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092861124000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -100,11 +96,9 @@
             - key: tid
               value:
                 intValue: "21763"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:21.125 UTC
         observedTimeUnixNano: now
         severityText: DEBUG
+        timeUnixNano: "1753092861125000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -127,11 +121,9 @@
             - key: tid
               value:
                 intValue: "21765"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:22.301 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092862301000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -154,11 +146,9 @@
             - key: tid
               value:
                 intValue: "21767"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:25.411 UTC
         observedTimeUnixNano: now
         severityText: ERROR
+        timeUnixNano: "1753092865411000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -181,11 +171,9 @@
             - key: tid
               value:
                 intValue: "21767"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:25.411 UTC
         observedTimeUnixNano: now
         severityText: DEBUG
+        timeUnixNano: "1753092865411000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -208,11 +196,9 @@
             - key: tid
               value:
                 intValue: "21770"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:27.123 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092867123000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -235,11 +221,9 @@
             - key: tid
               value:
                 intValue: "21772"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:30.673 UTC
         observedTimeUnixNano: now
         severityText: WARNING
+        timeUnixNano: "1753092870673000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -262,11 +246,9 @@
             - key: tid
               value:
                 intValue: "21772"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:30.673 UTC
         observedTimeUnixNano: now
         severityText: DEBUG
+        timeUnixNano: "1753092870673000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -294,11 +276,9 @@
             - key: tid
               value:
                 intValue: "21775"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:35.987 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092875987000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -321,11 +301,9 @@
             - key: tid
               value:
                 intValue: "21778"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:40.118 UTC
         observedTimeUnixNano: now
         severityText: CRITICAL
+        timeUnixNano: "1753092880118000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -348,11 +326,9 @@
             - key: tid
               value:
                 intValue: "21778"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:40.118 UTC
         observedTimeUnixNano: now
         severityText: DEBUG
+        timeUnixNano: "1753092880118000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -375,11 +351,9 @@
             - key: tid
               value:
                 intValue: "21782"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:45.721 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092885721000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -402,11 +376,9 @@
             - key: tid
               value:
                 intValue: "21782"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:46.053 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092886053000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -429,11 +401,9 @@
             - key: tid
               value:
                 intValue: "21784"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:49.215 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092889215000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -456,11 +426,9 @@
             - key: tid
               value:
                 intValue: "21790"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:52.800 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092892800000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -483,11 +451,9 @@
             - key: tid
               value:
                 intValue: "21793"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:55.029 UTC
         observedTimeUnixNano: now
         severityText: CRITICAL
+        timeUnixNano: "1753092895029000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -510,11 +476,9 @@
             - key: tid
               value:
                 intValue: "21793"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:55.029 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092895029000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -537,11 +501,9 @@
             - key: tid
               value:
                 intValue: "21793"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:55.029 UTC
         observedTimeUnixNano: now
         severityText: DEBUG
+        timeUnixNano: "1753092895029000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -564,11 +526,9 @@
             - key: tid
               value:
                 intValue: "1"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:56.000 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092896000000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -591,11 +551,9 @@
             - key: tid
               value:
                 intValue: "1"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:56.650 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092896650000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -618,11 +576,9 @@
             - key: tid
               value:
                 intValue: "1"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:57.012 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092897012000000"
       scope: {}
   - resource:
       attributes:
@@ -671,140 +627,7 @@
             - key: tid
               value:
                 intValue: "1"
-            - key: time
-              value:
-                stringValue: 2025-07-21 10:14:57.012 UTC
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1753092897012000000"
       scope: {}
-- collector_errors:
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:21.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:21.124 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:21.125 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:22.301 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:25.411 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:25.411 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:27.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:30.673 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:30.673 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-07-21 10:14:35.987 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
