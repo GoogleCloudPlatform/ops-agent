@@ -217,14 +217,14 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		return "", err
 	}
 
-	agentSelfMetrics := AgentSelfMetrics{
+	agentSelfSignals := AgentSelfSignals{
 		MetricsVersionLabel: metricVersionLabel,
 		LoggingVersionLabel: loggingVersionLabel,
 		FluentBitPort:       int(uc.GetFluentBitMetricsPort()),
 		OtelPort:            int(uc.GetOtelMetricsPort()),
 		OtelRuntimeDir:      outDir,
 	}
-	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
+	agentSelfSignals.AddSelfSignalsPipelines(receiverPipelines, pipelines, ctx)
 	resource, err := p.GetResource()
 	if err != nil {
 		return "", err

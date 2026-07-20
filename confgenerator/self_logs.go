@@ -22,7 +22,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
@@ -47,57 +46,6 @@ func fluentbitSelfLogsPath(p platform.Platform) string {
 		return path.Join("${logs_dir}", loggingModule)
 	}
 	return path.Join("${logs_dir}", "subagents", loggingModule)
-}
-
-func healthChecksLogsPath() string {
-	return path.Join("${logs_dir}", "health-checks.log")
-}
-
-func generateInputHealthLoggingPingComponent(ctx context.Context) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "INPUT",
-			Config: map[string]string{
-				"Name":          "dummy",
-				"Tag":           healthLogsTag,
-				"Dummy":         `{"code": "LogPingOpsAgent", "severity": "DEBUG"}`,
-				"Interval_Sec":  "600",
-				"Interval_NSec": "0",
-			},
-		},
-	}
-}
-
-// This method creates a file input for the `health-checks.log` file, a json parser for the
-// structured logs and a grep filter to avoid ingesting previous content of the file.
-func generateInputHealthChecksLogsComponents(ctx context.Context) []fluentbit.Component {
-	out := make([]fluentbit.Component, 0)
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths:   []string{healthChecksLogsPath()},
-		BufferInMemory: true,
-	}.Components(ctx, healthLogsTag)...)
-	out = append(out, LoggingProcessorParseJson{
-		// TODO(b/282754149): Remove TimeKey and TimeFormat when feature gets implemented.
-		ParserShared: ParserShared{
-			TimeKey:    logs.TimeZapKey,
-			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
-		},
-	}.Components(ctx, healthLogsTag, "health-checks-json")...)
-	out = append(out, []fluentbit.Component{
-		// This is used to exclude any previous content of the `health-checks.log` file that does not contain
-		// the `jsonPayload.severity` field. Due to `https://github.com/fluent/fluent-bit/issues/7092` the
-		// filtering can't be done directly to the `logging.googleapis.com/severity` field.
-		// We cannot use `LoggingProcessorExcludeLogs` here since it doesn't exclude when the field is missing.
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":  "grep",
-				"Match": healthLogsTag,
-				"Regex": fmt.Sprintf("%s INFO|ERROR|WARNING|DEBUG|info|error|warning|debug", logs.SeverityZapKey),
-			},
-		},
-	}...)
-	return out
 }
 
 // This method creates a file input for the `logging-module.log` file, a regex parser for the
@@ -216,9 +164,7 @@ func generateOutputSelfLogsComponent(ctx context.Context, userAgent string, inge
 
 func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-	out = append(out, generateInputHealthLoggingPingComponent(ctx)...)
 	out = append(out, generateInputFluentBitSelfLogsComponents(ctx, uc.Logging.Service.LogLevel)...)
-	out = append(out, generateInputHealthChecksLogsComponents(ctx)...)
 	out = append(out, generateFilterSelfLogsSamplingComponents(ctx)...)
 	out = append(out, generateFilterStructuredHealthLogsComponents(ctx)...)
 	out = append(out, generateFilterMapSeverityFieldComponent(ctx)...)

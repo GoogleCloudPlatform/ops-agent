@@ -333,6 +333,8 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 	got["enabled_receivers_otlp.json"] = string(generatedEnabledReceiversOTLPJSON)
 
+	got["logging_ping_otlp.json"] = `{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"body":{"kvlistValue":{"values":[{"key":"code","value":{"stringValue":"LogPingOpsAgent"}},{"key":"severity","value":{"stringValue":"DEBUG"}}]}}}]}]}]}`
+
 	// If the confgenerator test is designed to test the otel_logging experiment, generate an OTEL config with both otlp_exporter and otel_logging enabled.
 	if len(enabledExperiments) == 1 && enabledExperiments["otel_logging"] {
 		generateOtelConfigWithOtlpExporterEnabled(got, pc, testDir, otelGeneratedConfig)
