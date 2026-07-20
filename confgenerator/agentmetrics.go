@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
 
 // AgentSelfMetrics provides the agent.googleapis.com/agent/ metrics.
@@ -34,6 +35,7 @@ type AgentSelfMetrics struct {
 	OtelPort            int
 	OtelRuntimeDir      string
 	OtlpExporterEnabled bool
+	LogsDir             string
 }
 
 // Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
@@ -111,6 +113,18 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 	pipelines["opsagent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
+	}
+
+	receiverPipelines["logging_ping"] = r.LoggingPingPipeline(ctx)
+	pipelines["loggingping"] = otel.Pipeline{
+		Type:                 "logs",
+		ReceiverPipelineName: "logging_ping",
+	}
+
+	receiverPipelines["health_checks"] = r.HealthChecksPipeline(ctx)
+	pipelines["healthchecks"] = otel.Pipeline{
+		Type:                 "logs",
+		ReceiverPipelineName: "health_checks",
 	}
 }
 
@@ -436,6 +450,138 @@ func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPip
 				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
 			},
 		},
+	}, ctx)
+}
+
+// This method creates a component that enforces the `Structured Health Logs` format to
+// all `ops-agent-health` logs. It sets `agentKind`, `agentVersion` and `schemaVersion`.
+// This method also processes all self logs to set the severity field correctly.
+func generateStructuredHealthLogsOtelComponents(ctx context.Context) []otel.Component {
+	components, err := LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			fmt.Sprintf(`labels."%s"`, agentKindKey): {
+				StaticValue: &agentKind,
+			},
+			fmt.Sprintf(`labels."%s"`, agentVersionKey): {
+				StaticValue: &version.Version,
+			},
+			fmt.Sprintf(`labels."%s"`, schemaVersionKey): {
+				StaticValue: &schemaVersion,
+			},
+			"severity": {
+				MoveFrom: "jsonPayload.severity",
+				MapValues: map[string]string{
+					"error": "ERROR",
+					"warn":  "WARNING",
+					"info":  "INFO",
+					"debug": "DEBUG",
+				},
+				MapValuesExclusive: false,
+			},
+		},
+	}.Processors(ctx)
+	if err != nil {
+		// We're generating a hard-coded config, so this should never fail.
+		panic(err)
+	}
+	return components
+}
+
+// generateHealthLogsParsingComponents creates OTel processors that parse health check logs from JSON
+// and filter out any lines that do not have a valid severity.
+func generateHealthLogsParsingComponents(ctx context.Context) []otel.Component {
+	components := []otel.Component{}
+	parseJsonProccesor, err := LoggingProcessorParseJson{
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
+		},
+	}.Processors(ctx)
+	if err != nil {
+		// We're generating a hard-coded config, so this should never fail.
+		panic(err)
+	}
+	components = append(components, parseJsonProccesor...)
+
+	// This is used to exclude any previous content of the `health-checks.log` file that does not contain
+	// the `jsonPayload.severity` field.
+	body := ottl.LValue{"body"}
+	bodySeverity := ottl.LValue{"body", "severity"}
+	excludeLogFilter := otel.Filter("logs", "log_record",
+		[]ottl.Value{
+			ottl.IsNil(body),
+			ottl.And(body.IsPresent(), ottl.IsNil(bodySeverity)),
+			ottl.And(bodySeverity.IsPresent(), ottl.Not(ottl.IsMatch(bodySeverity, "INFO|ERROR|WARNING|DEBUG|info|error|warning|debug"))),
+		})
+	components = append(components, excludeLogFilter)
+
+	return components
+}
+
+func (r AgentSelfMetrics) LoggingPingPipeline(ctx context.Context) otel.ReceiverPipeline {
+	logProccesors := []otel.Component{
+		otel.Transform("log", "log",
+			[]ottl.Statement{
+				"set(observed_time, Now())",
+				"set(time, Now())",
+			},
+		),
+	}
+	logProccesors = append(logProccesors, generateStructuredHealthLogsOtelComponents(ctx)...)
+	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, healthLogsTag)...)
+
+	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
+		Receiver: otel.Component{
+			Type: "otlpjsonfile",
+			Config: map[string]any{
+				"include": []string{
+					filepath.Join(r.OtelRuntimeDir, "logging_ping_otlp.json"),
+				},
+				"replay_file":   true,
+				"poll_interval": time.Duration(600 * time.Second).String(),
+				"start_at":      "beginning",
+			},
+		},
+		Processors: map[string][]otel.Component{
+			"logs": logProccesors,
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.Logging,
+		},
+	}, ctx)
+}
+
+func (r AgentSelfMetrics) HealthChecksPipeline(ctx context.Context) otel.ReceiverPipeline {
+	healthChecksPath := filepath.Join(r.LogsDir, "health-checks.log")
+
+	logProccesors := generateHealthLogsParsingComponents(ctx)
+	logProccesors = append(logProccesors, generateStructuredHealthLogsOtelComponents(ctx)...)
+	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, healthLogsTag)...)
+
+	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
+		Receiver: otel.Component{
+			Type: "file_log",
+			Config: map[string]any{
+				"include":  []string{healthChecksPath},
+				"start_at": "beginning",
+				"storage":  fileStorageExtensionType,
+				"operators": []map[string]any{
+					{
+						"id":   "body",
+						"type": "move",
+						"from": "body",
+						"to":   "body.message",
+					},
+				},
+			},
+		},
+		Processors: map[string][]otel.Component{
+			"logs": logProccesors,
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.Logging,
+		},
+		UsedExtensions: []string{fileStorageExtensionType},
 	}, ctx)
 }
 
