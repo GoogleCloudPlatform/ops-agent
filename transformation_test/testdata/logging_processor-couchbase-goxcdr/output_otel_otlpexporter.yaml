@@ -46,11 +46,9 @@
             - key: message
               value:
                 stringValue: Starting replication pipeline for bucket travel-data
-            - key: timestamp
-              value:
-                stringValue: 2025-08-18T14:27:02.452Z
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1755527222452000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -73,11 +71,9 @@
             - key: message
               value:
                 stringValue: Failed to save checkpoint due to timeout
-            - key: timestamp
-              value:
-                stringValue: 2025-08-18T14:27:10.874Z
         observedTimeUnixNano: now
         severityText: WARNING
+        timeUnixNano: "1755527230874000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -102,11 +98,9 @@
                 stringValue: |-
                   Failed to route mutation for key "user:12345", retrying...
                   Additional detail: document size exceeded configured threshold
-            - key: timestamp
-              value:
-                stringValue: 2025-08-18T14:27:22.345Z
         observedTimeUnixNano: now
         severityText: ERROR
+        timeUnixNano: "1755527242345000000"
       - attributes:
         - key: compute.googleapis.com/resource_name
           value:
@@ -129,11 +123,9 @@
             - key: message
               value:
                 stringValue: Backfill task created for vbucket 102
-            - key: timestamp
-              value:
-                stringValue: 2025-08-18T14:27:45.657Z
         observedTimeUnixNano: now
         severityText: DEBUG
+        timeUnixNano: "1755527265657000000"
       scope: {}
   - resource:
       attributes:
@@ -182,75 +174,7 @@
             - key: message
               value:
                 stringValue: Replication pipeline stopped successfully
-            - key: timestamp
-              value:
-                stringValue: 2025-08-18T14:28:00.998Z
         observedTimeUnixNano: now
         severityText: INFO
+        timeUnixNano: "1755527280998000000"
       scope: {}
-- collector_errors:
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-08-18T14:27:02.452Z\": extra text: \"Z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-08-18T14:27:10.874Z\": extra text: \"Z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-08-18T14:27:22.345Z\": extra text: \"Z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-08-18T14:27:45.657Z\": extra text: \"Z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.156.0/parser.go:423
-    error: "parsing time \"2025-08-18T14:28:00.998Z\": extra text: \"Z\""
-    level: warn
-    msg: failed to execute statement
-    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.156.0
-    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)

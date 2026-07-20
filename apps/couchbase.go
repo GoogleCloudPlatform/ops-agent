@@ -390,7 +390,7 @@ func (p LoggingProcessorMacroCouchbaseGOXDCR) Expand(ctx context.Context) []conf
 						Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d*Z) (?<level>\w+) (?<log_type>\w+.\w+): (?<message>[\s\S]*)$`,
 						Parser: confgenerator.ParserShared{
 							TimeKey:    "timestamp",
-							TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+							TimeFormat: "%Y-%m-%dT%H:%M:%S.%LZ",
 						},
 					},
 				},
