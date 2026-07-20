@@ -958,8 +958,7 @@ func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit
 }
 
 func formatSystemTime(v ottl.LValue) ottl.Statements {
-	formattedTime := ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s")
-	return v.Set(ottl.Concat([]ottl.Value{formattedTime, ottl.StringLiteral("+0000")}, " "))
+	return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s %z"))
 }
 
 func init() {
