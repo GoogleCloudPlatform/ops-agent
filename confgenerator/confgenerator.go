@@ -241,7 +241,7 @@ func fileStorageExtension(stateDir string) otel.Component {
 	}
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir, logsDir string) (string, error) {
 	p := platform.FromContext(ctx)
 
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
@@ -260,6 +260,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		OtelPort:            int(uc.GetOtelMetricsPort()),
 		OtelRuntimeDir:      outDir,
 		OtlpExporterEnabled: uc.Global.GetOtlpExporter(),
+		LogsDir:             logsDir,
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 

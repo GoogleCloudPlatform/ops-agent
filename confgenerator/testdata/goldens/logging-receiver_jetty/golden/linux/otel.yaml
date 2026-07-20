@@ -52,6 +52,13 @@ processors:
         match_type: strict
         metric_names:
         - fluentbit_uptime
+  filter/health_checks_1:
+    error_mode: ignore
+    logs:
+      log_record:
+      - body == nil
+      - ((body != nil) and body["severity"] == nil)
+      - ((body != nil and body["severity"] != nil) and (not IsMatch(body["severity"], "INFO|ERROR|WARNING|DEBUG|info|error|warning|debug")))
   filter/hostmetrics_1:
     metrics:
       exclude:
@@ -614,11 +621,16 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
+<<<<<<< HEAD
   transform/logging_jetty__access_0:
+=======
+  transform/health_checks_0:
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     error_mode: ignore
     log_statements:
     - context: log
       statements:
+<<<<<<< HEAD
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
@@ -628,6 +640,16 @@ processors:
       - set(time, Time(body["time"], "%d/%b/%Y:%H:%M:%S %z")) where cache["__time_valid"] == true
       - delete_key(body, "time") where ((body != nil and body["time"] != nil) and cache["__time_valid"] == true)
       - set(body["http_request_status"], Int(body["http_request_status"])) where ((body != nil and body["http_request_status"] != nil) and Int(body["http_request_status"]) != nil)
+=======
+      - set(cache["__parsed_json"], ParseJSON(body["message"])) where (body != nil and body["message"] != nil)
+      - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_json"] != nil))
+      - merge_maps(body, cache["__parsed_json"], "upsert") where (cache != nil and cache["__parsed_json"] != nil)
+      - delete_key(cache, "__parsed_json") where (cache != nil and cache["__parsed_json"] != nil)
+      - set(cache["__time_valid"], false)
+      - set(cache["__time_valid"], true) where ((body != nil and body["time"] != nil) and Time(body["time"], "%Y-%m-%dT%H:%M:%S%z") != nil)
+      - set(time, Time(body["time"], "%Y-%m-%dT%H:%M:%S%z")) where cache["__time_valid"] == true
+      - delete_key(body, "time") where ((body != nil and body["time"] != nil) and cache["__time_valid"] == true)
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
       - merge_maps(attributes, body["logging.googleapis.com/labels"], "upsert") where body["logging.googleapis.com/labels"] != nil
       - delete_key(body, "logging.googleapis.com/labels") where (body != nil and body["logging.googleapis.com/labels"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
@@ -643,12 +665,15 @@ processors:
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+<<<<<<< HEAD
       - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
       - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+=======
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
       - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -676,11 +701,16 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+<<<<<<< HEAD
   transform/logging_jetty__access_1:
+=======
+  transform/health_checks_2:
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     error_mode: ignore
     log_statements:
     - context: log
       statements:
+<<<<<<< HEAD
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["http_request_protocol"]) where (body != nil and body["http_request_protocol"] != nil)
       - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
@@ -760,6 +790,31 @@ processors:
       - set(cache["value"], "agent.googleapis.com/jetty_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_jetty__access_2:
+=======
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], body["severity"]) where (body != nil and body["severity"] != nil)
+      - delete_key(body, "severity") where (body != nil and body["severity"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "ops-agent")
+      - set(attributes["agent.googleapis.com/health/agentKind"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "latest")
+      - set(attributes["agent.googleapis.com/health/agentVersion"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "v1")
+      - set(attributes["agent.googleapis.com/health/schemaVersion"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["mapped_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "debug"
+      - set(cache["mapped_value"], "ERROR") where cache["value"] == "error"
+      - set(cache["mapped_value"], "INFO") where cache["value"] == "info"
+      - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
+      - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
+  transform/health_checks_3:
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     error_mode: ignore
     log_statements:
     - context: log
@@ -786,9 +841,49 @@ processors:
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+<<<<<<< HEAD
       - set(cache["value"], "jetty_access") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_syslog_0:
+=======
+      - set(cache["value"], "ops-agent-health") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_ping_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(observed_time, Now())
+      - set(time, Now())
+  transform/logging_ping_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], body["severity"]) where (body != nil and body["severity"] != nil)
+      - delete_key(body, "severity") where (body != nil and body["severity"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "ops-agent")
+      - set(attributes["agent.googleapis.com/health/agentKind"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "latest")
+      - set(attributes["agent.googleapis.com/health/agentVersion"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "v1")
+      - set(attributes["agent.googleapis.com/health/schemaVersion"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["mapped_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "debug"
+      - set(cache["mapped_value"], "ERROR") where cache["value"] == "error"
+      - set(cache["mapped_value"], "INFO") where cache["value"] == "info"
+      - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
+      - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
+  transform/logging_ping_2:
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     error_mode: ignore
     log_statements:
     - context: log
@@ -815,7 +910,11 @@ processors:
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+<<<<<<< HEAD
       - set(cache["value"], "syslog") where cache["value"] == nil
+=======
+      - set(cache["value"], "ops-agent-health") where cache["value"] == nil
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/loggingmetrics_0:
     error_mode: ignore
@@ -851,22 +950,34 @@ processors:
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
+<<<<<<< HEAD
   file_log/logging_jetty__access:
     exclude: []
     fingerprint_size: 5kb
     include:
     - /opt/logs/*.request.log
     include_file_name: false
+=======
+  file_log/health_checks:
+    include:
+    - health-checks.log
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     operators:
     - from: body
       id: body
       to: body.message
       type: move
+<<<<<<< HEAD
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
   file_log/logging_syslog:
+=======
+    start_at: beginning
+    storage: file_storage
+  file_log/syslog:
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -904,6 +1015,12 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  otlpjsonfile/logging_ping:
+    include:
+    - logging_ping_otlp.json
+    poll_interval: 10m0s
+    replay_file: true
+    start_at: beginning
   otlpjsonfile/ops_agent:
     include:
     - enabled_receivers_otlp.json
@@ -929,7 +1046,32 @@ service:
   extensions:
   - file_storage
   pipelines:
+<<<<<<< HEAD
     logs/logs_default__pipeline_logging_syslog:
+=======
+    logs/healthchecks:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/health_checks_0
+      - filter/health_checks_1
+      - transform/health_checks_2
+      - transform/health_checks_3
+      - resourcedetection/_global_0
+      receivers:
+      - file_log/health_checks
+    logs/loggingping:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/logging_ping_0
+      - transform/logging_ping_1
+      - transform/logging_ping_2
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/logging_ping
+    logs/logs_default__pipeline_syslog:
+>>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
       exporters:
       - googlecloud/logging
       processors:
