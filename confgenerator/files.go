@@ -59,7 +59,7 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 			}
 		}
 	case "otel":
-		otelConfig, err := uc.GenerateOtelConfig(ctx, outDir, stateDir)
+		otelConfig, err := uc.GenerateOtelConfig(ctx, logsDir, stateDir, outDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
