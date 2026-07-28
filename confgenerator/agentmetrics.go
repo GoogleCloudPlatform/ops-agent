@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
 
 // AgentSelfSignals provides the agent.googleapis.com/agent/ metric and self logs.
@@ -35,6 +35,7 @@ type AgentSelfSignals struct {
 	FluentBitPort       int
 	OtelPort            int
 	OtelRuntimeDir      string
+	LogsDir             string
 }
 
 // Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
@@ -461,6 +462,40 @@ func (r AgentSelfSignals) OpsAgentPipeline(ctx context.Context) otel.ReceiverPip
 	}, ctx)
 }
 
+// This method creates a component that enforces the `Structured Health Logs` format to
+// all `ops-agent-health` logs. It sets `agentKind`, `agentVersion` and `schemaVersion`.
+// This method also processes all self logs to set the severity field correctly.
+func generateStructuredHealthLogsOtelComponents(ctx context.Context) []otel.Component {
+	components, err := LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			fmt.Sprintf(`labels."%s"`, agentKindKey): {
+				StaticValue: &agentKind,
+			},
+			fmt.Sprintf(`labels."%s"`, agentVersionKey): {
+				StaticValue: &version.Version,
+			},
+			fmt.Sprintf(`labels."%s"`, schemaVersionKey): {
+				StaticValue: &schemaVersion,
+			},
+			"severity": {
+				MoveFrom: "jsonPayload.severity",
+				MapValues: map[string]string{
+					"error": "ERROR",
+					"warn":  "WARNING",
+					"info":  "INFO",
+					"debug": "DEBUG",
+				},
+				MapValuesExclusive: false,
+			},
+		},
+	}.Processors(ctx)
+	if err != nil {
+		// We're generating a hard-coded config, so this should never fail.
+		panic(err)
+	}
+	return components
+}
+
 func (r AgentSelfSignals) LoggingPingPipeline(ctx context.Context) otel.ReceiverPipeline {
 	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
@@ -475,12 +510,8 @@ func (r AgentSelfSignals) LoggingPingPipeline(ctx context.Context) otel.Receiver
 		},
 		Processors: map[string][]otel.Component{
 			"logs": append(
-				otelSetLogNameComponents(ctx, "ops-agent-health"),
-				otel.Transform("log", "log", []ottl.Statement{
-					ottl.Statement(`set(attributes["agent.googleapis.com/health/agentKind"], "ops-agent")`),
-					ottl.Statement(`set(attributes["agent.googleapis.com/health/agentVersion"], "` + r.LoggingVersionLabel + `")`),
-					ottl.Statement(`set(attributes["agent.googleapis.com/health/schemaVersion"], "v1")`),
-				}),
+				generateStructuredHealthLogsOtelComponents(ctx),
+				otelSetLogNameComponents(ctx, "ops-agent-health")...,
 			),
 		},
 		ExporterTypes: map[string]otel.ExporterType{
@@ -490,10 +521,7 @@ func (r AgentSelfSignals) LoggingPingPipeline(ctx context.Context) otel.Receiver
 }
 
 func (r AgentSelfSignals) HealthChecksPipeline(ctx context.Context) otel.ReceiverPipeline {
-	healthChecksPath := "/var/log/google-cloud-ops-agent/health-checks.log"
-	if platform.FromContext(ctx).Type == platform.Windows {
-		healthChecksPath = `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`
-	}
+	healthChecksPath := filepath.Join(r.LogsDir, "health-checks.log")
 
 	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
@@ -524,16 +552,8 @@ func (r AgentSelfSignals) HealthChecksPipeline(ctx context.Context) otel.Receive
 		},
 		Processors: map[string][]otel.Component{
 			"logs": append(
-				otelSetLogNameComponents(ctx, "ops-agent-health"),
-				otel.Transform("log", "log", []ottl.Statement{
-					ottl.Statement(`set(attributes["agent.googleapis.com/health/agentKind"], "ops-agent")`),
-					ottl.Statement(`set(attributes["agent.googleapis.com/health/agentVersion"], "` + r.LoggingVersionLabel + `")`),
-					ottl.Statement(`set(attributes["agent.googleapis.com/health/schemaVersion"], "v1")`),
-					ottl.Statement(`set(body["severity"], "ERROR") where body["severity"] == "error"`),
-					ottl.Statement(`set(body["severity"], "WARNING") where body["severity"] == "warn"`),
-					ottl.Statement(`set(body["severity"], "INFO") where body["severity"] == "info"`),
-					ottl.Statement(`set(body["severity"], "DEBUG") where body["severity"] == "debug"`),
-				}),
+				generateStructuredHealthLogsOtelComponents(ctx),
+				otelSetLogNameComponents(ctx, "ops-agent-health")...,
 			),
 		},
 		ExporterTypes: map[string]otel.ExporterType{
