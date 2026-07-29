@@ -26,7 +26,7 @@ exporters:
 extensions:
   file_storage:
     create_directory: true
-    directory: /var/lib/google-cloud-ops-agent/fluent-bit/file_storage
+    directory: file_storage
   googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
@@ -1270,7 +1270,7 @@ processors:
 receivers:
   file_log/health_checks:
     include:
-    - /var/log/google-cloud-ops-agent/health-checks.log
+    - health-checks.log
     start_at: beginning
     storage: file_storage
   file_log/kafka:
