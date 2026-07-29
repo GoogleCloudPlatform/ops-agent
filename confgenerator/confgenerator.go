@@ -225,7 +225,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, logsDir, stateD
 		OtelRuntimeDir:      outDir,
 		LogsDir:             logsDir,
 	}
-	AgentSelfMetrics.AddSelfSignalsPipelines(receiverPipelines, pipelines, ctx)
+	AgentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 	resource, err := p.GetResource()
 	if err != nil {
 		return "", err
