@@ -26,10 +26,22 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
 
-// AgentSelfSignals provides the agent.googleapis.com/agent/ metric and self logs.
+var (
+	agentKind     string = "ops-agent"
+	schemaVersion string = "v1"
+)
+
+const (
+	healthLogsTag    string = "ops-agent-health"
+	agentVersionKey  string = "agent.googleapis.com/health/agentVersion"
+	agentKindKey     string = "agent.googleapis.com/health/agentKind"
+	schemaVersionKey string = "agent.googleapis.com/health/schemaVersion"
+)
+
+// AgentSelfMetrics provides the agent.googleapis.com/agent/ metric and self logs.
 // It is never referenced in the config file, and instead is forcibly added in confgenerator.go.
 // Therefore, it does not need to implement any interfaces.
-type AgentSelfSignals struct {
+type AgentSelfMetrics struct {
 	MetricsVersionLabel string
 	LoggingVersionLabel string
 	FluentBitPort       int
@@ -86,12 +98,12 @@ var otelErrorTypeToStatus = map[string]string{
 	"Unauthenticated":    "UNAUTHENTICATED",
 }
 
-func (r AgentSelfSignals) AddSelfSignalsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
+func (r AgentSelfMetrics) AddSelfSignalsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	r.AddSelfLogsPipelines(receiverPipelines, pipelines, ctx)
 	r.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 }
 
-func (r AgentSelfSignals) AddSelfLogsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
+func (r AgentSelfMetrics) AddSelfLogsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
 	receiverPipelines["logging_ping"] = r.LoggingPingPipeline(ctx)
 	// Pipeline names should have no underscores to avoid collision with user configurations.
@@ -107,7 +119,7 @@ func (r AgentSelfSignals) AddSelfLogsPipelines(receiverPipelines map[string]otel
 	}
 }
 
-func (r AgentSelfSignals) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
+func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
 	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline(ctx)
 
@@ -137,7 +149,7 @@ func (r AgentSelfSignals) AddSelfMetricsPipelines(receiverPipelines map[string]o
 	}
 }
 
-func (r AgentSelfSignals) PrometheusMetricsPipeline(ctx context.Context) otel.ReceiverPipeline {
+func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.ReceiverPipeline {
 	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -182,7 +194,7 @@ func (r AgentSelfSignals) PrometheusMetricsPipeline(ctx context.Context) otel.Re
 	}, ctx)
 }
 
-func (r AgentSelfSignals) OtelPipelineProcessors(ctx context.Context) []otel.Component {
+func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Component {
 	durationMetric := "grpc.client.attempt.duration"
 	durationCountMetric := "grpc.client.attempt.duration_count"
 	filteredMetrics := []string{
@@ -280,7 +292,7 @@ func (r AgentSelfSignals) OtelPipelineProcessors(ctx context.Context) []otel.Com
 	}
 }
 
-func (r AgentSelfSignals) FluentBitPipelineProcessors() []otel.Component {
+func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
 	return []otel.Component{
 		otel.MetricsFilter(
 			"include",
@@ -300,7 +312,7 @@ func (r AgentSelfSignals) FluentBitPipelineProcessors() []otel.Component {
 	}
 }
 
-func (r AgentSelfSignals) LoggingMetricsPipelineProcessors(ctx context.Context) []otel.Component {
+func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) []otel.Component {
 	durationMetric := "grpc.client.attempt.duration"
 	durationCountMetric := "grpc.client.attempt.duration_count"
 
@@ -437,7 +449,7 @@ func (r AgentSelfSignals) LoggingMetricsPipelineProcessors(ctx context.Context) 
 	}
 }
 
-func (r AgentSelfSignals) OpsAgentPipeline(ctx context.Context) otel.ReceiverPipeline {
+func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPipeline {
 	receiverConfig := map[string]any{
 		"include": []string{
 			filepath.Join(r.OtelRuntimeDir, "enabled_receivers_otlp.json"),
@@ -495,7 +507,38 @@ func generateStructuredHealthLogsOtelComponents(ctx context.Context) []otel.Comp
 	return components
 }
 
-func (r AgentSelfSignals) LoggingPingPipeline(ctx context.Context) otel.ReceiverPipeline {
+// generateHealthLogsParsingComponents creates OTel processors that parse health check logs from JSON
+// and filter out any lines that do not have a valid severity.
+func generateHealthLogsParsingComponents(ctx context.Context) []otel.Component {
+	components := []otel.Component{}
+	parseJsonProccesor, err := LoggingProcessorParseJson{
+		Field: "body",
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
+		},
+	}.Processors(ctx)
+	if err != nil {
+		// We're generating a hard-coded config, so this should never fail.
+		panic(err)
+	}
+	components = append(components, parseJsonProccesor...)
+
+	// This is used to exclude any previous content of the `health-checks.log` file that does not contain
+	// the `jsonPayload.severity` field.
+	excludeLogsProccesor, err := LoggingProcessorExcludeLogs{
+		MatchAny: []string{`jsonPayload.severity !~ "INFO|ERROR|WARNING|DEBUG|info|error|warning|debug"`},
+	}.Processors(ctx)
+	if err != nil {
+		// We're generating a hard-coded config, so this should never fail.
+		panic(err)
+	}
+	components = append(components, excludeLogsProccesor...)
+
+	return components
+}
+
+func (r AgentSelfMetrics) LoggingPingPipeline(ctx context.Context) otel.ReceiverPipeline {
 	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "otlpjsonfile",
@@ -519,8 +562,12 @@ func (r AgentSelfSignals) LoggingPingPipeline(ctx context.Context) otel.Receiver
 	}, ctx)
 }
 
-func (r AgentSelfSignals) HealthChecksPipeline(ctx context.Context) otel.ReceiverPipeline {
+func (r AgentSelfMetrics) HealthChecksPipeline(ctx context.Context) otel.ReceiverPipeline {
 	healthChecksPath := filepath.Join(r.LogsDir, "health-checks.log")
+
+	logProccesors := generateHealthLogsParsingComponents(ctx)
+	logProccesors = append(logProccesors, generateStructuredHealthLogsOtelComponents(ctx)...)
+	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, "ops-agent-health")...)
 
 	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
@@ -529,31 +576,10 @@ func (r AgentSelfSignals) HealthChecksPipeline(ctx context.Context) otel.Receive
 				"include":  []string{healthChecksPath},
 				"start_at": "beginning",
 				"storage":  fileStorageExtensionType,
-				"operators": []map[string]any{
-					{
-						"id":       "parse_json",
-						"type":     "json_parser",
-						"parse_to": "body",
-					},
-					{
-						"id":         "parse_time",
-						"type":       "time_parser",
-						"parse_from": "body.time",
-						"layout":     "%Y-%m-%dT%H:%M:%S%z",
-					},
-					{
-						"id":   "filter_severity",
-						"type": "filter",
-						"expr": `not (body.severity matches "(?i)INFO|ERROR|WARNING|DEBUG")`,
-					},
-				},
 			},
 		},
 		Processors: map[string][]otel.Component{
-			"logs": append(
-				generateStructuredHealthLogsOtelComponents(ctx),
-				otelSetLogNameComponents(ctx, "ops-agent-health")...,
-			),
+			"logs": logProccesors,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.Logging,
