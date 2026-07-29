@@ -217,7 +217,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, logsDir, stateD
 		return "", err
 	}
 
-	agentSelfSignals := AgentSelfSignals{
+	AgentSelfMetrics := AgentSelfMetrics{
 		MetricsVersionLabel: metricVersionLabel,
 		LoggingVersionLabel: loggingVersionLabel,
 		FluentBitPort:       int(uc.GetFluentBitMetricsPort()),
@@ -225,7 +225,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, logsDir, stateD
 		OtelRuntimeDir:      outDir,
 		LogsDir:             logsDir,
 	}
-	agentSelfSignals.AddSelfSignalsPipelines(receiverPipelines, pipelines, ctx)
+	AgentSelfMetrics.AddSelfSignalsPipelines(receiverPipelines, pipelines, ctx)
 	resource, err := p.GetResource()
 	if err != nil {
 		return "", err

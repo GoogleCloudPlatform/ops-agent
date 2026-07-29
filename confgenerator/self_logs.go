@@ -26,18 +26,9 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
 
-var (
-	agentKind     string = "ops-agent"
-	schemaVersion string = "v1"
-)
-
 const (
 	opsAgentLogsMatch    string = "ops-agent-*"
 	fluentBitSelfLogsTag string = "ops-agent-fluent-bit"
-	healthLogsTag        string = "ops-agent-health"
-	agentVersionKey      string = "agent.googleapis.com/health/agentVersion"
-	agentKindKey         string = "agent.googleapis.com/health/agentKind"
-	schemaVersionKey     string = "agent.googleapis.com/health/schemaVersion"
 )
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
