@@ -359,7 +359,7 @@ func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, pc platfor
 		filepath.Join("testdata", testDir, inputFileName),
 	)
 	if err == nil {
-		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, pc.defaultLogsDir, pc.defaultStateDir, "")
+		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "", "")
 		if err == nil {
 			got["otel_otlp_exporter.yaml"] = otelGeneratedConfigOtlp
 		}
