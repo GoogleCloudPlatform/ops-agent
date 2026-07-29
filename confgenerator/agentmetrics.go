@@ -566,6 +566,12 @@ func (r AgentSelfMetrics) HealthChecksPipeline(ctx context.Context) otel.Receive
 				"include":  []string{healthChecksPath},
 				"start_at": "beginning",
 				"storage":  fileStorageExtensionType,
+				"operators": map[string]any{
+					"id":   "body",
+					"type": "move",
+					"from": "body",
+					"to":   "body.message",
+				},
 			},
 		},
 		Processors: map[string][]otel.Component{

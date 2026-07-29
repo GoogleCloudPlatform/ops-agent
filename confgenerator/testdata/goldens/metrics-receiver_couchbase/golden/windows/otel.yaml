@@ -1407,6 +1407,11 @@ receivers:
   file_log/health_checks:
     include:
     - health-checks.log
+    operators:
+      from: body
+      id: body
+      to: body.message
+      type: move
     start_at: beginning
     storage: file_storage
   hostmetrics/hostmetrics:
