@@ -98,27 +98,6 @@ var otelErrorTypeToStatus = map[string]string{
 	"Unauthenticated":    "UNAUTHENTICATED",
 }
 
-func (r AgentSelfMetrics) AddSelfSignalsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
-	r.AddSelfLogsPipelines(receiverPipelines, pipelines, ctx)
-	r.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
-}
-
-func (r AgentSelfMetrics) AddSelfLogsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
-	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
-	receiverPipelines["logging_ping"] = r.LoggingPingPipeline(ctx)
-	// Pipeline names should have no underscores to avoid collision with user configurations.
-	pipelines["loggingping"] = otel.Pipeline{
-		Type:                 "logs",
-		ReceiverPipelineName: "logging_ping",
-	}
-
-	receiverPipelines["health_checks"] = r.HealthChecksPipeline(ctx)
-	pipelines["healthchecks"] = otel.Pipeline{
-		Type:                 "logs",
-		ReceiverPipelineName: "health_checks",
-	}
-}
-
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
 	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline(ctx)
@@ -146,6 +125,18 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 	pipelines["opsagent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
+	}
+
+	receiverPipelines["logging_ping"] = r.LoggingPingPipeline(ctx)
+	pipelines["loggingping"] = otel.Pipeline{
+		Type:                 "logs",
+		ReceiverPipelineName: "logging_ping",
+	}
+
+	receiverPipelines["health_checks"] = r.HealthChecksPipeline(ctx)
+	pipelines["healthchecks"] = otel.Pipeline{
+		Type:                 "logs",
+		ReceiverPipelineName: "health_checks",
 	}
 }
 
