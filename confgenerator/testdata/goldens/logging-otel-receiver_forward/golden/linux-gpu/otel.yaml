@@ -699,8 +699,8 @@ processors:
     log_statements:
     - context: log
       statements:
-      - set(cache["__parsed_json"], ParseJSON(body["body"])) where (body != nil and body["body"] != nil)
-      - delete_key(body, "body") where ((body != nil and body["body"] != nil) and (cache != nil and cache["__parsed_json"] != nil))
+      - set(cache["__parsed_json"], ParseJSON(body["message"])) where (body != nil and body["message"] != nil)
+      - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_json"] != nil))
       - merge_maps(body, cache["__parsed_json"], "upsert") where (cache != nil and cache["__parsed_json"] != nil)
       - delete_key(cache, "__parsed_json") where (cache != nil and cache["__parsed_json"] != nil)
       - set(cache["__time_valid"], false)

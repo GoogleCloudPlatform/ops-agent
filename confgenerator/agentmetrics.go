@@ -504,7 +504,6 @@ func generateStructuredHealthLogsOtelComponents(ctx context.Context) []otel.Comp
 func generateHealthLogsParsingComponents(ctx context.Context) []otel.Component {
 	components := []otel.Component{}
 	parseJsonProccesor, err := LoggingProcessorParseJson{
-		Field: "body",
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
