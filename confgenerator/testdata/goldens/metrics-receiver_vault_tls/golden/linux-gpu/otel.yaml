@@ -1585,7 +1585,7 @@ receivers:
     include:
     - health-checks.log
     operators:
-      from: body
+    - from: body
       id: body
       to: body.message
       type: move
