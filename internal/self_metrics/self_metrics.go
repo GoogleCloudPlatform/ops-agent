@@ -24,6 +24,7 @@ import (
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel/attribute"
@@ -39,7 +40,6 @@ const (
 	agentMetricNamespace       string = "agent.googleapis.com"
 	enabledReceiversMetricName string = "agent/ops_agent/enabled_receivers"
 	featureTrackingMetricName  string = "agent/internal/ops/feature_tracking"
-	loggingPingContent         string = `{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"body":{"kvlistValue":{"values":[{"key":"code","value":{"stringValue":"LogPingOpsAgent"}},{"key":"severity","value":{"stringValue":"DEBUG"}}]}}}]}]}]}`
 )
 
 func getFullAgentMetricName(metricName string) string {
@@ -334,7 +334,17 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 }
 
 func CollectLoggingPingToOTLPJSON() ([]byte, error) {
-	return []byte(loggingPingContent), nil
+	logs := plog.NewLogs()
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+	logRecord := scopeLog.LogRecords().AppendEmpty()
+
+	bodyMap := logRecord.Body().SetEmptyMap()
+	bodyMap.PutStr("code", "LogPingOpsAgent")
+	bodyMap.PutStr("severity", "DEBUG")
+
+	jsonMarshaler := &plog.JSONMarshaler{}
+	return jsonMarshaler.MarshalLogs(logs)
 }
 
 // config and merged config respectively

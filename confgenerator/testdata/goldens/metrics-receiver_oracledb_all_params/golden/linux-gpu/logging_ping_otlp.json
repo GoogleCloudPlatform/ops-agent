@@ -1,1 +1,1 @@
-{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"body":{"kvlistValue":{"values":[{"key":"code","value":{"stringValue":"LogPingOpsAgent"}},{"key":"severity","value":{"stringValue":"DEBUG"}}]}}}]}]}]}
+{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"kvlistValue":{"values":[{"key":"code","value":{"stringValue":"LogPingOpsAgent"}},{"key":"severity","value":{"stringValue":"DEBUG"}}]}}}]}]}]}
