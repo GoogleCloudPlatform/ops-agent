@@ -6224,6 +6224,27 @@ func TestUninstallRemovesService(t *testing.T) {
 	})
 }
 
+func verifyMetricsPort(ctx context.Context, logger *log.Logger, vm *gce.VM, port int, expectedContent string) error {
+	cmd := fmt.Sprintf("curl -s localhost:%d/metrics", port)
+	if gce.IsWindows(vm.ImageSpec) {
+		cmd = fmt.Sprintf("Invoke-RestMethod -Uri http://localhost:%d/metrics", port)
+	}
+	b := backoff.WithContext(
+		backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 30),
+		ctx,
+	)
+	return backoff.Retry(func() error {
+		out, err := gce.RunRemotely(ctx, logger, vm, cmd)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(out.Stdout, expectedContent) {
+			return fmt.Errorf("%q not found in metrics output on port %d: %s", expectedContent, port, out.Stdout)
+		}
+		return nil
+	}, b)
+}
+
 func TestMetricsPortOverrideEnv(t *testing.T) {
 	t.Parallel()
 	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
@@ -6299,45 +6320,10 @@ Environment="%s=40002"
 		}
 
 		// Verify that we can scrape metrics from the new ports with retries (waiting up to 60s for agent startup)
-		fbCmd := "curl -s localhost:40002/metrics"
-		if gce.IsWindows(imageSpec) {
-			fbCmd = "Invoke-RestMethod -Uri http://localhost:40002/metrics"
-		}
-		fbBackoff := backoff.WithContext(
-			backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 30),
-			ctx,
-		)
-		if err := backoff.Retry(func() error {
-			out, err := gce.RunRemotely(ctx, logger, vm, fbCmd)
-			if err != nil {
-				return err
-			}
-			if !strings.Contains(out.Stdout, "fluentbit_uptime") {
-				return fmt.Errorf("fluentbit_uptime not found in metrics output: %s", out.Stdout)
-			}
-			return nil
-		}, fbBackoff); err != nil {
+		if err := verifyMetricsPort(ctx, logger, vm, 40002, "fluentbit_uptime"); err != nil {
 			t.Fatalf("Failed to scrape Fluent Bit metrics on port 40002: %v", err)
 		}
-
-		otelCmd := "curl -s localhost:40001/metrics"
-		if gce.IsWindows(imageSpec) {
-			otelCmd = "Invoke-RestMethod -Uri http://localhost:40001/metrics"
-		}
-		otelBackoff := backoff.WithContext(
-			backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 30),
-			ctx,
-		)
-		if err := backoff.Retry(func() error {
-			out, err := gce.RunRemotely(ctx, logger, vm, otelCmd)
-			if err != nil {
-				return err
-			}
-			if !strings.Contains(out.Stdout, "otelcol_") {
-				return fmt.Errorf("otelcol_ not found in metrics output: %s", out.Stdout)
-			}
-			return nil
-		}, otelBackoff); err != nil {
+		if err := verifyMetricsPort(ctx, logger, vm, 40001, "otelcol_"); err != nil {
 			t.Fatalf("Failed to scrape OTel Collector metrics on port 40001: %v", err)
 		}
 	})
