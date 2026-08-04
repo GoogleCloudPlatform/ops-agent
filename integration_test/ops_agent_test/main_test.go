@@ -5353,7 +5353,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 		}, ";")
 		return cmd
 	}
-	return "sudo systemctl status google-cloud-ops-agent"
+	return "sudo journalctl -b 0 -u google-cloud-ops-agent --no-pager"
 }
 
 func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
