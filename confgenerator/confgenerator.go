@@ -206,7 +206,7 @@ func fileStorageExtension(stateDir string) otel.Component {
 	}
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, logsDir, stateDir, outDir string) (string, error) {
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir, logsDir string) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -217,7 +217,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, logsDir, stateD
 		return "", err
 	}
 
-	AgentSelfMetrics := AgentSelfMetrics{
+	agentSelfMetrics := AgentSelfMetrics{
 		MetricsVersionLabel: metricVersionLabel,
 		LoggingVersionLabel: loggingVersionLabel,
 		FluentBitPort:       int(uc.GetFluentBitMetricsPort()),
@@ -225,7 +225,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, logsDir, stateD
 		OtelRuntimeDir:      outDir,
 		LogsDir:             logsDir,
 	}
-	AgentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 	resource, err := p.GetResource()
 	if err != nil {
 		return "", err
