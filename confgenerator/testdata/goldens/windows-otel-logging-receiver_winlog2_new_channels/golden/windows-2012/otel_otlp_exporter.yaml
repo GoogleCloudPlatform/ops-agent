@@ -1052,6 +1052,13 @@ processors:
     log_statements:
     - context: log
       statements:
+      - set(observed_time, Now())
+      - set(time, Now())
+  transform/logging_ping_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
       - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
       - set(cache["__field_3"], body["severity"]) where (body != nil and body["severity"] != nil)
       - delete_key(body, "severity") where (body != nil and body["severity"] != nil)
@@ -1074,7 +1081,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_ping_1:
+  transform/logging_ping_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -2229,6 +2236,7 @@ service:
       processors:
       - transform/logging_ping_0
       - transform/logging_ping_1
+      - transform/logging_ping_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
       - resource/otlp_grpc/otlp_logs_logs_1

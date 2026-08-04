@@ -529,6 +529,17 @@ func generateHealthLogsParsingComponents(ctx context.Context) []otel.Component {
 }
 
 func (r AgentSelfMetrics) LoggingPingPipeline(ctx context.Context) otel.ReceiverPipeline {
+	logProccesors := []otel.Component{
+		otel.Transform("log", "log",
+			[]ottl.Statement{
+				"set(observed_time, Now())",
+				"set(time, Now())",
+			},
+		),
+	}
+	logProccesors = append(logProccesors, generateStructuredHealthLogsOtelComponents(ctx)...)
+	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, "ops-agent-health")...)
+
 	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "otlpjsonfile",
@@ -541,10 +552,7 @@ func (r AgentSelfMetrics) LoggingPingPipeline(ctx context.Context) otel.Receiver
 			},
 		},
 		Processors: map[string][]otel.Component{
-			"logs": append(
-				generateStructuredHealthLogsOtelComponents(ctx),
-				otelSetLogNameComponents(ctx, "ops-agent-health")...,
-			),
+			"logs": logProccesors,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.Logging,
