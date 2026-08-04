@@ -5331,13 +5331,13 @@ func waitForExpectedHealthCheckResults(ctx context.Context, logger *log.Logger, 
 
 	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(5*time.Second), ctx)
 	return backoff.Retry(func() error {
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		output, err := getHealthCheckResultsForImage(ctx, logger, vm)
 		if err != nil {
 			return err
 		}
 		for name, expected := range checks {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(name, expected, "")) {
-				return fmt.Errorf("expected %s check to %s in service output:\n%s", name, expected, cmdOut.Stdout)
+			if !strings.Contains(output, healthCheckResultMessage(name, expected, "")) {
+				return fmt.Errorf("expected %s check to %s in service output:\n%s", name, expected, output)
 			}
 		}
 		return nil
