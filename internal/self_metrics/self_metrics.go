@@ -256,6 +256,15 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 	}
 }
 
+func logToJson(logs plog.Logs) ([]byte, error) {
+	jsonMarshaler := &plog.JSONMarshaler{}
+	jsonResult, err := jsonMarshaler.MarshalLogs(logs)
+	if err != nil {
+		return nil, err
+	}
+	return jsonResult, nil
+}
+
 func metricToJson(metrics pmetric.Metrics) ([]byte, error) {
 	jsonMarshaler := &pmetric.JSONMarshaler{}
 	jsonResult, err := jsonMarshaler.MarshalMetrics(metrics)
@@ -335,16 +344,16 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 
 func CollectLoggingPingToOTLPJSON() ([]byte, error) {
 	logs := plog.NewLogs()
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
-	logRecord := scopeLog.LogRecords().AppendEmpty()
+	resource := logs.ResourceLogs().AppendEmpty()
+	resource.Resource().Attributes().PutStr("k", "v") // Resources can't be empty
+
+	logRecord := resource.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	bodyMap := logRecord.Body().SetEmptyMap()
 	bodyMap.PutStr("code", "LogPingOpsAgent")
 	bodyMap.PutStr("severity", "DEBUG")
 
-	jsonMarshaler := &plog.JSONMarshaler{}
-	return jsonMarshaler.MarshalLogs(logs)
+	return logToJson(logs)
 }
 
 // config and merged config respectively
