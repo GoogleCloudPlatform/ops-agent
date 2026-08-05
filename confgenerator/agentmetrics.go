@@ -550,6 +550,7 @@ func (r AgentSelfMetrics) LoggingPingPipeline(ctx context.Context) otel.Receiver
 				},
 				"replay_file":   true,
 				"poll_interval": time.Duration(600 * time.Second).String(),
+				"start_at":      "beginning",
 			},
 		},
 		Processors: map[string][]otel.Component{
