@@ -5309,7 +5309,7 @@ metrics:
 }
 
 func isHealthCheckTestImage(imageSpec string) bool {
-	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-12")
+	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-13")
 }
 
 func healthCheckResultMessage(name string, result string, code string) string {
@@ -5388,7 +5388,7 @@ func listenToPortForImage(vm *gce.VM) string {
 	return "nohup nc -l -p 20201 1>/dev/null 2>/dev/null &"
 }
 
-func TestPortsAndAPIHealthChecks(t *testing.T) {
+func TestPortsHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -5396,12 +5396,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.SkipNow()
 		}
 
-		customScopes := strings.Join([]string{
-			"https://www.googleapis.com/auth/monitoring.read",
-			"https://www.googleapis.com/auth/logging.write",
-			"https://www.googleapis.com/auth/devstorage.read_write",
-		}, ",")
-		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScopes})
+		ctx, dirLog, vm := agents.CommonSetup(t, imageSpec)
 		logger := dirLog.ToMainLog()
 
 		if !gce.IsWindows(vm.ImageSpec) {
@@ -5436,12 +5431,38 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 		checkExpectedHealthCheckResult(t, cmdOut, "Network", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "FAIL", "OtelMetricsPortErr")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiScopeErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "PASS", "")
+	})
+}
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger, vm, "ops-agent-health", time.Hour, query); err != nil {
-			t.Error(err)
+func TestAPIHealthChecks(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if !isHealthCheckTestImage(imageSpec) || gce.IsOpsAgentUAPPlugin() {
+			t.SkipNow()
 		}
+
+		customScopes := strings.Join([]string{
+			"https://www.googleapis.com/auth/monitoring.read",
+			"https://www.googleapis.com/auth/logging.write",
+			"https://www.googleapis.com/auth/devstorage.read_write",
+		}, ",")
+		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScopes})
+		logger := dirLog.ToMainLog()
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := getHealthCheckResultsForImage(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiScopeErr")
 	})
 }
 
