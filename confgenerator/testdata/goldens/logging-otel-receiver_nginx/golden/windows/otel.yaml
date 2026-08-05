@@ -1608,6 +1608,7 @@ receivers:
     - logging_ping_otlp.json
     poll_interval: 10m0s
     replay_file: true
+    start_at: beginning
   otlpjsonfile/ops_agent:
     include:
     - enabled_receivers_otlp.json
