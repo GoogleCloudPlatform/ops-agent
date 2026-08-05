@@ -117,6 +117,14 @@ var (
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
+	TraceApiScopeErr = HealthCheckError{
+		Code:         "TraceApiScopeErr",
+		Class:        Permission,
+		Message:      "VM is missing the https://www.googleapis.com/auth/trace.append scope.",
+		Action:       "Add the https://www.googleapis.com/auth/trace.append scope to the Compute Engine VM.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
+		IsFatal:      true,
+	}
 	LogApiPermissionErr = HealthCheckError{
 		Code:         "LogApiPermissionErr",
 		Class:        Permission,
@@ -191,6 +199,15 @@ var (
 		Message:      "Service account is missing the roles/telemetry.logsWriter role.",
 		Action:       "Add the roles/telemetry.logsWriter role to the Google Cloud service account.",
 		ResourceLink: "https://docs.cloud.google.com/iam/docs/roles-permissions/telemetry#telemetry.logsWriter",
+		IsFatal:      true,
+	}
+
+	TelTracesApiPermissionErr = HealthCheckError{
+		Code:         "TelTracesApiPermissionErr",
+		Class:        Permission,
+		Message:      "Service account is missing the roles/telemetry.tracesWriter role.",
+		Action:       "Add the roles/telemetry.tracesWriter role to the Google Cloud service account.",
+		ResourceLink: "https://docs.cloud.google.com/iam/docs/roles-permissions/telemetry#telemetry.tracesWriter",
 		IsFatal:      true,
 	}
 

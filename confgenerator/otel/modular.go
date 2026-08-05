@@ -42,6 +42,7 @@ const (
 	GMP
 	OTLP_Metrics
 	OTLP_Logs
+	OTLP_Traces
 	Logging
 )
 const (
@@ -62,6 +63,8 @@ func (t ExporterType) Name() string {
 		return "otlp_metrics"
 	} else if t == OTLP_Logs {
 		return "otlp_logs"
+	} else if t == OTLP_Traces {
+		return "otlp_traces"
 	} else {
 		panic("unknown ExporterType")
 	}

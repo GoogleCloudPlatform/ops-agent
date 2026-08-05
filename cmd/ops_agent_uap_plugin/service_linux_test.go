@@ -126,7 +126,7 @@ func Test_validateOpsAgentConfig(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
-			err := validateOpsAgentConfig(ctx, tc.path)
+			_, err := validateOpsAgentConfig(ctx, tc.path)
 			gotSuccess := (err == nil)
 			if gotSuccess != tc.wantSuccess {
 				t.Errorf("%s: validateOpsAgentConfig() got success = %v, want %v, error: %v", tc.name, gotSuccess, tc.wantSuccess, err)
