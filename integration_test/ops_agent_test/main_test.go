@@ -5156,6 +5156,11 @@ func TestAPIHealthChecks(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut, "Network", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiScopeErr")
+
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger, vm, "ops-agent-health", time.Hour, query); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
