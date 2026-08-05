@@ -516,14 +516,15 @@ func generateHealthLogsParsingComponents(ctx context.Context) []otel.Component {
 
 	// This is used to exclude any previous content of the `health-checks.log` file that does not contain
 	// the `jsonPayload.severity` field.
-	excludeLogsProccesor, err := LoggingProcessorExcludeLogs{
-		MatchAny: []string{`jsonPayload.severity !~ "INFO|ERROR|WARNING|DEBUG|info|error|warning|debug"`},
-	}.Processors(ctx)
-	if err != nil {
-		// We're generating a hard-coded config, so this should never fail.
-		panic(err)
-	}
-	components = append(components, excludeLogsProccesor...)
+	body := ottl.LValue{"body"}
+	bodySeverity := ottl.LValue{"body", "severity"}
+	excludeLogFilter := otel.Filter("log", "log",
+		[]ottl.Value{
+			ottl.IsNil(body),
+			ottl.And(body.IsPresent(), ottl.IsNil(bodySeverity)),
+			ottl.And(bodySeverity.IsPresent(), ottl.Not(ottl.IsMatch(bodySeverity, "INFO|ERROR|WARNING|DEBUG|info|error|warning|debug"))),
+		})
+	components = append(components, excludeLogFilter)
 
 	return components
 }
