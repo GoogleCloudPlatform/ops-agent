@@ -125,7 +125,7 @@
                 intValue: "6080"
             - key: TimeCreated
               value:
-                stringValue: 2026-01-16 18:45:59.5782153 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 Z
             - key: UserId
               value:
                 stringValue: ""
@@ -234,7 +234,7 @@
                 intValue: "6080"
             - key: TimeCreated
               value:
-                stringValue: 2026-01-16 18:45:59.5782153 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 Z
             - key: UserId
               value:
                 stringValue: ""
@@ -309,7 +309,7 @@
                 intValue: "5678"
             - key: TimeCreated
               value:
-                stringValue: 2025-12-14 05:26:29.0709018 +0000
+                stringValue: 2025-12-14 05:26:29.0709018 Z
             - key: UserId
               value:
                 stringValue: ""
@@ -384,7 +384,7 @@
                 intValue: "9876"
             - key: TimeCreated
               value:
-                stringValue: 2025-12-14 05:25:55.5387001 +0000
+                stringValue: 2025-12-14 05:25:55.5387001 Z
             - key: UserId
               value:
                 stringValue: ""
