@@ -519,7 +519,7 @@ func generateHealthLogsParsingComponents(ctx context.Context) []otel.Component {
 	// the `jsonPayload.severity` field.
 	body := ottl.LValue{"body"}
 	bodySeverity := ottl.LValue{"body", "severity"}
-	excludeLogFilter := otel.Filter("log", "log",
+	excludeLogFilter := otel.Filter("logs", "log_record",
 		[]ottl.Value{
 			ottl.IsNil(body),
 			ottl.And(body.IsPresent(), ottl.IsNil(bodySeverity)),

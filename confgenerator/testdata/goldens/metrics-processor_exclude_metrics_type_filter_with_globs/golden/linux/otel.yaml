@@ -56,8 +56,8 @@ processors:
         - fluentbit_uptime
   filter/health_checks_1:
     error_mode: ignore
-    log:
-      log:
+    logs:
+      log_record:
       - body == nil
       - ((body != nil) and body["severity"] == nil)
       - ((body != nil and body["severity"] != nil) and (not IsMatch(body["severity"], "INFO|ERROR|WARNING|DEBUG|info|error|warning|debug")))
