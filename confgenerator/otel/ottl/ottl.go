@@ -247,6 +247,10 @@ func Or(conditions ...Value) Value {
 	return valuef(`(%s)`, strings.Join(out, " or "))
 }
 
+func IsNil(a Value) Value {
+	return valuef(`%s == nil`, a)
+}
+
 func IsNotNil(a Value) Value {
 	return valuef(`%s != nil`, a)
 }
