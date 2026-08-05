@@ -6224,6 +6224,27 @@ func TestUninstallRemovesService(t *testing.T) {
 	})
 }
 
+func verifyMetricsPort(ctx context.Context, logger *log.Logger, vm *gce.VM, port int, expectedContent string) error {
+	cmd := fmt.Sprintf("curl -s localhost:%d/metrics", port)
+	if gce.IsWindows(vm.ImageSpec) {
+		cmd = fmt.Sprintf("Invoke-RestMethod -Uri http://localhost:%d/metrics", port)
+	}
+	b := backoff.WithContext(
+		backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 30),
+		ctx,
+	)
+	return backoff.Retry(func() error {
+		out, err := gce.RunRemotely(ctx, logger, vm, cmd)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(out.Stdout, expectedContent) {
+			return fmt.Errorf("%q not found in metrics output on port %d: %s", expectedContent, port, out.Stdout)
+		}
+		return nil
+	}, b)
+}
+
 func TestMetricsPortOverrideEnv(t *testing.T) {
 	t.Parallel()
 	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
@@ -6298,37 +6319,12 @@ Environment="%s=40002"
 			}
 		}
 
-		// Wait for agent to start up
-		time.Sleep(20 * time.Second)
-
-		// Verify that we can scrape metrics from the new ports
-		// Fluent Bit metrics on 40002
-		var fbMetricsOut, otelMetricsOut gce.CommandOutput
-		var err error
-
-		if gce.IsWindows(imageSpec) {
-			fbMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "Invoke-RestMethod -Uri http://localhost:40002/metrics")
-		} else {
-			fbMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "curl -s localhost:40002/metrics")
-		}
-		if err != nil {
+		// Verify that we can scrape metrics from the new ports with retries (waiting up to 60s for agent startup)
+		if err := verifyMetricsPort(ctx, logger, vm, 40002, "fluentbit_uptime"); err != nil {
 			t.Fatalf("Failed to scrape Fluent Bit metrics on port 40002: %v", err)
 		}
-		if !strings.Contains(fbMetricsOut.Stdout, "fluentbit_uptime") {
-			t.Fatalf("Fluent Bit metrics on port 40002 do not contain expected content. Output: %s", fbMetricsOut.Stdout)
-		}
-
-		// OTel Collector metrics on 40001
-		if gce.IsWindows(imageSpec) {
-			otelMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "Invoke-RestMethod -Uri http://localhost:40001/metrics")
-		} else {
-			otelMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "curl -s localhost:40001/metrics")
-		}
-		if err != nil {
+		if err := verifyMetricsPort(ctx, logger, vm, 40001, "otelcol_"); err != nil {
 			t.Fatalf("Failed to scrape OTel Collector metrics on port 40001: %v", err)
-		}
-		if !strings.Contains(otelMetricsOut.Stdout, "otelcol_") {
-			t.Fatalf("OTel Collector metrics on port 40001 do not contain expected content. Output: %s", otelMetricsOut.Stdout)
 		}
 	})
 }
