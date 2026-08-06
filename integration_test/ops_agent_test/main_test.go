@@ -6278,10 +6278,13 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 				t.Fatal(err)
 			}
 		} else {
-			// Stop the agent to avoid race conditions while setting up overrides
-			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl stop google-cloud-ops-agent"); err != nil {
+			// Stop all Ops Agent services to avoid race conditions while setting up overrides
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl stop google-cloud-ops-agent google-cloud-ops-agent-fluent-bit google-cloud-ops-agent-opentelemetry-collector"); err != nil {
 				t.Fatal(err)
 			}
+			// Give Fluent Bit time to cleanly shut down and release its listening socket.
+			// Fluent-Bit's default shutdown grace period is 5 seconds.
+			time.Sleep(10 * time.Second)
 
 			// Set up systemd overrides for Fluent Bit
 			fbOverrideDir := "/etc/systemd/system/google-cloud-ops-agent-fluent-bit.service.d"
@@ -6310,11 +6313,8 @@ Environment="%s=40002"
 				t.Fatal(err)
 			}
 
-			// Reload systemd and restart agent
-			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload"); err != nil {
-				t.Fatal(err)
-			}
-			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl start google-cloud-ops-agent"); err != nil {
+			// Reload systemd and restart all agent services
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload && sudo systemctl restart google-cloud-ops-agent google-cloud-ops-agent-fluent-bit google-cloud-ops-agent-opentelemetry-collector"); err != nil {
 				t.Fatal(err)
 			}
 		}
