@@ -54,7 +54,7 @@
         			SeDelegateSessionUserImpersonatePrivilege
       Task: 56789
       ThreadId: 6080
-      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
+      TimeCreated: 2026-01-16 18:45:59.5782153 Z
       UserId: ""
       Version: 0
     labels:
@@ -121,7 +121,7 @@
         			SeDelegateSessionUserImpersonatePrivilege
       Task: 56789
       ThreadId: 6080
-      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
+      TimeCreated: 2026-01-16 18:45:59.5782153 Z
       UserId: ""
       Version: 0
     labels:
@@ -154,7 +154,7 @@
       - 7300700070007300760063002F0031000000
       Task: 0
       ThreadId: 5678
-      TimeCreated: 2025-12-14 05:26:29.0709018 +0000
+      TimeCreated: 2025-12-14 05:26:29.0709018 Z
       UserId: ""
       Version: 0
     labels:
@@ -187,7 +187,7 @@
       - 7300700070007300760063002F0034000000
       Task: 0
       ThreadId: 9876
-      TimeCreated: 2025-12-14 05:25:55.5387001 +0000
+      TimeCreated: 2025-12-14 05:25:55.5387001 Z
       UserId: ""
       Version: 0
     labels:

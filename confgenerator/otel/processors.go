@@ -488,13 +488,14 @@ func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[
 }
 
 // CombineMetrics returns a config snippet that renames metrics matching the regex old to new, applying zero or more transformations.
-func CombineMetrics(old, new string, operations ...map[string]interface{}) map[string]interface{} {
+func CombineMetrics(old, new, aggregationType string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"include":       old,
-		"match_type":    "regexp",
-		"action":        "combine",
-		"new_name":      new,
-		"submatch_case": "lower",
+		"include":          old,
+		"match_type":       "regexp",
+		"action":           "combine",
+		"new_name":         new,
+		"aggregation_type": aggregationType,
+		"submatch_case":    "lower",
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations

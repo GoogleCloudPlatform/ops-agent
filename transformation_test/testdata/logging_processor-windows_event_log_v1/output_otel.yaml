@@ -49,8 +49,8 @@
         			SeSystemEnvironmentPrivilege
         			SeImpersonatePrivilege
         			SeDelegateSessionUserImpersonatePrivilege
-      TimeGenerated: 2026-01-16 18:45:59.5782153 +0000
-      TimeWritten: 2026-01-16 18:45:59.5782153 +0000
+      TimeGenerated: 2026-01-16 18:45:59.5782153 Z
+      TimeWritten: 2026-01-16 18:45:59.5782153 Z
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -110,8 +110,8 @@
         			SeSystemEnvironmentPrivilege
         			SeImpersonatePrivilege
         			SeDelegateSessionUserImpersonatePrivilege
-      TimeGenerated: 2026-01-16 18:45:59.5782153 +0000
-      TimeWritten: 2026-01-16 18:45:59.5782153 +0000
+      TimeGenerated: 2026-01-16 18:45:59.5782153 Z
+      TimeWritten: 2026-01-16 18:45:59.5782153 Z
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -136,8 +136,8 @@
       StringInserts:
       - Software Protection
       - stopped
-      TimeGenerated: 2025-12-14 05:26:29.0709018 +0000
-      TimeWritten: 2025-12-14 05:26:29.0709018 +0000
+      TimeGenerated: 2025-12-14 05:26:29.0709018 Z
+      TimeWritten: 2025-12-14 05:26:29.0709018 Z
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -162,8 +162,8 @@
       StringInserts:
       - Software Protection
       - running
-      TimeGenerated: 2025-12-14 05:25:55.5387001 +0000
-      TimeWritten: 2025-12-14 05:25:55.5387001 +0000
+      TimeGenerated: 2025-12-14 05:25:55.5387001 Z
+      TimeWritten: 2025-12-14 05:25:55.5387001 Z
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name

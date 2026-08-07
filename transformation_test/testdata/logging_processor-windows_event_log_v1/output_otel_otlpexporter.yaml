@@ -110,10 +110,10 @@
                       			SeDelegateSessionUserImpersonatePrivilege
             - key: TimeGenerated
               value:
-                stringValue: 2026-01-16 18:45:59.5782153 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 Z
             - key: TimeWritten
               value:
-                stringValue: 2026-01-16 18:45:59.5782153 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 Z
         observedTimeUnixNano: now
       - attributes:
         - key: compute.googleapis.com/resource_name
@@ -201,10 +201,10 @@
                       			SeDelegateSessionUserImpersonatePrivilege
             - key: TimeGenerated
               value:
-                stringValue: 2026-01-16 18:45:59.5782153 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 Z
             - key: TimeWritten
               value:
-                stringValue: 2026-01-16 18:45:59.5782153 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 Z
         observedTimeUnixNano: now
       - attributes:
         - key: compute.googleapis.com/resource_name
@@ -257,10 +257,10 @@
                   - stringValue: stopped
             - key: TimeGenerated
               value:
-                stringValue: 2025-12-14 05:26:29.0709018 +0000
+                stringValue: 2025-12-14 05:26:29.0709018 Z
             - key: TimeWritten
               value:
-                stringValue: 2025-12-14 05:26:29.0709018 +0000
+                stringValue: 2025-12-14 05:26:29.0709018 Z
         observedTimeUnixNano: now
       - attributes:
         - key: compute.googleapis.com/resource_name
@@ -313,9 +313,9 @@
                   - stringValue: running
             - key: TimeGenerated
               value:
-                stringValue: 2025-12-14 05:25:55.5387001 +0000
+                stringValue: 2025-12-14 05:25:55.5387001 Z
             - key: TimeWritten
               value:
-                stringValue: 2025-12-14 05:25:55.5387001 +0000
+                stringValue: 2025-12-14 05:25:55.5387001 Z
         observedTimeUnixNano: now
       scope: {}
