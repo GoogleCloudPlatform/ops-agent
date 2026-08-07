@@ -539,7 +539,7 @@ func (r AgentSelfMetrics) LoggingPingPipeline(ctx context.Context) otel.Receiver
 		),
 	}
 	logProccesors = append(logProccesors, generateStructuredHealthLogsOtelComponents(ctx)...)
-	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, "ops-agent-health")...)
+	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, healthLogsTag)...)
 
 	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
@@ -567,7 +567,7 @@ func (r AgentSelfMetrics) HealthChecksPipeline(ctx context.Context) otel.Receive
 
 	logProccesors := generateHealthLogsParsingComponents(ctx)
 	logProccesors = append(logProccesors, generateStructuredHealthLogsOtelComponents(ctx)...)
-	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, "ops-agent-health")...)
+	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, healthLogsTag)...)
 
 	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
