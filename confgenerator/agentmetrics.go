@@ -206,7 +206,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 			),
 		}
 		// b/468059325: Factor in partial success after upstream bug is fixed.
-		pointCountMetric = otel.CombineMetrics("otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points", "agent/monitoring/point_count",
+		pointCountMetric = otel.CombineMetrics("otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points", "agent/monitoring/point_count", "sum",
 			otel.AggregateLabels("sum", "status"))
 		apiRequestCount = otel.RenameMetric(durationCountMetric, "agent/api_request_count",
 			otel.RenameLabelValues("rpc.response.status_code", otelErrorTypeToStatus),
@@ -365,7 +365,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 				otel.AddLabel("response_code", "400"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
-			otel.CombineMetrics("^otel_log_entry_count$$", "otel_log_entry_count",
+			otel.CombineMetrics("^otel_log_entry_count$$", "otel_log_entry_count", "sum",
 				otel.AggregateLabels("sum", "response_code")),
 		),
 		// Aggregating as delta metrics isolates data for only the most recent metric cumulative update.
@@ -401,9 +401,9 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 			otel.SetName("otel_request_count", "agent/request_count"),
 		),
 		otel.MetricsTransform(
-			otel.CombineMetrics(`^agent/log_entry_count$`, "agent/log_entry_count", otel.AggregateLabels("sum", "response_code")),
-			otel.CombineMetrics(`^agent/log_entry_retry_count$`, "agent/log_entry_retry_count", otel.AggregateLabels("sum", "response_code")),
-			otel.CombineMetrics(`^agent/request_count$`, "agent/request_count", otel.AggregateLabels("sum", "response_code")),
+			otel.CombineMetrics(`^agent/log_entry_count$`, "agent/log_entry_count", "sum", otel.AggregateLabels("sum", "response_code")),
+			otel.CombineMetrics(`^agent/log_entry_retry_count$`, "agent/log_entry_retry_count", "sum", otel.AggregateLabels("sum", "response_code")),
+			otel.CombineMetrics(`^agent/request_count$`, "agent/request_count", "sum", otel.AggregateLabels("sum", "response_code")),
 		),
 		// DeltaToCumulative keeps in memory information of previous delta points
 		// to generate a valid cumulative monotonic metric.

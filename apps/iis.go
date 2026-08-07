@@ -117,6 +117,7 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				otel.CombineMetrics(
 					`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$$`,
 					"iis/network/transferred_bytes_count",
+					"sum",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 				),
@@ -129,6 +130,7 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				otel.CombineMetrics(
 					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$$`,
 					"iis/request_count",
+					"sum",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 				),
