@@ -44,14 +44,11 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
 			otel.OTLP_Logs: {
 				ProcessorsByType: map[string][]otel.Component{
-					// Batch with 1.5s timeout to group in the same log request
-					// all late entries flushed from a multiline parser after 1s.
 					"logs": {
 						otel.GCPProjectID("fake-project"),
 						otel.DisableOtlpRoundTrip(),
 						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
-						otel.BatchProcessor(500, 500, "1500ms"),
 					},
 				},
 				Exporter: otel.Component{
@@ -63,6 +60,9 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 						},
 						"sending_queue": map[string]any{
 							"enabled": true,
+							"batch": map[string]any{
+								"flush_timeout": "1500ms",
+							},
 						},
 					},
 				},
