@@ -28,7 +28,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -612,20 +611,10 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			if strings.HasPrefix(msg, "Consuming files") {
 				consumingCount += 1
 				if consumingCount == 3 {
-					// We've processed the entire input file. Give the pipeline a window to finish
-					// executing transform processors and draining multiline log batches (up to 1000ms
-					// for force_flush_period) before sending SIGTERM for graceful shutdown.
-					go func() {
-						time.Sleep(1000 * time.Millisecond)
-						if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-							t.Logf("failed to signal process: %v", err)
-						}
-						// Fallback: If otelopscol fails to stop gracefully, force kill it.
-						time.Sleep(10 * time.Second)
-						if cmd.ProcessState == nil || !cmd.ProcessState.Exited() {
-							_ = cmd.Process.Kill()
-						}
-					}()
+					// We've processed the entire input file. Signal the collector to stop.
+					if err := cmd.Process.Signal(os.Interrupt); err != nil {
+						t.Errorf("failed to signal process: %v", err)
+					}
 				}
 			}
 			stacktrace, ok := log["stacktrace"].(string)
