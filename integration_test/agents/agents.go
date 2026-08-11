@@ -637,6 +637,8 @@ func FetchPackageVersions(ctx context.Context, logger *log.Logger, vm *gce.VM, p
 // isRetriableInstallError checks to see if the error may be transient.
 func isRetriableInstallError(imageSpec string, err error) bool {
 	if strings.Contains(err.Error(), "Could not refresh zypper repositories.") ||
+		strings.Contains(err.Error(), "Could not get lock") ||
+		strings.Contains(err.Error(), "Unable to acquire the dpkg frontend lock") ||
 		strings.Contains(err.Error(), "Credentials are invalid") ||
 		strings.Contains(err.Error(), "Resource temporarily unavailable") ||
 		strings.Contains(err.Error(), "System management is locked by the application") {
