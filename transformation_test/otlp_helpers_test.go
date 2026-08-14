@@ -61,6 +61,9 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 						"tls": map[string]any{
 							"insecure": true, // We must use insecure TLS because our mock server on localhost does not have certificates installed.
 						},
+						"sending_queue": map[string]any{
+							"enabled": true,
+						},
 					},
 				},
 			},
