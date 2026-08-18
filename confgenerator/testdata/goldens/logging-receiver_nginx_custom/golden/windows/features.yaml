@@ -70,3 +70,31 @@
   feature: processors:nginx_error
   key: "[1].enabled"
   value: "true"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "4"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "2"
+- module: logging
+  feature: service:service
+  key: pipelines.[1].receivers.__length
+  value: "2"
+- module: logging
+  feature: service:service
+  key: pipelines.[2].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[2].processors.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[3].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[3].processors.__length
+  value: "1"

@@ -39,6 +39,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 
 	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
@@ -199,12 +201,15 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	// hang, so give them a shorter timeout to avoid hanging the whole test.
 	metricsCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "sudo curl -s localhost:20202/metrics")
-	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "sudo curl -s localhost:20201/metrics")
+	fbPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-fluent-bit -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20202; fi; curl -s localhost:$PORT/metrics'`, fluentbit.ExperimentalMetricsPortEnv)
+	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, fbPortCmd)
+
+	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-opentelemetry-collector -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, otel.ExperimentalMetricsPortEnv)
+	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, otelPortCmd)
 
 	isUAPPlugin := gce.IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
-		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
+		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("grpcurl -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
 	} else {
 		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
 	}
@@ -257,7 +262,7 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	if gce.IsOpsAgentUAPPlugin() {
 		stateDir = `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\`
 		gce.RunRemotely(ctx, logger.ToFile("ops_agent_uap_plugin_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-uap-plugin' } | Format-Table -AutoSize -Wrap")
-		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf(`C:\grpcurl.exe -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus`, OpsAgentPluginServerPort))
+		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf(`C:\grpcurl.exe -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus`, OpsAgentPluginServerPort))
 		gce.RunRemotely(ctx, logger.ToFile("active_processes_in_vm.txt"), vm, `Get-WmiObject -Class Win32_Process | Select-Object Name, ProcessId, ParentProcessId`)
 	} else {
 		gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
@@ -529,7 +534,8 @@ func IsRPMBased(imageSpec string) bool {
 		strings.HasPrefix(imageSpec, "suse-cloud") ||
 		strings.HasPrefix(imageSpec, "suse-sap-cloud") ||
 		strings.HasPrefix(imageSpec, "opensuse-cloud") ||
-		strings.Contains(imageSpec, "sles-")
+		strings.Contains(imageSpec, "sles-") ||
+		strings.HasPrefix(imageSpec, "almalinux-cloud")
 }
 
 // StripTildeSuffix strips off everything after the first ~ character. We see
@@ -631,6 +637,8 @@ func FetchPackageVersions(ctx context.Context, logger *log.Logger, vm *gce.VM, p
 // isRetriableInstallError checks to see if the error may be transient.
 func isRetriableInstallError(imageSpec string, err error) bool {
 	if strings.Contains(err.Error(), "Could not refresh zypper repositories.") ||
+		strings.Contains(err.Error(), "Could not get lock") ||
+		strings.Contains(err.Error(), "Unable to acquire the dpkg frontend lock") ||
 		strings.Contains(err.Error(), "Credentials are invalid") ||
 		strings.Contains(err.Error(), "Resource temporarily unavailable") ||
 		strings.Contains(err.Error(), "System management is locked by the application") {
@@ -723,9 +731,9 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 		grpcurlExecutable := "grpcurl"
 		if gce.IsWindows(imageSpec) {
 			grpcurlExecutable = `C:\grpcurl.exe`
-			return fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop; Start-Sleep -Seconds 5; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
+			return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop; Start-Sleep -Seconds 5; %s -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 		}
-		return fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
+		return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && %s -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -786,6 +794,24 @@ func windowsEnvironment(environment map[string]string) string {
 	return toEnvironment(environment, `$env:%s='%s'`, "\n")
 }
 
+func disableBrokenRepos(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	logger.Println("Attempting to disable known broken third-party repositories...")
+	// We disable 'ciq-sigcloud-next' on Rocky Linux/RHEL VMs because depot.ciq.com
+	// frequently times out, causing package manager commands (yum/dnf) to fail.
+	// This is a systemic external infrastructure flake.
+	disableCmd := `
+if command -v dnf &>/dev/null; then
+  sudo dnf config-manager --set-disabled ciq-sigcloud-next || true
+  if [ -f /etc/yum.repos.d/ciq-sigcloud-next.repo ]; then
+    sudo sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/ciq-sigcloud-next.repo || true
+  fi
+  sudo sed -i '/\[ciq-sigcloud-next\]/,/^\[/ s/enabled=1/enabled=0/' /etc/yum.repos.d/*.repo 2>/dev/null || true
+fi
+`
+	_, err := gce.RunRemotely(ctx, logger, vm, disableCmd)
+	return err
+}
+
 // InstallOpsAgent installs the Ops Agent on the given VM. Consults the given
 // PackageLocation to determine where to install the agent from. For details
 // about PackageLocation, see the documentation for the PackageLocation struct.
@@ -796,6 +822,12 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
+	}
+
+	if !gce.IsWindows(vm.ImageSpec) {
+		if err := disableBrokenRepos(ctx, logger, vm); err != nil {
+			logger.Printf("Warning: failed to disable broken repos (continuing anyway): %v", err)
+		}
 	}
 
 	if gce.IsOpsAgentUAPPlugin() {
@@ -902,7 +934,7 @@ func StartCommandForImage(imageSpec string) string {
 		if gce.IsWindows(imageSpec) {
 			grpcurlExecutable = `C:\grpcurl.exe`
 		}
-		return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
+		return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -919,11 +951,11 @@ func StartOpsAgentViaUAPCommand(imageSpec string, config string) string {
 	}
 	if len(config) > 0 {
 		if gce.IsWindows(imageSpec) {
-			return fmt.Sprintf("echo '{%s}' | %s -plaintext -d \"@\" localhost:1234 plugin_comm.GuestAgentPlugin/Start", config, grpcurlExecutable)
+			return fmt.Sprintf("echo '{%s}' | %s -plaintext -max-time 30 -d \"@\" localhost:1234 plugin_comm.GuestAgentPlugin/Start", config, grpcurlExecutable)
 		}
-		return fmt.Sprintf("%s -plaintext -d '{%s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
+		return fmt.Sprintf("%s -plaintext -max-time 30 -d '{%s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
 	}
-	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
+	return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
 }
 
 func StopCommandForImage(imageSpec string) string {
@@ -932,7 +964,7 @@ func StopCommandForImage(imageSpec string) string {
 		if gce.IsWindows(imageSpec) {
 			grpcurlExecutable = `C:\grpcurl.exe`
 		}
-		return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop", grpcurlExecutable)
+		return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop", grpcurlExecutable)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -947,7 +979,7 @@ func GetUAPPluginStatusForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		grpcurlExecutable = `C:\grpcurl.exe`
 	}
-	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus", grpcurlExecutable)
+	return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus", grpcurlExecutable)
 
 }
 
@@ -1277,12 +1309,12 @@ func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *g
 
 	if strings.Contains(feature, OtelLoggingFeatureFlag) {
 		if config == "" {
-				config = defaultOtelLoggingConfig()
-			} else {
-				config = setExperimentalOtelLoggingInConfig(config)
-			}
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
 	}
-	
+
 	// Set experimental feature environment variable.
 	if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
 		return err
@@ -1293,7 +1325,7 @@ func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *g
 
 func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !IsRPMBased(vm.ImageSpec) {
-		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not RPM based", vm.ImageSpec))
+		return fmt.Errorf("VM spec: %s, is not RPM based", vm.ImageSpec)
 	}
 
 	if location.packagesInGCS != "" {
@@ -1318,7 +1350,7 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 
 func verifyWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !gce.IsWindows(vm.ImageSpec) {
-		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not windows based", vm.ImageSpec))
+		return fmt.Errorf("VM spec: %s, is not windows based", vm.ImageSpec)
 	}
 	if location.packagesInGCS != "" {
 		return verifyWindowsBinaryIsSigned(ctx, logger, vm, fmt.Sprintf("%s\\*.goo", windowsAgentGCSDownloadPath))
@@ -1418,6 +1450,6 @@ func VerifyOpsAgentSigned(ctx context.Context, logger *log.Logger, vm *gce.VM) e
 	} else if gce.IsWindows(vm.ImageSpec) {
 		return verifyWindowsBinarySigned(ctx, logger, vm, location)
 	} else {
-		return fmt.Errorf(fmt.Sprintf("VM image: %s, is not suported for signing", vm.ImageSpec))
+		return fmt.Errorf("VM image: %s, is not supported for signing", vm.ImageSpec)
 	}
 }

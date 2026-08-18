@@ -38,3 +38,11 @@
   feature: receivers:apache_error
   key: "[1].include_paths.__length"
   value: "3"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "2"

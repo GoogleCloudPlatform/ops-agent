@@ -62,8 +62,8 @@ platforms_to_skip:
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
-  - ubuntu-os-cloud:ubuntu-2510-amd64 # Possible support in the future
-  - ubuntu-os-cloud:ubuntu-2510-arm64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-2604-lts-amd64 # TODO(b/512442712): Skipped on Ubuntu 26.04 due to systemd/AppArmor custom directory blockages
+  - ubuntu-os-cloud:ubuntu-2604-lts-arm64 # TODO(b/512442712): Skipped on Ubuntu 26.04 due to systemd/AppArmor custom directory blockages 
 supported_app_version: ["10.1.X through 10.7.X", ""] # Indicate multiple versions.
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
@@ -182,7 +182,7 @@ expected_metrics:
     unavailable_on:
       - ubuntu-os-cloud:ubuntu-2404-lts-amd64
       - ubuntu-os-cloud:ubuntu-2404-lts-arm64
-      - ml-images:common-cu128-ubuntu-2404-nvidia-570
+      - ml-images:common-cu129-ubuntu-2404-nvidia-580
       - debian-cloud:debian-12-arm64
       - debian-cloud:debian-13
       - debian-cloud:debian-13-arm64

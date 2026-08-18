@@ -70,3 +70,23 @@
   feature: receivers:files
   key: "[3].record_log_file_path"
   value: "false"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "4"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[1].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[2].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[3].receivers.__length
+  value: "1"

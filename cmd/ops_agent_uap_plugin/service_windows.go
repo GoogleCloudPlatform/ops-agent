@@ -32,7 +32,6 @@ import (
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows"
@@ -236,15 +235,6 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 	return nil
 }
 
-func runHealthChecks(healthCheckFileLogger logs.StructuredLogger) {
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-
-	// Log health check results to health-checks.log log file.
-	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
-
-	log.Println("Health checks completed")
-}
-
 func createWindowsJobHandle() (windows.Handle, error) {
 	jobHandle, err := windows.CreateJobObject(nil, nil)
 	if err != nil {
@@ -296,7 +286,6 @@ func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPlug
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
-		"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)

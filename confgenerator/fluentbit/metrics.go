@@ -14,9 +14,12 @@
 
 package fluentbit
 
-import "strconv"
+import (
+	"strconv"
+)
 
 const MetricsPort = 20202
+const ExperimentalMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_FLUENT_BIT_METRICS_PORT"
 
 func MetricsInputComponent() Component {
 	return Component{
@@ -29,7 +32,7 @@ func MetricsInputComponent() Component {
 	}
 }
 
-func MetricsOutputComponent() Component {
+func MetricsOutputComponent(port int) Component {
 	return Component{
 		Kind: "OUTPUT",
 		Config: map[string]string{
@@ -37,7 +40,7 @@ func MetricsOutputComponent() Component {
 			"Name":  "prometheus_exporter",
 			"Match": "*",
 			"host":  "0.0.0.0",
-			"port":  strconv.Itoa(MetricsPort),
+			"port":  strconv.Itoa(port),
 		},
 	}
 }

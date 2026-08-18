@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
@@ -62,8 +63,20 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
+func (uc *UnifiedConfig) HasTraces() bool {
+	return uc.Traces != nil
+}
+
 func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
+}
+
+func (uc *UnifiedConfig) GetFluentBitMetricsPort() uint16 {
+	return portutil.GetPortFromEnv(fluentbit.ExperimentalMetricsPortEnv, fluentbit.MetricsPort)
+}
+
+func (uc *UnifiedConfig) GetOtelMetricsPort() uint16 {
+	return portutil.GetPortFromEnv(otel.ExperimentalMetricsPortEnv, otel.MetricsPort)
 }
 
 func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
@@ -1092,8 +1105,6 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	}
 	platformDefaultConfig := BuiltInConfStructs[platform.FromContext(ctx).Name()].Logging
 	exp_otlp := experiments.FromContext(ctx)["otlp_logging"]
-	// N.B. Temporarily gate the "auto" otel logging behind an experiment flag.
-	exp_otel := experiments.FromContext(ctx)["otel_logging"]
 	force_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
@@ -1136,7 +1147,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				Processors:   processors,
 			}
 			if (force_otel != nil && *force_otel) || // User asked for OTel logging
-				(exp_otel && force_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
+				(force_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
 				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
 				instance.Backend = BackendOTel
 			}

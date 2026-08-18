@@ -65,10 +65,13 @@ import (
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/api/distribution"
@@ -4981,221 +4984,6 @@ traces:
 	)
 }
 
-func TestOTLPMetricsOTLP(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		if gce.IsOpsAgentUAPPlugin() {
-			// Ops Agent Plugin does not restart subagents on termination.
-			t.SkipNow()
-		}
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		otlpConfig := `
-combined:
-  receivers:
-    otlp:
-      type: otlp
-      grpc_endpoint: 0.0.0.0:4317
-metrics:
-  service:
-    pipelines:
-      otlp:
-        receivers:
-        - otlp
-traces:
-  service:
-    pipelines:
-`
-		// Only run the test for the OTLP http exporter
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, agents.OtlpHttpExporterFeatureFlag); err != nil {
-			t.Fatal(err)
-		}
-
-		// Have to wait for startup feature tracking metrics to be sent
-		// before we tear down the service.
-		time.Sleep(2 * time.Minute)
-
-		// Generate metric traffic with dummy app
-		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer metricFile.Close()
-		if err := installGolang(ctx, logger, vm); err != nil {
-			t.Fatal(err)
-		}
-		serviceName := "otlp-metric-googlemanagedprometheus-test"
-		if err = runGoCode(ctx, logger, vm, metricFile, "-service_name", serviceName); err != nil {
-			t.Fatal(err)
-		}
-		expectedLabels := []*metadata.MetricLabel{
-			{Name: "otel_scope_name", ValueRegex: "foo"},
-			{Name: "instance_name", ValueRegex: vm.Name},
-			{Name: "machine_type", ValueRegex: fmt.Sprintf("projects/[0-9]+/machineTypes/%s", vm.MachineType)},
-		}
-		tests := []metadata.ExpectedMetric{
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.gauge/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.cumulative/counter",
-					Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              15.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:      "prometheus.googleapis.com/otlp.test.histogram/histogram",
-					Kind:      metric.MetricDescriptor_CUMULATIVE.String(),
-					ValueType: metric.MetricDescriptor_DISTRIBUTION.String(),
-					Value: &distribution.Distribution{
-						Count:                 3,
-						Mean:                  2,
-						SumOfSquaredDeviation: 0.75,
-						BucketOptions: &distribution.Distribution_BucketOptions{
-							Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
-								ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
-									Bounds: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-								},
-							},
-						},
-						BucketCounts: []int64{0, 3},
-					},
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type: "prometheus.googleapis.com/otlp.test.updowncounter/gauge",
-					Kind: metric.MetricDescriptor_GAUGE.String(),
-					// b/476112381: New OTLP endpoint for prometheus converts INT metrics types to DOUBLE
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              3.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/workload.googleapis.com/otlp.test.prefix1/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-		}
-		var multiErr error
-		for _, test := range tests {
-			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, true))
-		}
-		if multiErr != nil {
-			t.Error(multiErr)
-		}
-
-		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
-			{
-				Module:  "logging",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			},
-			{
-				Module:  "metrics",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			},
-			{
-				Module:  "combined",
-				Feature: "receivers:otlp",
-				Key:     "[0].enabled",
-				Value:   "true",
-			},
-			{
-				Module:  "combined",
-				Feature: "receivers:otlp",
-				Key:     "[0].grpc_endpoint",
-				Value:   "endpoint",
-			},
-		}
-
-		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
-		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-	})
-}
-
 func TestOTLPMetricsGMP(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -5521,7 +5309,7 @@ metrics:
 }
 
 func isHealthCheckTestImage(imageSpec string) bool {
-	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-11")
+	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-12")
 }
 
 func healthCheckResultMessage(name string, result string, code string) string {
@@ -5537,6 +5325,25 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
+func waitForExpectedHealthCheckResults(ctx context.Context, logger *log.Logger, vm *gce.VM, maxWait time.Duration, checks map[string]string) error {
+	ctx, cancel := context.WithTimeout(ctx, maxWait)
+	defer cancel()
+
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(5*time.Second), ctx)
+	return backoff.Retry(func() error {
+		output, err := getHealthCheckResultsForImage(ctx, logger, vm)
+		if err != nil {
+			return err
+		}
+		for name, expected := range checks {
+			if !strings.Contains(output, healthCheckResultMessage(name, expected, "")) {
+				return fmt.Errorf("expected %s check to %s in service output:\n%s", name, expected, output)
+			}
+		}
+		return nil
+	}, backoffPolicy)
+}
+
 func getRecentServiceOutputForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
@@ -5546,7 +5353,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 		}, ";")
 		return cmd
 	}
-	return "sudo systemctl status google-cloud-ops-agent"
+	return "sudo journalctl -b 0 -u google-cloud-ops-agent --no-pager"
 }
 
 func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
@@ -5601,6 +5408,8 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			var packages []string
 			if gce.IsCentOS(vm.ImageSpec) || gce.IsRHEL(vm.ImageSpec) {
 				packages = []string{"nc"}
+			} else if gce.IsDebianBased(vm.ImageSpec) {
+				packages = []string{"netcat-traditional"}
 			} else {
 				packages = []string{"netcat"}
 			}
@@ -5636,17 +5445,66 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	})
 }
 
+func waitForNetworkBlock(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	logger.Println("Waiting for network block to propagate...")
+	// The deny egress firewall rule is eventually consistent. We want to wait
+	// until ALL key endpoints are blocked before proceeding, to ensure the health
+	// checks consistently detect the block.
+	checkCmd := `if curl -s -m 5 https://telemetry.googleapis.com > /dev/null || \
+   curl -s -m 5 https://logging.googleapis.com > /dev/null || \
+   curl -s -m 5 https://monitoring.googleapis.com > /dev/null || \
+   curl -s -m 5 https://dl.google.com > /dev/null || \
+   curl -s -m 5 https://packages.cloud.google.com > /dev/null; then
+  exit 0
+else
+  exit 1
+fi`
+	if gce.IsWindows(vm.ImageSpec) {
+		checkCmd = `if (
+  (Test-NetConnection telemetry.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection logging.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection monitoring.googleapis.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection dl.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded -or
+  (Test-NetConnection packages.cloud.google.com -Port 443 -WarningAction SilentlyContinue).TcpTestSucceeded
+) {
+  exit 0
+} else {
+  exit 1
+}`
+	}
+
+	timeout := time.After(5 * time.Minute)
+	tick := time.NewTicker(10 * time.Second)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeout:
+			return fmt.Errorf("timeout waiting for network block to propagate")
+		case <-tick.C:
+			_, err := gce.RunRemotely(ctx, logger, vm, checkCmd)
+			if err != nil {
+				logger.Printf("Network check failed as expected (all endpoints blocked): %v", err)
+				return nil
+			}
+			logger.Println("At least one network endpoint is still reachable, waiting...")
+		}
+	}
+}
+
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
-		if !isHealthCheckTestImage(imageSpec) {
+		if !isHealthCheckTestImage(imageSpec) || gce.IsOpsAgentUAPPlugin() {
 			t.SkipNow()
 		}
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5667,7 +5525,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.AddTagToVm(ctx, logger, vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(2 * time.Minute)
+		if err := waitForNetworkBlock(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
@@ -5684,8 +5544,12 @@ func TestNetworkHealthCheck(t *testing.T) {
 		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Network", "WARNING", "DLApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
+		if strings.Contains(feature, "otlp_exporter") {
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "TelApiConnErr")
+		} else {
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
+			checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
+		}
 	})
 }
 
@@ -5966,14 +5830,14 @@ func TestRestartVM(t *testing.T) {
 			}
 
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
+			// Ensure all healthchecks pass before the restart with backoff polling
+			if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+				"Network": "PASS",
+				"Ports":   "PASS",
+				"API":     "PASS",
+			}); err != nil {
+				t.Error(err)
 			}
-			// Ensure sure all healthchecks pass before the restart
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
 
 		logger.Printf(`Restarting instance. For details, see "VM_restart.txt".`)
@@ -5999,13 +5863,13 @@ func TestRestartVM(t *testing.T) {
 				t.Error("expected the plugin to be running after the VM restart, but is not running")
 			}
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
+			if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+				"Network": "PASS",
+				"Ports":   "PASS",
+				"API":     "PASS",
+			}); err != nil {
+				t.Error(err)
 			}
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
 	})
 }
@@ -6202,13 +6066,29 @@ func TestAppHubLogLabels(t *testing.T) {
 			"--uri",
 		}
 
-		output, err := gce.RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
+		var migResourceString string
+
+		// AppHub discovery is asynchronous and can take several minutes. Retry for up to 3 minutes.
+		discoveryCtx, discoveryCancel := context.WithTimeout(ctx, 3*time.Minute)
+		defer discoveryCancel()
+
+		err := backoff.Retry(func() error {
+			out, err := gce.RunGcloud(discoveryCtx, logger, "", discoverMIGWorkloadArgs)
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(out.Stdout) == "" {
+				return fmt.Errorf("discovered workload for %s not found yet", migVM.ManagedInstanceGroupName())
+			}
+			migResourceString = strings.Replace(strings.TrimSpace(out.Stdout), "https://apphub.googleapis.com/v1/", "", 1)
+			return nil
+		}, backoff.WithContext(backoff.NewConstantBackOff(15*time.Second), discoveryCtx))
+
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("Failed to discover AppHub workload: %v", err)
 		}
 
 		// Setup Apphub #2 : Register Managed Instance Group as AppHub workload.
-		migResourceString := strings.Replace(output.Stdout, "https://apphub.googleapis.com/v1/", "", 1)
 		registerAppHubWorkloadArgs := []string{
 			"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
 			"--application=" + AppHubIntegrationTestApp,
@@ -6218,8 +6098,7 @@ func TestAppHubLogLabels(t *testing.T) {
 			"--format=json",
 		}
 
-		output, err = gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
-		if err != nil {
+		if _, err := gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs); err != nil {
 			t.Fatal(err)
 		}
 
@@ -6236,8 +6115,7 @@ func TestAppHubLogLabels(t *testing.T) {
 				"--format=json",
 			}
 
-			output, err = gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs)
-			if err != nil {
+			if _, err := gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -6342,6 +6220,111 @@ func TestUninstallRemovesService(t *testing.T) {
 
 		if out, err := gce.RunRemotely(ctx, logger, vm, checkServiceCmd); err != nil {
 			t.Fatalf("Service still exists after uninstall, or error checking status: %v. Output: %s", err, out.Stdout)
+		}
+	})
+}
+
+func verifyMetricsPort(ctx context.Context, logger *log.Logger, vm *gce.VM, port int, expectedContent string) error {
+	cmd := fmt.Sprintf("curl -s localhost:%d/metrics", port)
+	if gce.IsWindows(vm.ImageSpec) {
+		cmd = fmt.Sprintf("Invoke-RestMethod -Uri http://localhost:%d/metrics", port)
+	}
+	b := backoff.WithContext(
+		backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 30),
+		ctx,
+	)
+	return backoff.Retry(func() error {
+		out, err := gce.RunRemotely(ctx, logger, vm, cmd)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(out.Stdout, expectedContent) {
+			return fmt.Errorf("%q not found in metrics output on port %d: %s", expectedContent, port, out.Stdout)
+		}
+		return nil
+	}, b)
+}
+
+func TestMetricsPortOverrideEnv(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+		// Windows support added below
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("Skipping on UAP plugin as it is not supported")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		// Setup agent with default config first
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+			t.Fatal(err)
+		}
+
+		if gce.IsWindows(imageSpec) {
+			// Set environment variables via PowerShell
+			setEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", "40002", "Machine"); [Environment]::SetEnvironmentVariable("%s", "40001", "Machine")`,
+				fluentbit.ExperimentalMetricsPortEnv, otel.ExperimentalMetricsPortEnv)
+			if _, err := gce.RunRemotely(ctx, logger, vm, setEnvCmd); err != nil {
+				t.Fatal(err)
+			}
+			// Cleanup env vars at the end of the test
+			t.Cleanup(func() {
+				unsetEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", $null, "Machine"); [Environment]::SetEnvironmentVariable("%s", $null, "Machine")`,
+					fluentbit.ExperimentalMetricsPortEnv, otel.ExperimentalMetricsPortEnv)
+				gce.RunRemotely(ctx, logger, vm, unsetEnvCmd)
+			})
+			// Restart agent
+			if err := agents.RestartOpsAgent(ctx, logger, vm); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			// Stop the agent to avoid race conditions while setting up overrides
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl stop google-cloud-ops-agent"); err != nil {
+				t.Fatal(err)
+			}
+
+			// Set up systemd overrides for Fluent Bit
+			fbOverrideDir := "/etc/systemd/system/google-cloud-ops-agent-fluent-bit.service.d"
+			fbOverrideFile := fbOverrideDir + "/override.conf"
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo mkdir -p %s", fbOverrideDir)); err != nil {
+				t.Fatal(err)
+			}
+			fbOverrideContent := fmt.Sprintf(`[Service]
+Environment="%s=40002"
+`, fluentbit.ExperimentalMetricsPortEnv)
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", fbOverrideContent, fbOverrideFile)); err != nil {
+				t.Fatal(err)
+			}
+
+			// Set up systemd overrides for OTel Collector
+			otelOverrideDir := "/etc/systemd/system/google-cloud-ops-agent-opentelemetry-collector.service.d"
+			otelOverrideFile := otelOverrideDir + "/override.conf"
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo mkdir -p %s", otelOverrideDir)); err != nil {
+				t.Fatal(err)
+			}
+			otelOverrideContent := fmt.Sprintf(`[Service]
+Environment="%s=40001"
+Environment="%s=40002"
+`, otel.ExperimentalMetricsPortEnv, fluentbit.ExperimentalMetricsPortEnv)
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", otelOverrideContent, otelOverrideFile)); err != nil {
+				t.Fatal(err)
+			}
+
+			// Reload systemd and restart agent
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload"); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl start google-cloud-ops-agent"); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		// Verify that we can scrape metrics from the new ports with retries (waiting up to 60s for agent startup)
+		if err := verifyMetricsPort(ctx, logger, vm, 40002, "fluentbit_uptime"); err != nil {
+			t.Fatalf("Failed to scrape Fluent Bit metrics on port 40002: %v", err)
+		}
+		if err := verifyMetricsPort(ctx, logger, vm, 40001, "otelcol_"); err != nil {
+			t.Fatalf("Failed to scrape OTel Collector metrics on port 40001: %v", err)
 		}
 	})
 }

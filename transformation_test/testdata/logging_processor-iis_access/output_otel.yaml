@@ -1,6 +1,5 @@
 - entries:
   - httpRequest:
-      protocol: HTTP/1.1
       referer: http://localhost/
       remoteIp: "::1"
       requestMethod: GET
@@ -23,7 +22,6 @@
       type: gce_instance
     timestamp: 2022-03-11T01:26:30Z
   - httpRequest:
-      protocol: HTTP/1.1
       remoteIp: "::1"
       requestMethod: GET
       requestUrl: /
@@ -45,7 +43,6 @@
       type: gce_instance
     timestamp: 2022-03-11T01:26:30Z
   - httpRequest:
-      protocol: HTTP/1.1
       serverIp: <nil>:<nil>
     jsonPayload:
       message: "2022-03-10 17:26:32 ::1 GET /favicon.ico - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 404 0 2 49 "
@@ -60,7 +57,6 @@
       type: gce_instance
     timestamp: now
   - httpRequest:
-      protocol: HTTP/1.1
       remoteIp: "::1"
       requestMethod: GET
       requestUrl: /forbidden?something=something

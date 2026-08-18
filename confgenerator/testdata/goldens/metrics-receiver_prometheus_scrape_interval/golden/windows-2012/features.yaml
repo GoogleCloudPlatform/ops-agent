@@ -66,3 +66,11 @@
   feature: receivers:prometheus
   key: "[0].config.[1].scrape_configs.static_config_target_groups"
   value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"

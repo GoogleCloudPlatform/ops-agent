@@ -63,12 +63,14 @@ type CustomFeature struct {
 // track features not captured by the `tracking` struct tag.
 type CustomFeatures interface {
 	// ExtractFeatures returns a list of features that will be tracked for this component.
-	ExtractFeatures() ([]CustomFeature, error)
+	// If the boolean is true, no further features will be extracted from the component.
+	ExtractFeatures() ([]CustomFeature, bool, error)
 
 	// ListAllFeatures returns a list of all features that could be tracked for this component.
 	// This lists all the possible features that could be tracked for this component, but some of these
 	// features may not be tracked when not used by the component.
-	ListAllFeatures() []string
+	// If the boolean is true, no further features will be extracted from the component.
+	ListAllFeatures() ([]string, bool)
 }
 
 // ExtractFeatures fields that containing a tracking tag will be tracked.
@@ -94,6 +96,16 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 			return nil, err
 		}
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
+
+		tempTrackedFeatures, err = trackingFeatures(reflect.ValueOf(userUc.Metrics.Service), metadata{}, Feature{
+			Module: "metrics",
+			Kind:   "service",
+			Type:   "service",
+		})
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
 	}
 
 	if userUc.HasLogging() {
@@ -104,6 +116,28 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
 
 		tempTrackedFeatures, err = trackedMappedComponents("logging", "processors", userUc.Logging.Processors)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+
+		tempTrackedFeatures, err = trackingFeatures(reflect.ValueOf(userUc.Logging.Service), metadata{}, Feature{
+			Module: "logging",
+			Kind:   "service",
+			Type:   "service",
+		})
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+	}
+
+	if userUc.HasTraces() {
+		tempTrackedFeatures, err = trackingFeatures(reflect.ValueOf(userUc.Traces.Service), metadata{}, Feature{
+			Module: "traces",
+			Kind:   "service",
+			Type:   "service",
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -154,12 +188,13 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 
 // TODO(b/272536539): add time.Duration to auto tracking
 func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature, error) {
+	var features []Feature
+
 	if customFeatures, ok := c.Interface().(CustomFeatures); ok {
-		cfs, err := customFeatures.ExtractFeatures()
+		cfs, complete, err := customFeatures.ExtractFeatures()
 		if err != nil {
 			return nil, err
 		}
-		var features []Feature
 		for _, cf := range cfs {
 			features = append(features, Feature{
 				Module: feature.Module,
@@ -169,11 +204,13 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 				Value:  cf.Value,
 			})
 		}
-		return features, nil
+		if complete {
+			return features, nil
+		}
 	}
 
 	if md.isExcluded {
-		return nil, nil
+		return features, nil
 	}
 	t := c.Type()
 
@@ -182,15 +219,13 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 	}
 
 	if c.IsZero() {
-		return nil, nil
+		return features, nil
 	}
 
 	v := reflect.Indirect(c)
 	if v.Kind() == reflect.Invalid {
-		return nil, nil
+		return features, nil
 	}
-
-	var features []Feature
 
 	switch kind := t.Kind(); {
 	case kind == reflect.Struct:
@@ -417,17 +452,16 @@ func getMetadata(field reflect.StructField) metadata {
 	}
 	isExcluded := trackingTag == "-"
 
-	yamlTag, ok := field.Tag.Lookup("yaml")
-	if !ok {
-		panic("field must have a yaml tag")
-	}
-
+	yamlName := strings.ToLower(field.Name)
 	hasInline := false
-	yamlTags := strings.Split(yamlTag, ",")
-	for _, tag := range yamlTags {
-		if tag == "inline" {
-			hasInline = true
+	if yamlTag, ok := field.Tag.Lookup("yaml"); ok {
+		yamlTags := strings.Split(yamlTag, ",")
+		for _, tag := range yamlTags {
+			if tag == "inline" {
+				hasInline = true
+			}
 		}
+		yamlName = yamlTags[0]
 	}
 
 	return metadata{
@@ -439,7 +473,7 @@ func getMetadata(field reflect.StructField) metadata {
 		overrideValue: trackingTags[0],
 		// The first tag is the field identifier
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
-		yamlTag: yamlTags[0],
+		yamlTag: yamlName,
 	}
 }
 

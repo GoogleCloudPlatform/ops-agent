@@ -10,17 +10,11 @@ if [[ $ID == debian && "${VERSION_ID}" == 13 ]]; then
 elif [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
     sudo apt-get install -y openjdk-17-jdk openjdk-17-jdk-headless
     TOMCAT_VERSION=tomcat10
-elif [[ $ID == ubuntu && "${VERSION_ID}" == 24* ]]; then
+elif [[ $ID == ubuntu && "${VERSION_ID}" =~ ^(24|25|26) ]]; then
     sudo apt-get install -y default-jdk default-jdk-headless
     TOMCAT_VERSION=tomcat10
 else
-    if [[ $ID == ubuntu && "${VERSION_ID}" == 24* ]]; then
-        TOMCAT_VERSION=tomcat10
-    elif [[ $ID == ubuntu && "${VERSION_ID}" == 25* ]]; then
-        TOMCAT_VERSION=tomcat10
-    else
-        TOMCAT_VERSION=tomcat9
-    fi
+    TOMCAT_VERSION=tomcat9
     sudo apt-get install -y curl default-jdk default-jdk-headless
 fi
 

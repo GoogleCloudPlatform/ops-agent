@@ -22,3 +22,7 @@
   feature: exporters:otlp
   key: otlp_exporter
   value: "false"
+- module: logging
+  feature: service:service
+  key: experimental_otel_logging
+  value: "false"

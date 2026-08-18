@@ -434,6 +434,35 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 	return statements, nil
 }
 
+func (p LoggingProcessorModifyFields) ListAllFeatures() ([]string, bool) {
+	return []string{
+		"has_ruby_regex",
+	}, false
+}
+
+func (p LoggingProcessorModifyFields) ExtractFeatures() ([]CustomFeature, bool, error) {
+	hasRubyRegex := false
+	for _, field := range p.Fields {
+		if field != nil && field.OmitIf != "" {
+			flt, err := filter.NewFilter(field.OmitIf)
+			if err != nil {
+				// Unparsable; just skip the feature.
+				return nil, false, nil
+			}
+			if flt.HasRubyRegex() {
+				hasRubyRegex = true
+				break
+			}
+		}
+	}
+	return []CustomFeature{
+		{
+			Key:   []string{"has_ruby_regex"},
+			Value: fmt.Sprintf("%v", hasRubyRegex),
+		},
+	}, false, nil
+}
+
 func init() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorModifyFields{} })
 }

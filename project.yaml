@@ -13,23 +13,23 @@
 # limitations under the License.
 
 targets:
-  questing:
-    os_versions: [ubuntu-25.10*]
+  resolute:
+    os_versions: [ubuntu-26.04*]
     package_extension:
       deb
     architectures:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-os-cloud:ubuntu-2510-amd64
+          - ubuntu-os-cloud:ubuntu-2604-lts-amd64
           exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2510-amd64
+          - ubuntu-os-cloud:ubuntu-minimal-2604-lts-amd64
       aarch64:
         test_distros:
           representative:
-          - ubuntu-os-cloud:ubuntu-2510-arm64
+          - ubuntu-os-cloud:ubuntu-2604-lts-arm64
           exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2510-arm64
+          - ubuntu-os-cloud:ubuntu-minimal-2604-lts-arm64
   trixie:
     os_versions: [debian-13*]
     package_extension:
@@ -66,7 +66,7 @@ targets:
           representative:
           - debian-cloud:debian-11
   centos8:
-    os_versions: [centos-8*,rocky-8*,rhel-8*]
+    os_versions: [centos-8*,rocky-8*,rhel-8*,almalinux-8*]
     package_extension:
       rpm
     repo_name:
@@ -78,10 +78,10 @@ targets:
           - rocky-linux-cloud:rocky-linux-8
           exhaustive:
           - rhel-cloud:rhel-8
-          - rhel-sap-cloud:rhel-8-6-sap-ha
           - rhel-sap-cloud:rhel-8-8-sap-ha
           - rhel-sap-cloud:rhel-8-10-sap-ha
           - rocky-linux-cloud:rocky-linux-8-optimized-gcp
+          - almalinux-cloud:almalinux-8
       aarch64:
         test_distros:
           representative:
@@ -89,6 +89,7 @@ targets:
           exhaustive:
           - rhel-cloud:rhel-8-arm64
           - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
+          - almalinux-cloud:almalinux-8-arm64
   jammy:
     os_versions: [ubuntu-22.04*]
     package_extension:
@@ -117,7 +118,7 @@ targets:
         test_distros:
           representative:
           - ubuntu-os-cloud:ubuntu-2404-lts-amd64
-          - ml-images:common-cu128-ubuntu-2404-nvidia-570
+          - ml-images:common-cu129-ubuntu-2404-nvidia-580
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2404-lts-amd64
       aarch64:
@@ -127,7 +128,7 @@ targets:
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2404-lts-arm64
   rockylinux9:
-    os_versions: [centos-9*,rocky-9*,rhel-9*]
+    os_versions: [centos-9*,rocky-9*,rhel-9*,almalinux-9*]
     package_extension:
       rpm
     repo_name:
@@ -140,10 +141,10 @@ targets:
           exhaustive:
           - rhel-cloud:rhel-9
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp
-          - rhel-sap-cloud:rhel-9-0-sap-ha
           - rhel-sap-cloud:rhel-9-2-sap-ha
           - rhel-sap-cloud:rhel-9-4-sap-ha
           - rhel-sap-cloud:rhel-9-6-sap-ha
+          - almalinux-cloud:almalinux-9
       aarch64:
         test_distros:
           representative:
@@ -151,8 +152,9 @@ targets:
           exhaustive:
           - rhel-cloud:rhel-9-arm64
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
+          - almalinux-cloud:almalinux-9-arm64
   rockylinux10:
-    os_versions: [centos-10*,rocky-10*,rhel-10*]
+    os_versions: [centos-10*,rocky-10*,rhel-10*,almalinux-10*]
     package_extension:
       rpm
     repo_name:
@@ -166,6 +168,7 @@ targets:
           - rhel-cloud:rhel-10
           - centos-cloud:centos-stream-10
           - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+          - almalinux-cloud:almalinux-10
       aarch64:
         test_distros:
           representative:
@@ -174,6 +177,8 @@ targets:
           - rhel-cloud:rhel-10-arm64
           - centos-cloud:centos-stream-10-arm64
           - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
+          - almalinux-cloud:almalinux-10-arm64
+          
   sles12:
     os_versions: [sles-12*]
     package_extension:

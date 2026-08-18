@@ -4,8 +4,6 @@ exporters:
       authenticator: googleclientauth
     balancer_name: pick_first
     endpoint: telemetry.googleapis.com:443
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
     sending_queue:
       batch:
         flush_timeout: 200ms
@@ -18,13 +16,13 @@ exporters:
       queue_size: 20000000
       sizer: bytes
       storage: file_storage
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   otlp_grpc/otlp_metrics:
     auth:
       authenticator: googleclientauth
     balancer_name: pick_first
     endpoint: telemetry.googleapis.com:443
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   file_storage:
     create_directory: true
@@ -49,7 +47,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: drop
-  deltatocumulative/loggingmetrics_6: {}
+  deltatocumulative/loggingmetrics_7: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -78,7 +76,7 @@ processors:
   filter/loggingmetrics_1:
     metrics:
       datapoint:
-      - metric.name == "rpc_client_call_duration_count" and (not IsMatch(datapoint.attributes["rpc_method"], "opentelemetry.proto.collector.logs.v1.LogsService/Export"))
+      - metric.name == "rpc.client.call.duration_count" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.logs.v1.LogsService/Export"))
   filter/loggingmetrics_2:
     metrics:
       include:
@@ -89,11 +87,11 @@ processors:
         - fluentbit_stackdriver_retried_records_total
         - otelcol_exporter_sent_log_records
         - otelcol_exporter_send_failed_log_records
-        - rpc_client_call_duration_count
+        - rpc.client.call.duration_count
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "rpc_client_call_duration_count" and (not IsMatch(datapoint.attributes["rpc_method"], "opentelemetry.proto.collector.metrics.v1.MetricsService/Export"))
+      - metric.name == "rpc.client.call.duration_count" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.metrics.v1.MetricsService/Export"))
   filter/otel_2:
     metrics:
       include:
@@ -103,8 +101,8 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
-        - rpc_client_call_duration_count
-  interval/loggingmetrics_7:
+        - rpc.client.call.duration_count
+  interval/loggingmetrics_8:
     interval: 1m
   metric_start_time/otlp_grpc/otlp_metrics_metrics_1:
     strategy: subtract_initial_point
@@ -463,11 +461,11 @@ processors:
         label_set:
         - response_code
     - action: update
-      include: rpc_client_call_duration_count
+      include: rpc.client.call.duration_count
       new_name: otel_request_count
       operations:
       - action: update_label
-        label: rpc_response_status_code
+        label: rpc.response.status_code
         value_actions:
         - new_value: ABORTED
           value: Aborted
@@ -518,7 +516,7 @@ processors:
         - new_value: UNKNOWN
           value: shutdown
       - action: update_label
-        label: rpc_response_status_code
+        label: rpc.response.status_code
         new_label: response_code
       - action: update_label
         label: response_code
@@ -607,7 +605,39 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/loggingmetrics_8:
+  metricstransform/loggingmetrics_6:
+    transforms:
+    - action: combine
+      include: ^agent/log_entry_count$
+      match_type: regexp
+      new_name: agent/log_entry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      include: ^agent/log_entry_retry_count$
+      match_type: regexp
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      include: ^agent/request_count$
+      match_type: regexp
+      new_name: agent/request_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+  metricstransform/loggingmetrics_9:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -635,11 +665,11 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: rpc_client_call_duration_count
+      include: rpc.client.call.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: rpc_response_status_code
+        label: rpc.response.status_code
         value_actions:
         - new_value: ABORTED
           value: Aborted
@@ -690,7 +720,7 @@ processors:
         - new_value: UNKNOWN
           value: shutdown
       - action: update_label
-        label: rpc_response_status_code
+        label: rpc.response.status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
@@ -712,7 +742,7 @@ processors:
       operations:
       - action: toggle_scalar_data_type
       - action: update_label
-        label: error_type
+        label: error.type
         new_label: status
       - action: update_label
         label: status
@@ -803,13 +833,13 @@ processors:
     - gcp
   transform/agent_prometheus_0:
     metric_statements:
-    - context: metric
+    - context: resource
       statements:
-      - delete_key(resource.attributes, "service_name")
-      - delete_key(resource.attributes, "service_version")
-      - delete_key(resource.attributes, "service_instance_id")
-      - delete_key(resource.attributes, "server_port")
-      - delete_key(resource.attributes, "url_scheme")
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.version")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "server.port")
+      - delete_key(attributes, "url.scheme")
   transform/agent_prometheus_1:
     metric_statements:
     - context: scope
@@ -860,7 +890,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "rpc_client_call_duration"
+      - extract_count_metric(true) where name == "rpc.client.call.duration"
   transform/loggingmetrics_5:
     metric_statements:
     - context: metric
@@ -960,13 +990,13 @@ processors:
       - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
       - set(cache["__field_10"], body["user"]) where (body != nil and body["user"] != nil)
       - set(cache["__omit_0"], false)
-      - set(cache["__omit_0"], true) where ((body != nil and body["http_request_referer"] != nil) and IsMatchRubyRegex(body["http_request_referer"], "(?i)^-$"))
+      - set(cache["__omit_0"], true) where ((body != nil and body["http_request_referer"] != nil) and IsMatch(body["http_request_referer"], "(?i)^-$"))
       - set(cache["__omit_1"], false)
-      - set(cache["__omit_1"], true) where ((body != nil and body["gzip_ratio"] != nil) and IsMatchRubyRegex(body["gzip_ratio"], "(?i)^-$"))
+      - set(cache["__omit_1"], true) where ((body != nil and body["gzip_ratio"] != nil) and IsMatch(body["gzip_ratio"], "(?i)^-$"))
       - set(cache["__omit_2"], false)
-      - set(cache["__omit_2"], true) where ((body != nil and body["host"] != nil) and IsMatchRubyRegex(body["host"], "(?i)^-$"))
+      - set(cache["__omit_2"], true) where ((body != nil and body["host"] != nil) and IsMatch(body["host"], "(?i)^-$"))
       - set(cache["__omit_3"], false)
-      - set(cache["__omit_3"], true) where ((body != nil and body["user"] != nil) and IsMatchRubyRegex(body["user"], "(?i)^-$"))
+      - set(cache["__omit_3"], true) where ((body != nil and body["user"] != nil) and IsMatch(body["user"], "(?i)^-$"))
       - delete_key(body, "http_request_protocol") where (body != nil and body["http_request_protocol"] != nil)
       - delete_key(body, "http_request_referer") where (body != nil and body["http_request_referer"] != nil)
       - delete_key(body, "http_request_remoteIp") where (body != nil and body["http_request_remoteIp"] != nil)
@@ -1180,7 +1210,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "rpc_client_call_duration"
+      - extract_count_metric(true) where name == "rpc.client.call.duration"
   transform/otlp_grpc/otlp_logs_logs_2:
     error_mode: ignore
     log_statements:
@@ -1226,7 +1256,7 @@ processors:
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/nginx__access:
+  file_log/nginx__access:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1241,7 +1271,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/nginx__error:
+  file_log/nginx__error:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1256,7 +1286,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1325,7 +1355,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     logs/logs_nginx_nginx__access:
       exporters:
       - otlp_grpc/otlp_logs
@@ -1339,7 +1369,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/nginx__access
+      - file_log/nginx__access
     logs/logs_nginx_nginx__error:
       exporters:
       - otlp_grpc/otlp_logs
@@ -1353,7 +1383,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/nginx__error
+      - file_log/nginx__error
     metrics/default__pipeline_hostmetrics:
       exporters:
       - otlp_grpc/otlp_metrics
@@ -1412,9 +1442,10 @@ service:
       - metricstransform/loggingmetrics_3
       - cumulativetodelta/loggingmetrics_4
       - transform/loggingmetrics_5
-      - deltatocumulative/loggingmetrics_6
-      - interval/loggingmetrics_7
-      - metricstransform/loggingmetrics_8
+      - metricstransform/loggingmetrics_6
+      - deltatocumulative/loggingmetrics_7
+      - interval/loggingmetrics_8
+      - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metric_start_time/otlp_grpc/otlp_metrics_metrics_1

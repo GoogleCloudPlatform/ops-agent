@@ -105,19 +105,14 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	}
 
 	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
-		pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
-		if isSystem {
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
-		}
-
-		// b/476109839: For prometheus metrics using the OTLP exporter. The dots "." in the metric name are NOT replaced with underscore "_".
-		// This is diffrent from the GMP endpoint.
 		if isPrometheus {
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-			// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
-			// This behavior is the same as the GCM/GMP exporters.
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
+			pipeline.ExporterTypes["metrics"] = otel.GMP
+		} else {
+			pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
+			if isSystem {
+				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+			}
 		}
 	}
 
@@ -137,9 +132,7 @@ func otlpExporterForMetrics(userAgent string) otel.Component {
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
-			"headers": map[string]string{
-				"User-Agent": userAgent,
-			},
+			"user_agent": userAgent,
 		},
 	}
 }
@@ -154,9 +147,7 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
-			"headers": map[string]string{
-				"User-Agent": userAgent,
-			},
+			"user_agent": userAgent,
 			"sending_queue": map[string]interface{}{
 				"enabled":       true,
 				"queue_size":    20000000,
@@ -229,8 +220,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 	agentSelfMetrics := AgentSelfMetrics{
 		MetricsVersionLabel: metricVersionLabel,
 		LoggingVersionLabel: loggingVersionLabel,
-		FluentBitPort:       fluentbit.MetricsPort,
-		OtelPort:            otel.MetricsPort,
+		FluentBitPort:       int(uc.GetFluentBitMetricsPort()),
+		OtelPort:            int(uc.GetOtelMetricsPort()),
 		OtelRuntimeDir:      outDir,
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
@@ -243,6 +234,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
+		MetricsPort:       uc.GetOtelMetricsPort(),
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
 			otel.System: {
 				Exporter: googleCloudExporter(userAgent, false, false),
@@ -613,7 +605,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		out = append(out, addGceMetadataAttributesProcessor(ctx).Components(ctx, "*", "*.default-data-proc.gce_metadata")...)
 	}
 	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
-	out = append(out, fluentbit.MetricsOutputComponent())
+	out = append(out, fluentbit.MetricsOutputComponent(int(uc.GetFluentBitMetricsPort())))
 
 	return out, nil
 }

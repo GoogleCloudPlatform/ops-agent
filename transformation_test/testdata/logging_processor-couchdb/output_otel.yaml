@@ -1,6 +1,5 @@
 - entries:
   - httpRequest:
-      protocol: HTTP/1.1
       remoteIp: 127.0.0.1
       requestMethod: PUT
       responseSize: "16"

@@ -280,7 +280,7 @@ func init() {
 
 // ExtractFeatures returns a list of features that are enabled in the receiver config.
 // Must always be a subset of ListAllFeatures().
-func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
+func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, bool, error) {
 	customFeatures := make([]CustomFeature, 0)
 	customFeatures = append(customFeatures, CustomFeature{
 		Key:   []string{"enabled"},
@@ -328,11 +328,11 @@ func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
 			})
 		}
 	}
-	return customFeatures, nil
+	return customFeatures, true, nil
 }
 
 // ListAllFeatures returns a list of all features that the receiver supports that we track.
-func (r PrometheusMetrics) ListAllFeatures() []string {
+func (r PrometheusMetrics) ListAllFeatures() ([]string, bool) {
 	return []string{
 		"confgenerator.ConfigComponent.Type",
 		"config.[].scrape_configs.scheme",
@@ -349,5 +349,5 @@ func (r PrometheusMetrics) ListAllFeatures() []string {
 		"config.[].scrape_configs.relabel_configs",
 		"config.[].scrape_configs.metric_relabel_configs",
 		"config.[].scrape_configs.static_config_target_groups",
-	}
+	}, true
 }

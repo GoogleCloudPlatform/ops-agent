@@ -30,3 +30,15 @@
   feature: receivers:files
   key: "[0].include_paths.__length"
   value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: experimental_otel_logging
+  value: "true"

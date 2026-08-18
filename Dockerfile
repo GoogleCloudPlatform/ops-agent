@@ -24,7 +24,7 @@ ARG CMAKE_VERSION=3.25.2
 ARG OPENJDK_MAJOR_VERSION=17
 ARG OPENJDK_FULL_VERSION=17.0.8
 ARG OPENJDK_VERSION_SUFFIX=7
-ARG GO_VERSION=1.25.0
+ARG GO_VERSION=1.26.4
 
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager
@@ -1227,10 +1227,10 @@ COPY --from=noble-build /google-cloud-ops-agent*.deb /
 COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
-# Build Ops Agent for ubuntu-questing
+# Build Ops Agent for ubuntu-resolute
 # ======================================
 
-FROM ubuntu:questing AS questing-build-base
+FROM ubuntu:resolute AS resolute-build-base
 ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
@@ -1250,7 +1250,7 @@ RUN set -xe; \
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
-FROM questing-build-base AS questing-build-otel
+FROM resolute-build-base AS resolute-build-otel
 WORKDIR /work
 # Download golang deps
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
@@ -1267,21 +1267,21 @@ RUN \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
     ./otel.sh /work/cache/
 
-FROM questing-build-base AS questing-build-fluent-bit
+FROM resolute-build-base AS resolute-build-fluent-bit
 WORKDIR /work
 COPY ./submodules/fluent-bit submodules/fluent-bit
 COPY ./builds/fluent_bit.sh .
 RUN ./fluent_bit.sh /work/cache/
 
 
-FROM questing-build-base AS questing-build-systemd
+FROM resolute-build-base AS resolute-build-systemd
 WORKDIR /work
 COPY ./systemd systemd
 COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM questing-build-base AS questing-build-golang-base
+FROM resolute-build-base AS resolute-build-golang-base
 WORKDIR /work
 COPY go.mod go.sum ./
 # Fetch dependencies
@@ -1291,14 +1291,14 @@ COPY apps apps
 COPY internal internal
 
 
-FROM questing-build-golang-base AS questing-build-wrapper
+FROM resolute-build-golang-base AS resolute-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
 RUN ./agent_wrapper.sh /work/cache/
 
 
-FROM questing-build-golang-base AS questing-build
+FROM resolute-build-golang-base AS resolute-build
 WORKDIR /work
 COPY . /work
 
@@ -1309,22 +1309,22 @@ RUN ./pkg/deb/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=questing-build-otel /work/cache /work/cache
-COPY --from=questing-build-fluent-bit /work/cache /work/cache
-COPY --from=questing-build-systemd /work/cache /work/cache
-COPY --from=questing-build-wrapper /work/cache /work/cache
+COPY --from=resolute-build-otel /work/cache /work/cache
+COPY --from=resolute-build-fluent-bit /work/cache /work/cache
+COPY --from=resolute-build-systemd /work/cache /work/cache
+COPY --from=resolute-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN ./pkg/plugin/build.sh /work/cache questing
+RUN ./pkg/plugin/build.sh /work/cache resolute
 
 
-FROM scratch AS questing
-COPY --from=questing-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-questing.tgz
-COPY --from=questing-build /google-cloud-ops-agent*.deb /
-COPY --from=questing-build /google-cloud-ops-agent-plugin*.tar.gz /
+FROM scratch AS resolute
+COPY --from=resolute-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-resolute.tgz
+COPY --from=resolute-build /google-cloud-ops-agent*.deb /
+COPY --from=resolute-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 FROM scratch
 COPY --from=centos8 /* /
@@ -1338,4 +1338,4 @@ COPY --from=sles15 /* /
 COPY --from=sles16 /* /
 COPY --from=jammy /* /
 COPY --from=noble /* /
-COPY --from=questing /* /
+COPY --from=resolute /* /

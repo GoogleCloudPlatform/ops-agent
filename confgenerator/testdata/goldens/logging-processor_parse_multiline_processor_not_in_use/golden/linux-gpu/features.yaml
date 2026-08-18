@@ -46,3 +46,11 @@
   feature: processors:parse_multiline
   key: "[0].match_any.[1].enabled"
   value: "true"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"

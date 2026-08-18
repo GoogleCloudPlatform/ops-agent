@@ -34,3 +34,11 @@
   feature: receivers:rabbitmq
   key: "[0].insecure_skip_verify"
   value: "false"
+- module: metrics
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
