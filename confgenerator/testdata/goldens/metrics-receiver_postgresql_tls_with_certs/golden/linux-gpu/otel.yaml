@@ -783,6 +783,7 @@ receivers:
     - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
+    start_at: beginning
   postgresql/postgresql:
     collection_interval: 30s
     endpoint: localhost:3306
