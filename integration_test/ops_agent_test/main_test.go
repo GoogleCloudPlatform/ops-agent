@@ -6262,7 +6262,7 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 
 		if gce.IsWindows(imageSpec) {
 			// Set environment variables via PowerShell
-			setEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", "40002", "Machine"); [Environment]::SetEnvironmentVariable("%s", "40001", "Machine")`,
+			setEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", "21202", "Machine"); [Environment]::SetEnvironmentVariable("%s", "21201", "Machine")`,
 				fluentbit.ExperimentalMetricsPortEnv, otel.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, setEnvCmd); err != nil {
 				t.Fatal(err)
@@ -6278,11 +6278,6 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 				t.Fatal(err)
 			}
 		} else {
-			// Stop the agent to avoid race conditions while setting up overrides
-			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl stop google-cloud-ops-agent"); err != nil {
-				t.Fatal(err)
-			}
-
 			// Set up systemd overrides for Fluent Bit
 			fbOverrideDir := "/etc/systemd/system/google-cloud-ops-agent-fluent-bit.service.d"
 			fbOverrideFile := fbOverrideDir + "/override.conf"
@@ -6290,7 +6285,7 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 				t.Fatal(err)
 			}
 			fbOverrideContent := fmt.Sprintf(`[Service]
-Environment="%s=40002"
+Environment="%s=21202"
 `, fluentbit.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", fbOverrideContent, fbOverrideFile)); err != nil {
 				t.Fatal(err)
@@ -6303,28 +6298,28 @@ Environment="%s=40002"
 				t.Fatal(err)
 			}
 			otelOverrideContent := fmt.Sprintf(`[Service]
-Environment="%s=40001"
-Environment="%s=40002"
+Environment="%s=21201"
+Environment="%s=21202"
 `, otel.ExperimentalMetricsPortEnv, fluentbit.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", otelOverrideContent, otelOverrideFile)); err != nil {
 				t.Fatal(err)
 			}
 
-			// Reload systemd and restart agent
+			// Reload systemd daemon and restart agent
 			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload"); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl start google-cloud-ops-agent"); err != nil {
+			if err := agents.RestartOpsAgent(ctx, logger, vm); err != nil {
 				t.Fatal(err)
 			}
 		}
 
 		// Verify that we can scrape metrics from the new ports with retries (waiting up to 60s for agent startup)
-		if err := verifyMetricsPort(ctx, logger, vm, 40002, "fluentbit_uptime"); err != nil {
-			t.Fatalf("Failed to scrape Fluent Bit metrics on port 40002: %v", err)
+		if err := verifyMetricsPort(ctx, logger, vm, 21202, "fluentbit_uptime"); err != nil {
+			t.Fatalf("Failed to scrape Fluent Bit metrics on port 21202: %v", err)
 		}
-		if err := verifyMetricsPort(ctx, logger, vm, 40001, "otelcol_"); err != nil {
-			t.Fatalf("Failed to scrape OTel Collector metrics on port 40001: %v", err)
+		if err := verifyMetricsPort(ctx, logger, vm, 21201, "otelcol_"); err != nil {
+			t.Fatalf("Failed to scrape OTel Collector metrics on port 21201: %v", err)
 		}
 	})
 }
