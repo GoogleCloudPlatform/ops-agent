@@ -4468,7 +4468,19 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 
 		// 3. Check the error log for a message about Ops Agent conflicting with standalone agent.
 		if gce.IsOpsAgentUAPPlugin() {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+			var cmdOut gce.CommandOutput
+			b := backoff.WithContext(
+				backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 30),
+				ctx,
+			)
+			err := backoff.Retry(func() error {
+				out, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+				if err != nil {
+					return err
+				}
+				cmdOut = out
+				return nil
+			}, b)
 			if err != nil {
 				t.Fatal(err)
 			}
