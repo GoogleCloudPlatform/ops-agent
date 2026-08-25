@@ -766,11 +766,8 @@ func TestCustomLogFile(t *testing.T) {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
+		if err := gce.AssertLogMissing(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`); err != nil {
+			t.Error(err)
 		}
 	})
 }
@@ -1386,11 +1383,8 @@ func TestSyslogTCP(t *testing.T) {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message:"test pattern"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
+		if err := gce.AssertLogMissing(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message:"test pattern"`); err != nil {
+			t.Error(err)
 		}
 	})
 }
@@ -1502,11 +1496,8 @@ func TestExcludeLogs(t *testing.T) {
 		}
 		// p1: Give the excluded log some time to show up.
 		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
+		if err := gce.AssertLogMissing(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"pattern"`); err != nil {
+			t.Error(err)
 		}
 
 		// p2: Expect to see the log.
@@ -1598,11 +1589,8 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 		}
 		// Give the excluded log some time to show up.
 		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field="value"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
+		if err := gce.AssertLogMissing(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field="value"`); err != nil {
+			t.Error(err)
 		}
 	})
 }
@@ -1691,11 +1679,8 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 		// Give the excluded log some time to show up.
 		time.Sleep(60 * time.Second)
 		for _, name := range []string{"f1", "f2"} {
-			_, err := gce.QueryLog(ctx, logger, vm, name, time.Hour, `jsonPayload.query_field="value"`, 5)
-			if err == nil {
-				t.Error("expected log to be excluded but was included")
-			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-				t.Fatalf("unexpected error: %v", err)
+			if err := gce.AssertLogMissing(ctx, logger, vm, name, time.Hour, `jsonPayload.query_field="value"`); err != nil {
+				t.Error(err)
 			}
 		}
 	})
