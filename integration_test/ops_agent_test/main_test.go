@@ -843,7 +843,7 @@ func TestPluginGetStatusReturnsRPCErrorOnSubAgentTerminationWithNonZeroCode(t *t
 			t.Errorf("expected the plugin GetStatus() call to return an error, got nil")
 		}
 
-		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"fluent-bit"})
+		pid, _ := fetchPID(ctx, logger, vm, "fluent-bit")
 		if pid != "" {
 			t.Error("expected the plugin to terminate the other subagent when one crashes")
 		}
@@ -886,12 +886,14 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 		time.Sleep(10 * time.Second)
 
-		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
-		if pid != "" {
-			t.Error("expected the plugin to terminate otel subagent process when the parent gRPC server process terminates")
+		for _, pn := range metricsAgentProcessNamesForImage(vm.ImageSpec) {
+			pid, _ := fetchPID(ctx, logger, vm, pn)
+			if pid != "" {
+				t.Errorf("expected the plugin to terminate %s subagent process when the parent gRPC server process terminates", pn)
+			}
 		}
 
-		pid, err = fetchPID(ctx, logger, vm, "fluent-bit")
+		pid, _ := fetchPID(ctx, logger, vm, "fluent-bit")
 		if pid != "" {
 			t.Error("expected the plugin to terminate fluent-bit subagent process when the parent gRPC server process terminates")
 		}
@@ -4276,17 +4278,31 @@ func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName s
 }
 
 // fetchPIDAndProcessName returns the process ID and name of the first matching process from a given list of names on the given VM.
+// It retries for up to 30 seconds to allow asynchronously spawned subagents time to register in the process table.
 func fetchPIDAndProcessName(ctx context.Context, logger *log.Logger, vm *gce.VM, processNames []string) (string, string, error) {
-	var errors error
-	for _, pn := range processNames {
-		output, err := fetchPID(ctx, logger, vm, pn)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-		} else {
-			return output, pn, nil
+	b := backoff.WithContext(
+		backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 15),
+		ctx,
+	)
+	var output, matchedName string
+	err := backoff.Retry(func() error {
+		var errors error
+		for _, pn := range processNames {
+			out, err := fetchPID(ctx, logger, vm, pn)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+			} else if out != "" {
+				output = out
+				matchedName = pn
+				return nil
+			}
 		}
+		return errors
+	}, b)
+	if err != nil {
+		return "", "", err
 	}
-	return "", "", errors
+	return output, matchedName, nil
 }
 
 func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, processName string) error {
