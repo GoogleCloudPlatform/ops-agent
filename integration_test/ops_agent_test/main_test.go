@@ -5264,7 +5264,15 @@ metrics:
 				fmt.Sprintf("+g.co/r/gce_instance/instance_id:%d", vm.ID),
 			},
 		}
-		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
+		b := backoff.WithContext(
+			backoff.WithMaxRetries(backoff.NewConstantBackOff(10*time.Second), 18),
+			ctx,
+		)
+		err = backoff.Retry(func() error {
+			_, err := gce.WaitForTrace(ctx, logger, vm, options)
+			return err
+		}, b)
+		if err != nil {
 			t.Error(err)
 		}
 	})

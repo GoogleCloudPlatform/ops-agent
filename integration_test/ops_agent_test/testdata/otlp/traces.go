@@ -18,7 +18,7 @@ func installTraceExportPipeline(ctx context.Context) (func(context.Context) erro
 		return nil, err
 	}
 	tracerProvider := trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
+		trace.WithSyncer(exporter),
 		trace.WithResource(resource.Default()),
 	)
 	otel.SetTracerProvider(tracerProvider)
@@ -34,7 +34,9 @@ func main() {
 	}
 
 	defer func() {
-		if err := shutdown(ctx); err != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := shutdown(shutdownCtx); err != nil {
 			log.Fatal(err)
 		}
 	}()

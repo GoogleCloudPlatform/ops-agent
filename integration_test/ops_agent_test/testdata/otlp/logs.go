@@ -22,9 +22,10 @@ func main() {
 	logBody := flag.String("log_body", "This is a test log", "log body text")
 	flag.Parse()
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, "localhost:4317", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.DialContext(ctx, "localhost:4317", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -47,9 +48,17 @@ func main() {
 	lr.Body().SetStr(*logBody)
 
 	req := plogotlp.NewExportRequestFromLogs(ld)
-	_, err = client.Export(ctx, req)
-	if err != nil {
-		log.Fatalf("could not export: %v", err)
+	var exportErr error
+	for attempt := 1; attempt <= 10; attempt++ {
+		exportCtx, exportCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, exportErr = client.Export(exportCtx, req)
+		exportCancel()
+		if exportErr == nil {
+			log.Println("Successfully exported logs")
+			return
+		}
+		log.Printf("client.Export() attempt %d failed: %v, retrying...", attempt, exportErr)
+		time.Sleep(1 * time.Second)
 	}
-	log.Println("Successfully exported logs")
+	log.Fatalf("could not export after retries: %v", exportErr)
 }

@@ -80,7 +80,9 @@ func main() {
 	}
 
 	defer func() {
-		if err := shutdown(ctx); err != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := shutdown(shutdownCtx); err != nil {
 			log.Fatal(err)
 		}
 	}()
