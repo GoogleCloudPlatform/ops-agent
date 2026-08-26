@@ -1353,17 +1353,6 @@
     timestamp: 2025-07-21T15:05:28.612Z
   partialSuccess: true
 - collector_errors:
-  - caller: ottlfuncs/func_set.go:46
-    level: warn
-    msg: The OTTL 'set' function silently ignored a nil value. This behavior is deprecated and will change in a future release. Enable the feature gate 'ottl.set.allowNil' to pass nil to the target.
-    otelcol.component.id: transform/my-log-name_0
-    otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.159.0
   - caller: ottl@v0.159.0/parser.go:423
     error: "json: float unexpected end of JSON input"
     level: warn
@@ -1377,3 +1366,14 @@
       service.name: otelopscol
       service.version: v0.159.0
     statement: set(log.cache["__parsed_json"], ParseJSON(log.body["message"])) where (log.body != nil and log.body["message"] != nil)
+  - caller: ottlfuncs/func_set.go:46
+    level: warn
+    msg: The OTTL 'set' function silently ignored a nil value. This behavior is deprecated and will change in a future release. Enable the feature gate 'ottl.set.allowNil' to pass nil to the target.
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.159.0
