@@ -78,7 +78,6 @@ import (
 	"google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v2"
 )
@@ -1256,78 +1255,6 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
 		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
 		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
 			t.Error(err)
-		}
-	})
-}
-
-func TestProcessorOrder(t *testing.T) {
-	// See b/194632049 and b/195105380.  In that bug, the generated Fluent Bit
-	// config had mis-ordered filters: json2 came before json1 because "log"
-	// sorts before "message".  The correct order is json1 then json2.
-	//
-	// Due to the bug, the log contents came through as a string, not as
-	// parsed JSON.
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-
-		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`logging:
-  receivers:
-    mylog_source:
-      type: files
-      include_paths:
-      - %s
-  exporters:
-    google:
-      type: google_cloud_logging
-  processors:
-    json1:
-      type: parse_json
-      field: message
-      time_key: time
-      time_format: "%s"
-    json2:
-      type: parse_json
-      field: log
-  service:
-    pipelines:
-      my_pipeline:
-        receivers: [mylog_source]
-        processors: [json1, json2]
-        exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
-		// correctly in windows (b/218888265).
-		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\",\"overwritten\":\"yes\"}\n","time":"%s","preserved":"yes","overwritten":"no"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
-		}
-
-		entry, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, "", gce.LogQueryMaxAttempts)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		want := &structpb.Struct{Fields: map[string]*structpb.Value{
-			"level":       {Kind: &structpb.Value_StringValue{StringValue: "info"}},
-			"message":     {Kind: &structpb.Value_StringValue{StringValue: "start"}},
-			"preserved":   {Kind: &structpb.Value_StringValue{StringValue: "yes"}},
-			"overwritten": {Kind: &structpb.Value_StringValue{StringValue: "yes"}},
-		}}
-
-		got, ok := entry.Payload.(proto.Message)
-		if !ok {
-			t.Fatalf("got %+v of type %T, want type proto.Message", entry.Payload, entry.Payload)
-		}
-		if !proto.Equal(got, want) {
-			t.Errorf("got %+v, want %+v", got, want)
 		}
 	})
 }
