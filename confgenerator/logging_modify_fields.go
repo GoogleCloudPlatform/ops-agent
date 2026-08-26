@@ -411,9 +411,9 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 		}
 		switch field.Type {
 		case "integer":
-			statements = statements.Append(value.Set(ottl.ToInt(value)))
+			statements = statements.Append(value.SetIf(ottl.ToInt(value), ottl.And(value.IsPresent(), ottl.IsNotNil(ottl.ToInt(value)))))
 		case "float":
-			statements = statements.Append(value.Set(ottl.ToFloat(value)))
+			statements = statements.Append(value.SetIf(ottl.ToFloat(value), ottl.And(value.IsPresent(), ottl.IsNotNil(ottl.ToFloat(value)))))
 		case "YesNoBoolean":
 			statements = statements.Append(value.SetToYesNoBoolean(value))
 		}
