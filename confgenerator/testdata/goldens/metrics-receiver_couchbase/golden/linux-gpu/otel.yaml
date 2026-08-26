@@ -186,6 +186,7 @@ processors:
         label: bucket
         new_label: bucket_name
     - action: combine
+      aggregation_type: sum
       include: "^couchbase\\.bucket\\.error\\.oom\\.count\\.(?P<error_type>unrecoverable|recoverable)$$"
       match_type: regexp
       new_name: couchbase.bucket.error.oom.count
@@ -641,6 +642,7 @@ processors:
         label_set:
         - response_code
     - action: combine
+      aggregation_type: sum
       include: ^otel_log_entry_count$$
       match_type: regexp
       new_name: otel_log_entry_count
@@ -653,6 +655,7 @@ processors:
   metricstransform/loggingmetrics_6:
     transforms:
     - action: combine
+      aggregation_type: sum
       include: ^agent/log_entry_count$
       match_type: regexp
       new_name: agent/log_entry_count
@@ -663,6 +666,7 @@ processors:
         - response_code
       submatch_case: lower
     - action: combine
+      aggregation_type: sum
       include: ^agent/log_entry_retry_count$
       match_type: regexp
       new_name: agent/log_entry_retry_count
@@ -673,6 +677,7 @@ processors:
         - response_code
       submatch_case: lower
     - action: combine
+      aggregation_type: sum
       include: ^agent/request_count$
       match_type: regexp
       new_name: agent/request_count
