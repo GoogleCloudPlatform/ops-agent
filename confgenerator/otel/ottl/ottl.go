@@ -100,12 +100,13 @@ func (a LValue) SetIf(b, condition Value) Statements {
 		cache := LValue{"cache", "__setif_value"}
 		statements = statements.Append(
 			cache.Delete(),
-			cache.Set(b),
+			cache.SetIf(b, condition),
 			statementsf(
-				`replace_pattern(%s, %q, %q)`,
+				`replace_pattern(%s, %q, %q) where %s`,
 				cache,
 				`^projects/([^/]*)/traces/`,
 				"",
+				cache.IsPresent(),
 			),
 		)
 		b = cache
