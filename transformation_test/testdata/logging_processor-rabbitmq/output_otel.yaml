@@ -2,7 +2,7 @@
   - jsonPayload:
       message: "** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **"
       process_id: 0.692.0
-      severity: error
+      severity: erro
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
@@ -12,7 +12,6 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    severity: ERROR
     timestamp: 2025-08-18T01:01:20.441571Z
   - jsonPayload:
       message: Successfully set user tags for user 'admin' to [administrator]
@@ -106,7 +105,7 @@
   - jsonPayload:
       message: "Disk free space too low. Free bytes: 500000, limit: 1000000"
       process_id: 0.501.0
-      severity: error
+      severity: erro
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
@@ -116,12 +115,11 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    severity: ERROR
     timestamp: 2025-08-18T03:56:01.456Z
   - jsonPayload:
       message: "AMQP connection <0.600.0> (10.0.0.1:5672 -> 10.0.0.2:5672): connection closed unexpectedly"
       process_id: 0.600.0
-      severity: error
+      severity: erro
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
@@ -131,7 +129,6 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    severity: ERROR
     timestamp: 2025-08-18T04:06:06.789Z
   - jsonPayload:
       message: Re-establishing connection to peer rabbit@node2
@@ -164,7 +161,7 @@
     timestamp: 2025-08-18T04:07:07.777Z
   - jsonPayload:
       message: |-
-        2025-08-18 05:07:43.557042+00:00 [error] <0.130.0>
+        2025-08-18 05:07:43.557042+00:00 [erro] <0.130.0>
         BOOT FAILED
         ===========
         ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
@@ -181,7 +178,7 @@
   - jsonPayload:
       message: "Disk free space too low. Free bytes: 500000, limit: 1000000"
       process_id: 0.501.0
-      severity: error
+      severity: erro
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
@@ -191,7 +188,6 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    severity: ERROR
     timestamp: 2025-08-18T06:56:01.456Z
   - jsonPayload:
       message: "{shutdown,{connection_closed, \"Broken pipe\"}}"
