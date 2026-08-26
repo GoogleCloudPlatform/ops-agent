@@ -35,7 +35,7 @@ type ModifyField struct {
 	DefaultValue *string `yaml:"default_value" validate:"excluded_with=StaticValue"`
 
 	// OTTL expression with copied value
-	sourceValue ottl.Value `yaml:"-"`
+	sourceValue ottl.LValue `yaml:"-"`
 	// Name of Lua variable with copied value
 	sourceVar string `yaml:"-"`
 	// Name of Lua variable with omit boolean
@@ -365,19 +365,20 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 			return nil, fmt.Errorf("failed to parse output field %q: %w", dest, err)
 		}
 
-		src := ottl.Nil()
-		if field.sourceValue != nil {
-			src = field.sourceValue
-		}
-		if field.StaticValue != nil {
-			src = ottl.StringLiteral(*field.StaticValue)
-		}
 		value := ottl.LValue{"cache", "value"}
 		statements = statements.Append(
 			// Set silently fails to set if the value is nil, so we delete first.
 			value.Delete(),
-			value.Set(src),
 		)
+		if field.StaticValue != nil {
+			statements = statements.Append(
+				value.Set(ottl.StringLiteral(*field.StaticValue)),
+			)
+		} else if field.sourceValue != nil {
+			statements = statements.Append(
+				value.SetIf(field.sourceValue, field.sourceValue.IsPresent()),
+			)
+		}
 		if field.DefaultValue != nil {
 			statements = statements.Append(
 				value.SetIfNil(ottl.StringLiteral(*field.DefaultValue)),
