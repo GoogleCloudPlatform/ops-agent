@@ -1149,6 +1149,8 @@ receivers:
     scrapers:
       cpu:
         metrics:
+          system.cpu.logical.count:
+            enabled: false
           system.cpu.time:
             attributes:
             - cpu

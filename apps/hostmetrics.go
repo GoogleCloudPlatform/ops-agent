@@ -300,6 +300,11 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.Recei
 									"cpu", "state",
 								},
 							},
+							"system.cpu.logical.count": map[string]interface{}{
+								// We don't need this metric which is enabled by default.
+								// See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49325
+								"enabled": false,
+							},
 						},
 					},
 					"load":       struct{}{},
