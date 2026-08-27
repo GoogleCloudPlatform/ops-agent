@@ -696,7 +696,16 @@ receivers:
   hostmetrics/hostmetrics:
     collection_interval: 30s
     scrapers:
-      cpu: {}
+      cpu:
+        metrics:
+          system.cpu.time:
+            attributes:
+            - cpu
+            - state
+          system.cpu.utilization:
+            attributes:
+            - cpu
+            - state
       disk: {}
       filesystem: {}
       load: {}
