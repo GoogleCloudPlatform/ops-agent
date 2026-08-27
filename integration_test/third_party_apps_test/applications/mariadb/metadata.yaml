@@ -108,7 +108,7 @@ expected_metrics:
     monitored_resources: [gce_instance]
     labels:
       - name: command
-        value_regex: delete|insert|select|update
+        value_regex: delete|insert|select|update|alter_table|create_index|create_table|optimize
   - type: workload.googleapis.com/mysql.double_writes
     value_type: INT64
     kind: CUMULATIVE
