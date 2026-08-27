@@ -1167,10 +1167,6 @@ receivers:
             attributes:
             - cpu
             - state
-          system.cpu.utilization:
-            attributes:
-            - cpu
-            - state
       disk: {}
       filesystem: {}
       load: {}

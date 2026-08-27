@@ -294,11 +294,8 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.Recei
 					"cpu": map[string]interface{}{
 						"metrics": map[string]interface{}{
 							"system.cpu.time": map[string]interface{}{
-								"attributes": []string{
-									"cpu", "state",
-								},
-							},
-							"system.cpu.utilization": map[string]interface{}{
+								// We only need to keep this attributes for the system.cpu.time metric.
+								// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49161
 								"attributes": []string{
 									"cpu", "state",
 								},
