@@ -100,12 +100,13 @@ func (a LValue) SetIf(b, condition Value) Statements {
 		cache := LValue{"cache", "__setif_value"}
 		statements = statements.Append(
 			cache.Delete(),
-			cache.Set(b),
+			cache.SetIf(b, condition),
 			statementsf(
-				`replace_pattern(%s, %q, %q)`,
+				`replace_pattern(%s, %q, %q) where %s`,
 				cache,
 				`^projects/([^/]*)/traces/`,
 				"",
+				cache.IsPresent(),
 			),
 		)
 		b = cache
@@ -281,10 +282,11 @@ func (a LValue) SetToBool(b Value) Statements {
 
 func (a LValue) SetToYesNoBoolean(b Value) Statements {
 	cache := LValue{"cache", "__yes_no_bool"}
-	out := Statements{
-		statementf(`set(%s, true) where (%s and %s == "Yes")`, cache, IsNotNil(b), b),
-		statementf(`set(%s, false) where (%s and %s != "Yes")`, cache, IsNotNil(b), b),
-	}
+	out := Statements{}.Append(
+		cache.Delete(),
+		statementsf(`set(%s, true) where (%s and %s == "Yes")`, cache, IsNotNil(b), b),
+		statementsf(`set(%s, false) where (%s and %s != "Yes")`, cache, IsNotNil(b), b),
+	)
 	out = out.Append(a.SetIf(cache, cache.IsPresent()))
 	out = out.Append(cache.Delete())
 	return out

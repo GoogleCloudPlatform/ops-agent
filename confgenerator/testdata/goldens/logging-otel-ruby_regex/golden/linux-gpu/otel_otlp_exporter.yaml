@@ -616,6 +616,7 @@ processors:
         label_set:
         - response_code
     - action: combine
+      aggregation_type: sum
       include: ^otel_log_entry_count$$
       match_type: regexp
       new_name: otel_log_entry_count
@@ -628,6 +629,7 @@ processors:
   metricstransform/loggingmetrics_6:
     transforms:
     - action: combine
+      aggregation_type: sum
       include: ^agent/log_entry_count$
       match_type: regexp
       new_name: agent/log_entry_count
@@ -638,6 +640,7 @@ processors:
         - response_code
       submatch_case: lower
     - action: combine
+      aggregation_type: sum
       include: ^agent/log_entry_retry_count$
       match_type: regexp
       new_name: agent/log_entry_retry_count
@@ -648,6 +651,7 @@ processors:
         - response_code
       submatch_case: lower
     - action: combine
+      aggregation_type: sum
       include: ^agent/request_count$
       match_type: regexp
       new_name: agent/request_count
@@ -820,6 +824,7 @@ processors:
         label_set:
         - status
     - action: combine
+      aggregation_type: sum
       include: otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points
       match_type: regexp
       new_name: agent/monitoring/point_count
@@ -940,7 +945,7 @@ processors:
       - set(cache["__omit_0"], false)
       - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatchRubyRegex(body["omitted"], "(?!foo)bar"))
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["hello"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(body, "hello") where ((body != nil and body["hello"] != nil) and cache["__omit_0"] == true)
   transform/logs_p1_sample__logs_5:
@@ -953,7 +958,7 @@ processors:
       - set(cache["__omit_0"], false)
       - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatch(body["omitted"], "safe"))
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["hello"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(body, "hello") where ((body != nil and body["hello"] != nil) and cache["__omit_0"] == true)
   transform/ops_agent_0:
@@ -1012,19 +1017,19 @@ processors:
       - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
       - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(cache["value"], "test-mig") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
       - set(cache["value"], "test-zone") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
       - set(cache["value"], "") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "sample_logs") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/syslog_0:
@@ -1041,19 +1046,19 @@ processors:
       - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
       - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(cache["value"], "test-mig") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
       - set(cache["value"], "test-zone") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
       - set(cache["value"], "") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
@@ -1076,7 +1081,14 @@ receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
-      cpu: {}
+      cpu:
+        metrics:
+          system.cpu.logical.count:
+            enabled: false
+          system.cpu.time:
+            attributes:
+            - cpu
+            - state
       disk: {}
       filesystem: {}
       load: {}

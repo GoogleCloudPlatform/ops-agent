@@ -134,7 +134,7 @@ func (p LoggingProcessorMacroPostgresql) Expand(ctx context.Context) []confgener
 						Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*\[(?<tid>\d+)\](?:\s+(?<user>\S*)@(?<database>\S*))?\s*(?<level>\w+):\s+(?<message>[\s\S]*)`,
 						Parser: confgenerator.ParserShared{
 							TimeKey:    "time",
-							TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
+							TimeFormat: "%Y-%m-%d %H:%M:%S.%L %Z",
 							Types: map[string]string{
 								"tid": "integer",
 							},
@@ -148,7 +148,7 @@ func (p LoggingProcessorMacroPostgresql) Expand(ctx context.Context) []confgener
 						Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*(?:\s+(?<database>\S*)\s+(?<user>\S*))?\s*\[(?<tid>\d+)\]\s*(?<level>\w+):\s+(?<message>[\s\S]*)`,
 						Parser: confgenerator.ParserShared{
 							TimeKey:    "time",
-							TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
+							TimeFormat: "%Y-%m-%d %H:%M:%S.%L %Z",
 							Types: map[string]string{
 								"tid": "integer",
 							},
