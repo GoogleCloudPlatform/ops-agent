@@ -281,7 +281,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 
 	// Otel configs
-	otelGeneratedConfig, err := mergedUc.GenerateOtelConfig(ctx, "", "")
+	otelGeneratedConfig, err := mergedUc.GenerateOtelConfig(ctx, "", "", "")
 	if err != nil {
 		return
 	}
@@ -333,6 +333,12 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 	got["enabled_receivers_otlp.json"] = string(generatedEnabledReceiversOTLPJSON)
 
+	generatedLoggingPingOTLPJSON, err := self_metrics.CollectLoggingPingToOTLPJSON()
+	if err != nil {
+		return
+	}
+	got["logging_ping_otlp.json"] = string(generatedLoggingPingOTLPJSON)
+
 	// If the confgenerator test is designed to test the otel_logging experiment, generate an OTEL config with both otlp_exporter and otel_logging enabled.
 	if len(enabledExperiments) == 1 && enabledExperiments["otel_logging"] {
 		generateOtelConfigWithOtlpExporterEnabled(got, pc, testDir, otelGeneratedConfig)
@@ -353,7 +359,7 @@ func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, pc platfor
 		filepath.Join("testdata", testDir, inputFileName),
 	)
 	if err == nil {
-		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "")
+		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "", "")
 		if err == nil {
 			got["otel_otlp_exporter.yaml"] = otelGeneratedConfigOtlp
 		}
