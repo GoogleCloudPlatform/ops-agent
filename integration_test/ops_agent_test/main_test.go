@@ -1063,6 +1063,7 @@ func startFluentBitBackgroundPipe(ctx context.Context, logger *log.Logger, vm *g
 	Format json`
 
 	fluentBitArgs := "-i tail" +
+		" -p read_from_head=true" +
 		" -p buffer_chunk_size=512k" +
 		" -p buffer_max_size=512k" +
 		" -p path=" + remoteFile
