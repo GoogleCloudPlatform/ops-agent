@@ -17,6 +17,14 @@ package confgenerator
 type Global struct {
 	DefaultSelfLogFileCollection *bool            `yaml:"default_self_log_file_collection,omitempty"`
 	DefaultLogFileRotation       *LogFileRotation `yaml:"default_self_log_file_rotation,omitempty"`
+	OtlpExporter                 *bool            `yaml:"otlp_exporter,omitempty"`
+}
+
+func (g *Global) GetOtlpExporter() bool {
+	if g != nil && g.OtlpExporter != nil {
+		return *g.OtlpExporter
+	}
+	return false
 }
 
 // Get whether self log collection should be enabled. Defaults to true if unset.
