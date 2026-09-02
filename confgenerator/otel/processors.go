@@ -691,6 +691,14 @@ func MetricUnknownCounter() Component {
 	})
 }
 
+// AddPrometheusPrefix ensures prometheus metrics exported via OTLP have the "prometheus.googleapis.com/" prefix
+// so the backend treats them as prometheus metrics even if they contain custom domain prefixes.
+func AddPrometheusPrefix() Component {
+	return Transform("metric", "metric", []ottl.Statement{
+		`set(metric.name, Concat(["prometheus.googleapis.com/", metric.name], "")) where not HasPrefix(metric.name, "prometheus.googleapis.com/")`,
+	})
+}
+
 // This processor prevents telemetry.googleapis.com from populating the LogEntry.otlp field by setting the gcp.use_legacy_mapping resource attribute to true.
 func DisableOtlpRoundTrip() Component {
 	return ResourceTransform(

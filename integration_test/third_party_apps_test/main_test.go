@@ -590,11 +590,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 			return nonRetryable, err
 		}
 	}
-	if exporter == "otlphttp" {
-		if err := setExperimentalFeatures(ctx, logger.ToMainLog(), vm, "otlp_exporter"); err != nil {
-			return nonRetryable, fmt.Errorf("error setting EXPERIMENTAL_FEATURES: %v", err)
-		}
-	}
+
 	if err := agents.InstallOpsAgent(ctx, logger.ToMainLog(), vm, agents.LocationFromEnvVars()); err != nil {
 		// InstallOpsAgent does its own retries.
 		return nonRetryable, fmt.Errorf("error installing agent: %v", err)
@@ -602,6 +598,18 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if _, err = runScriptFromScriptsDir(ctx, logger.ToMainLog(), vm, path.Join("applications", app, "enable"), nil); err != nil {
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
+	}
+
+	if exporter == "otlphttp" {
+		configPath := agents.OpsAgentConfigPath(vm.ImageSpec)
+		content, err := gce.RetrieveContent(ctx, logger.ToMainLog(), vm, configPath)
+		if err != nil {
+			return nonRetryable, fmt.Errorf("error retrieving config: %v", err)
+		}
+		content = agents.SetOtlpExporterInConfig(content)
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(content), configPath); err != nil {
+			return nonRetryable, fmt.Errorf("error uploading config: %v", err)
+		}
 	}
 
 	if err := agents.RestartOpsAgent(ctx, logger.ToMainLog(), vm); err != nil {

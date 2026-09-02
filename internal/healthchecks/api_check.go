@@ -26,15 +26,16 @@ import (
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/googleapis/gax-go/v2/apierror"
 	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
+	coltracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
 	logspb "go.opentelemetry.io/proto/otlp/logs/v1"
 	metricsprpb "go.opentelemetry.io/proto/otlp/metrics/v1"
 	resourcepb "go.opentelemetry.io/proto/otlp/resource/v1"
+	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 	"golang.org/x/oauth2/google"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -161,6 +162,39 @@ func createTelemetryLogsRequest(resource resourcedetector.Resource) *collogspb.E
 								Body: &commonpb.AnyValue{
 									Value: &commonpb.AnyValue_StringValue{StringValue: "Health check log entry"},
 								},
+								Attributes: []*commonpb.KeyValue{
+									{Key: "instrumentation_source", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: "agent.googleapis.com/health_check"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createTelemetryTracesRequest(resource resourcedetector.Resource) *coltracepb.ExportTraceServiceRequest {
+	currentTimeNano := uint64(time.Now().UnixNano())
+	return &coltracepb.ExportTraceServiceRequest{
+		ResourceSpans: []*tracepb.ResourceSpans{
+			{
+				Resource: &resourcepb.Resource{
+					Attributes: []*commonpb.KeyValue{
+						{Key: "gcp.project_id", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: resource.ProjectName()}}},
+					},
+				},
+				ScopeSpans: []*tracepb.ScopeSpans{
+					{
+						Scope: &commonpb.InstrumentationScope{},
+						Spans: []*tracepb.Span{
+							{
+								TraceId:           []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+								SpanId:            []byte{1, 2, 3, 4, 5, 6, 7, 8},
+								Name:              "Health check span",
+								Kind:              tracepb.Span_SPAN_KIND_INTERNAL,
+								StartTimeUnixNano: currentTimeNano,
+								EndTimeUnixNano:   currentTimeNano,
 								Attributes: []*commonpb.KeyValue{
 									{Key: "instrumentation_source", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: "agent.googleapis.com/health_check"}}},
 								},
@@ -328,6 +362,10 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 	return nil
 }
 
+type APICheck struct {
+	otlpExporterEnabled bool
+}
+
 func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -385,7 +423,62 @@ func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetect
 	return nil
 }
 
-type APICheck struct{}
+func runTelemetryTracesCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	creds, err := google.FindDefaultCredentials(ctx,
+		"https://www.googleapis.com/auth/trace.append",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to find default credentials: %v", err)
+	}
+
+	conn, err := grpc.NewClient(
+		"telemetry.googleapis.com:443",
+		grpc.WithTransportCredentials(credentials.NewTLS(nil)),
+		grpc.WithPerRPCCredentials(oauth.TokenSource{TokenSource: creds.TokenSource}),
+	)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	logger.Infof("telemetry client was created successfully")
+
+	client := coltracepb.NewTraceServiceClient(conn)
+
+	req := createTelemetryTracesRequest(resource)
+
+	_, err = client.Export(ctx, req)
+	if err != nil {
+		stat, ok := status.FromError(err)
+		if ok {
+			for _, detail := range stat.Details() {
+				if info, ok := detail.(*errdetails.ErrorInfo); ok {
+					if info.Reason == AccessTokenScopeInsufficient {
+						return TraceApiScopeErr
+					}
+				}
+			}
+			switch stat.Code() {
+			case codes.PermissionDenied:
+				if strings.Contains(stat.Message(), "disabled") {
+					return TelApiDisabledErr
+				}
+				return TelTracesApiPermissionErr
+			case codes.Unauthenticated:
+				return TelApiUnauthenticatedErr
+			case codes.DeadlineExceeded, codes.Unavailable:
+				return TelApiConnErr
+			}
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return TelApiConnErr
+		}
+		return err
+	}
+	return nil
+}
 
 func (c APICheck) Name() string {
 	return "API Check"
@@ -399,10 +492,11 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 
 	var monOrTelErr error
 	var logOrTelLogsErr error
+	var telTracesErr error
 	var wg sync.WaitGroup
 
-	wg.Add(2)
-	if experiments.FromContext(context.Background())["otlp_exporter"] {
+	if c.otlpExporterEnabled {
+		wg.Add(3)
 		logger.Infof("Running Telemetry API checks")
 		go func() {
 			defer wg.Done()
@@ -412,7 +506,12 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 			defer wg.Done()
 			logOrTelLogsErr = runTelemetryLogsCheck(logger, resource)
 		}()
+		go func() {
+			defer wg.Done()
+			telTracesErr = runTelemetryTracesCheck(logger, resource)
+		}()
 	} else {
+		wg.Add(2)
 		logger.Infof("Running legacy API checks")
 		go func() {
 			defer wg.Done()
@@ -425,5 +524,5 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	}
 	wg.Wait()
 
-	return errors.Join(monOrTelErr, logOrTelLogsErr)
+	return errors.Join(monOrTelErr, logOrTelLogsErr, telTracesErr)
 }
