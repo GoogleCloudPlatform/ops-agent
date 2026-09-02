@@ -12,7 +12,7 @@ osname="$(lsb_release -si)"
 # meaning it shouldn't run into issues with requiring newer
 # dependencies than what Debian 11 offers.
 # Remove once we add support for an Ubuntu ARM platform.
-if [[ "${osname}" == Debian && "${oscode}" == bullseye && "$(uname -m)" == aarch64 ]]; then
+if [[ "${osname}" == Debian && "${oscode}" == bookworm && "$(uname -m)" == aarch64 ]]; then
   oscode="focal"
   osname="Ubuntu"
 fi

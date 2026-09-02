@@ -164,7 +164,7 @@ transformation_test_update: transformation_test
 # or both using (googlecloudmonitoring|otlphttp).
 
 ZONES ?= us-central1-b
-IMAGE_SPECS ?= debian-cloud:debian-11
+IMAGE_SPECS ?= debian-cloud:debian-12
 INTEGRATION_TEST_FILTER ?= '.*'
 THIRD_PARTY_APPS ?= '.*'
 THIRD_PARTY_APPS_ENDPOINT ?= googlecloudmonitoring

@@ -221,7 +221,7 @@ total 180116
 Inspect the tarball to see if there is anything obviously wrong.
 
 ```shell
-$ tar -tvf $PACKAGES_OUT/google-cloud-ops-agent-debian-bullseye.tgz
+$ tar -tvf $PACKAGES_OUT/google-cloud-ops-agent-debian-bookworm.tgz
 ```
 
 #### Create a VM
