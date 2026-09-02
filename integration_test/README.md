@@ -279,7 +279,7 @@ a hop.
 ```
 └── logs
     ├── sponge_log.xml
-    └── TestThirdPartyApps_debian-cloud:debian-12_jetty
+    └── TestThirdPartyApps_debian-cloud:debian-12_bookworm
         ├── VM_initialization.txt
         ├── config.yaml.txt
         ├── fluent_bit_main.conf.txt
@@ -304,7 +304,7 @@ TODO: Document log files for a Windows VM.
 *   `sponge_log.xml`: Structured data about which tests
     passed/failed, but not very human readable.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
-    `TestThirdPartyApps_debian-cloud:debian-12_jetty`) that ran. This is the place
+    `TestThirdPartyApps_debian-cloud:debian-12_bookworm`) that ran. This is the place
     to start if you are wondering what happened to a particular shard.
 *   `syslog.txt`: The system's `/var/log/{syslog,messages}`. Highly useful.
     OTel collector logs can be found here by searching for `otelopscol`.
