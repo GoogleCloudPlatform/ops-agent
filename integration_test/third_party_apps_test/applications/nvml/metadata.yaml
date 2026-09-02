@@ -43,7 +43,6 @@ gpu_platforms:
   - model: l4
     platforms:
       - debian-cloud:debian-12
-      - debian-cloud:debian-12
       - ml-images:common-cu129-ubuntu-2404-nvidia-580
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9
