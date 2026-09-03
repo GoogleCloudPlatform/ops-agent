@@ -50,14 +50,14 @@ Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your
 environment and simply call the target.
 You can also specify the `ZONES` and `IMAGE_SPECS` variables if you would like
 to run the tests on something other than the defaults (`us-central1-b` for
-ZONES and `debian-cloud:debian-11` for `IMAGE_SPECS`).
+ZONES and `debian-cloud:debian-12` for `IMAGE_SPECS`).
 
 The above command will run the tests against the stable Ops Agent. To test
 against a pre-built but unreleased agent, you can add the
 `AGENT_PACKAGES_IN_GCS` environment variable onto your command like this:
 
 ```
-AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bullseye_x86_64/2677/20240711-200228/result \
+AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bookworm_x86_64/2677/20240711-200228/result \
 ```
 
 You can obtain such a URI by:
@@ -65,7 +65,7 @@ You can obtain such a URI by:
 1.  take a previous Kokoro run with a successful build and go to the
     `Invocation Details` page. Get the value corresponding to the `GCS` key.
     For example:
-    `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bullseye_x86_64/2677/20240711-200228`
+    `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bookworm_x86_64/2677/20240711-200228`
 2.  Replace `https://console.cloud.google.com/storage/browser/` at the beginning
     of the URL with `gs://` and put `/result` on the end and pass that as
     `AGENT_PACKAGES_IN_GCS`.
@@ -279,7 +279,7 @@ a hop.
 ```
 └── logs
     ├── sponge_log.xml
-    └── TestThirdPartyApps_debian-cloud:debian-11_jetty
+    └── TestThirdPartyApps_debian-cloud:debian-12_bookworm
         ├── VM_initialization.txt
         ├── config.yaml.txt
         ├── fluent_bit_main.conf.txt
@@ -304,7 +304,7 @@ TODO: Document log files for a Windows VM.
 *   `sponge_log.xml`: Structured data about which tests
     passed/failed, but not very human readable.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
-    `TestThirdPartyApps_debian-cloud:debian-11_jetty`) that ran. This is the place
+    `TestThirdPartyApps_debian-cloud:debian-12_bookworm`) that ran. This is the place
     to start if you are wondering what happened to a particular shard.
 *   `syslog.txt`: The system's `/var/log/{syslog,messages}`. Highly useful.
     OTel collector logs can be found here by searching for `otelopscol`.

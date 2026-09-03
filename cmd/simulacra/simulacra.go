@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	defaultImageFamily        = "debian-11"
+	defaultImageFamily        = "debian-12"
 	defaultThirdPartyAppsPath = "./integration_test/third_party_apps_data"
 	vmInitLogFileName         = "vm_initialization.txt"
 )
@@ -222,12 +222,12 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-// Parse the metadata image name with format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711'
+// Parse the metadata image name with format 'projects/debian-cloud/global/images/debian-12-bookworm-v20230711'
 // and return the scope and image name.
 func parseImageFromMetadata(name string) (string, string, string, error) {
 	components := strings.Split(name, "/")
 	if len(components) < 5 {
-		return "", "", "", errors.New("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711' ")
+		return "", "", "", errors.New("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-12-bookworm-v20230711' ")
 	}
 	imgProject := components[1]
 	scope := components[2]
@@ -294,7 +294,7 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 func getSimulacraConfig() (*Config, error) {
 	configPath := flag.String("config", "", "Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored.")
 	diagnosticOutputPath := flag.String("diagnostic_output_path", "", "Optional. The path to a directory contaning the output from the ops agent diagnostic tool. If specified, all other arguments will be ignored and Simulacra will be configured from the diagnostic tool output.")
-	imageFamily := flag.String("image_family", defaultImageFamily, "Optional. The OS for the VM. If missing, debian-11 is used.")
+	imageFamily := flag.String("image_family", defaultImageFamily, "Optional. The OS for the VM. If missing, debian-12 is used.")
 	opsAgentConfigFile := flag.String("ops_agent_config", "", "Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. ")
 	project := flag.String("project", "", "Optional. If missing, Simulacra will try to infer from GCloud config.")
 	zone := flag.String("zone", "", "Optional. If missing, Simulacra will try to infer from GCloud config. ")

@@ -75,7 +75,7 @@ We offer a subset of the possible configuration parameters as command line argum
 
     --config : Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored. 
 
-    --image_family: Optional. The image-family for the VM. If missing, debian-11 is used.
+    --image_family: Optional. The image-family for the VM. If missing, debian-12 is used.
 
     --ops_agent_config: Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings.
 
@@ -97,8 +97,8 @@ We offer a subset of the possible configuration parameters as command line argum
 
 | Key                      | Type           | Default | Description |
 |:-------------------------|:---------------|:--------|:------------|
-| `image_family`            | string | debian-11 | The image family for the VM. |
-| `image`             | string       | ""     | The exact image for the VM. If both image and image_family are unspecified, the VM is configured with image family 'debian-11'  |
+| `image_family`            | string | debian-12 | The image family for the VM. |
+| `image`             | string       | ""     | The exact image for the VM. If both image and image_family are unspecified, the VM is configured with image family 'debian-12'  |
 | `image_project`             | string       | ""     | The project the image belongs to. |
 | `ops_agent_config`             | string           | ""   | Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. |
 | `project`      | string           | ""   |  The project ID for the project where the VMs will be created. If missing, Simulacra will try to infer from GCloud config.|

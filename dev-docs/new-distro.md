@@ -39,16 +39,16 @@ manifest as runtime errors that won't show up until tests are run.
 
 1.  Temporarily repurpose one of the existing Kokoro builds for testing
     your new distro. For example, in
-    [kokoro/config/build/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_x86_64.gcl)
-    or [kokoro/config/build/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_aarch64.gcl),
+    [kokoro/config/build/presubmit/bookworm_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bookworm_x86_64.gcl)
+    or [kokoro/config/build/presubmit/bookworm_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bookworm_aarch64.gcl),
 
-    [kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl)
-    or [kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl),
+    [kokoro/config/test/ops_agent/presubmit/bookworm_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bookworm_x86_64.gcl)
+    or [kokoro/config/test/ops_agent/presubmit/bookworm_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bookworm_aarch64.gcl),
    
-    [kokoro/config/test/third_party_apps/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/presubmit/bullseye_x86_64.gcl)
-    or [kokoro/config/test/third_party_apps/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/presubmit/bullseye_aarch64.gcl)
+    [kokoro/config/test/third_party_apps/presubmit/bookworm_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/presubmit/bookworm_x86_64.gcl)
+    or [kokoro/config/test/third_party_apps/presubmit/bookworm_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/presubmit/bookworm_aarch64.gcl)
 
-    replace `bullseye` with `$DISTRO_SHORT` and change `deb` to `rpm` if
+    replace `bookworm` with `$DISTRO_SHORT` and change `deb` to `rpm` if
     needed.
 
     Example PR: https://github.com/GoogleCloudPlatform/ops-agent/pull/1705/files
@@ -66,7 +66,7 @@ manifest as runtime errors that won't show up until tests are run.
 
 1.  Once builds and "Ops Agent integration test" (AKA `ops_agent_test`) are
     passing, revert the temporary changes to the Kokoro configs (the
-    `bullseye_$arch.gcl` files in the earlier step) and to the `project.yaml`. Get your PR reviewed and
+    `bookworm_$arch.gcl` files in the earlier step) and to the `project.yaml`. Get your PR reviewed and
     merge it to `master`.
 
 ### Running `third_party_apps_test` against the new distro
@@ -97,17 +97,17 @@ The instructions are very similar to the instructions for `ops_agent_test`.
     ([Sample PR](https://github.com/GoogleCloudPlatform/ops-agent/pull/1044)):
 
     *   In
-        [build/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_x86_64.gcl)
+        [build/presubmit/bookworm_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bookworm_x86_64.gcl)
         or
-        [build/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_aarch64.gcl),
-        set `DISTRO` to `'$DISTRO_SHORT'` (instead of `'bullseye'`) and
+        [build/presubmit/bookworm_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bookworm_aarch64.gcl),
+        set `DISTRO` to `'$DISTRO_SHORT'` (instead of `'bookworm'`) and
         change `deb` to `rpm` if needed.
     *   In
-        [test/third_party_apps/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/bullseye_x86_64.gcl)
+        [test/third_party_apps/presubmit/bookworm_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/bookworm_x86_64.gcl)
         or
-        [test/third_party_apps/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/bullseye_aarch64.gcl),
+        [test/third_party_apps/presubmit/bookworm_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/bookworm_aarch64.gcl),
         set `platforms` to `['$DISTRO_FAMILY']` (instead of
-        `['debian-cloud:debian-11']`). You should also add this section right after the
+        `['debian-cloud:debian-12']`). You should also add this section right after the
         `platforms =` line:
 
         ```gcl
@@ -119,25 +119,25 @@ The instructions are very similar to the instructions for `ops_agent_test`.
         ```
 
     *   In
-        [test/ops_agent/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl)
+        [test/ops_agent/presubmit/bookworm_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bookworm_x86_64.gcl)
         or
-        [test/ops_agent/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl),
+        [test/ops_agent/presubmit/bookworm_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bookworm_aarch64.gcl),
         set `platforms` to `['$DISTRO_FAMILY']`. This step is optional but
         if you don't do it, `ops_agent_test` will later fail and you'll have
         to remember to ignore those failures (since it will still be trying
-        to run `ops_agent_test` on bullseye).
+        to run `ops_agent_test` on bookworm).
 
 1.  Make a PR at this point to make Kokro run builds and tests. Problems
     with the new distro will show up as failures in the `third party apps
-    integration test (Bullseye)`, since you repurposed `bullseye_$arch.gcl` in
+    integration test (Bookworm)`, since you repurposed `bookworm_$arch.gcl` in
     the previous step. At this point you can look at the test failures and
     determine how much work is needed to get them to pass. You may need to
     add your new distro to a few places in
     [third_party_apps_data/test_config.yaml](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/test_config.yaml)
     to disable your new platform for certain problematic apps.
 
-1.  Once `third party apps integration test (Bullseye)` is passing, Revert the
-    temporary changes to the Kokoro configs (the various `bullseye_$arch.gcl`
+1.  Once `third party apps integration test (Bookworm)` is passing, Revert the
+    temporary changes to the Kokoro configs (the various `bookworm_$arch.gcl`
     files in the earlier step). Get your PR reviewed and merge it to `master`.
 
 ## Adding a new RPM signing key

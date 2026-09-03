@@ -131,18 +131,6 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "deb",
 	},
 	{
-		from_image:  "debian:bullseye",
-		target_name: "bullseye",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip` + installCMake,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "debian-bullseye",
-		package_extension: "deb",
-	},
-	{
 		from_image:  "debian:trixie",
 		target_name: "trixie",
 		install_packages: `RUN set -x; apt-get update && \

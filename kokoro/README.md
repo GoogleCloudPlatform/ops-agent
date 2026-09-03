@@ -16,7 +16,7 @@ This is only half of the story, however. Half of our Kokoro configs live inside
 Google's code silo, called Piper. They configure what kind of builds we want to
 have, what their names are, and what source code they can see. Here is a
 diagram that shows how these configs (called "job configs") are structured and
-how they point to the configs here (called "build configs"). Only bullseye and
+how they point to the configs here (called "build configs"). Only bookworm and
 Windows are pictured, for brevity.
 
 ![mapping](mapping.png)
