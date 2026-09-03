@@ -1,8 +1,4 @@
 exporters:
-  googlemanagedprometheus:
-    metric:
-      add_metric_suffixes: false
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   otlp_grpc/otlp_logs:
     auth:
       authenticator: googleclientauth
@@ -923,6 +919,20 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
+  transform/prometheus_1:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
+      - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
+      - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
+  transform/prometheus_2:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - set(metric.name, Concat(["prometheus.googleapis.com/", metric.name], "")) where not HasPrefix(metric.name, "prometheus.googleapis.com/")
   transform/syslog_0:
     error_mode: ignore
     log_statements:
@@ -1182,9 +1192,14 @@ service:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
       exporters:
-      - googlemanagedprometheus
+      - otlp_grpc/otlp_metrics
       processors:
       - transform/prometheus_0
+      - transform/prometheus_1
+      - transform/prometheus_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/prometheus
   telemetry:
