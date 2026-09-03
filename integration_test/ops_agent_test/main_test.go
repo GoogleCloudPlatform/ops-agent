@@ -5009,6 +5009,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 
 		time.Sleep(2 * time.Minute)
 
+		startTime := time.Now()
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
@@ -5017,8 +5018,8 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3*time.Minute, query); err != nil {
+		query := fmt.Sprintf(`timestamp >= "%s" AND severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`, startTime.Format(time.RFC3339))
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
