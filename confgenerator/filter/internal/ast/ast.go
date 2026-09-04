@@ -58,9 +58,9 @@ var logEntryRootValueMapToOTel = map[string][]string{
 }
 
 var logEntryRootStructMapToOTel = map[string][]string{
-	"jsonPayload": {"body"},
-	"labels":      {"attributes"},
-	// "operation": {}, // TODO: Missing in OTel exporter
+	"jsonPayload":    {"body"},
+	"labels":         {"attributes"},
+	"operation":      {"attributes", "gcp.operation"},
 	"sourceLocation": {"attributes", "gcp.source_location"},
 	"httpRequest":    {"attributes", "gcp.http_request"},
 }
