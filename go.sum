@@ -58,8 +58,8 @@ github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1v
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228 h1:K6GHKAI+PB91Fm+KEwX4q6s6xzZ/+BkOi8Kjxh0tJ6U=
 github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228/go.mod h1:31SvkAl6ORtir1odRpTl92XpTtn52GnBAHPtCKDSePo=
-github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260811162639-c15694e1f028 h1:wEpyn48ldCGAWjmyAs29Oh/ZodI1SfxJ+HUWUcOhVU4=
-github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260811162639-c15694e1f028/go.mod h1:xeAqR0So8WbLXhm0APqwYV0FNGWzOk6MD92IufaFZ8c=
+github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260904140452-23f028dc7797 h1:QI6wOZCFdreLbNkMrEVSmbVv+/rXLC6V7rD5AstbJ7I=
+github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260904140452-23f028dc7797/go.mod h1:w+hALN4HKl6g1hzn0eY8jBpOn2qNOoEtVrmnEyVyCHs=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 h1:rIkQfkCOVKc1OiRCNcSDD8ml5RJlZbH/Xsq7lbpynwc=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0/go.mod h1:RD2SsorTmYhF6HkTmDw7KmPYQk8OBYwTkuasChwv7R4=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0 h1:owcC2UnmsZycprQ5RfRgjydWhuoxg71LUfyiQdijZuM=
