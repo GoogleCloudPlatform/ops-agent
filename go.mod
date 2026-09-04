@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/logging v1.13.0
 	cloud.google.com/go/monitoring v1.24.2
 	cloud.google.com/go/storage v1.57.0 // indirect
-	cloud.google.com/go/trace v1.11.6 // indirect
+	cloud.google.com/go/trace v1.11.6
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0
 	github.com/binxio/gcloudconfig v0.1.5
 	github.com/blang/semver v3.5.1+incompatible
@@ -47,7 +47,7 @@ require (
 	buf.build/go/protoyaml v0.3.1
 	cloud.google.com/go/secretmanager v1.15.0
 	github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228
-	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260811162639-c15694e1f028
+	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260904140452-23f028dc7797
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0
 	go.opentelemetry.io/collector/pdata v1.48.0
 	go.opentelemetry.io/proto/otlp v1.10.0
