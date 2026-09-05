@@ -5305,8 +5305,10 @@ func TestFileOffset(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Wait 1 min for all logs to be ingested after first start.
-		time.Sleep(1 * time.Minute)
+		// Wait for the first line to be ingested before stopping the agent.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`); err != nil {
+			t.Fatalf("Failed waiting for initial log ingestion: %v", err)
+		}
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
@@ -5321,20 +5323,34 @@ func TestFileOffset(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Wait 1 min for logs to be ingested after restart.
-		time.Sleep(1 * time.Minute)
+		// Verify second log was ingested after restart.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
+			t.Fatalf("Failed waiting for log ingestion after restart: %v", err)
+		}
 
-		// We should only observe one instance of the "first line" log.
-		matchingLogs, err := gce.QueryAllLogs(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, gce.LogQueryMaxAttempts)
+		// We should only observe one instance of the "first line" log (offset was preserved).
+		// QueryAllLogs returns immediately on attempt 1 with an empty slice if err == nil (intended for AssertLogMissing).
+		// To account for Cloud Logging query index propagation, retry until at least one log is returned.
+		queryCtx, queryCancel := context.WithTimeout(ctx, 3*time.Minute)
+		defer queryCancel()
+
+		var matchingLogs []*cloudlogging.Entry
+		err := backoff.Retry(func() error {
+			var qErr error
+			matchingLogs, qErr = gce.QueryAllLogs(queryCtx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, 1)
+			if qErr != nil {
+				return qErr
+			}
+			if len(matchingLogs) == 0 {
+				return errors.New("matching logs is empty")
+			}
+			return nil
+		}, backoff.WithContext(backoff.NewConstantBackOff(10*time.Second), queryCtx))
 		if err != nil {
-			t.Error(err)
+			logger.Printf("Failed waiting for 'first line' query matches: %v", err)
 		}
 		if len(matchingLogs) != 1 {
 			t.Errorf(`Expected to find exactly one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
-		}
-		// Verify second log was ingested.
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
-			t.Error(err)
 		}
 	})
 }
