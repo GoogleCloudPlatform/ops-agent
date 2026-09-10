@@ -1,6 +1,6 @@
 # escape=`
 
-ARG WINDOWS_VERSION=ltsc2022
+ARG WINDOWS_VERSION=10.0.20348.5499
 
 #
 # Builder Image - Windows Server Core
