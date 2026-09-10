@@ -105,6 +105,10 @@ var dockerfileArguments = []templateArguments{
 		// Build against the oldest supported EL10 minor (10.0, OpenSSL 3.2).
 		// RHEL 10.1+ rebased OpenSSL to 3.5; binaries built there depend on
 		// OPENSSL_3.4.0 symbol versions that RHEL 10.0 (EUS) does not provide.
+		// Rocky mirrors only serve the latest 10.x, so the repos below are
+		// pointed at the 10.0 vault; pinning the image tag alone is not enough.
+		// TODO: b/558217946 - Revisit the 10.0 pin once fluent-bit no longer
+		// needs OpenSSL 3.4 symbols or RHEL 10.0 EUS is out of support.
 		from_image:  "rockylinux/rockylinux:10.0",
 		target_name: "rockylinux10",
 		install_packages: `RUN set -x; \
