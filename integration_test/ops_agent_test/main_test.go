@@ -5010,7 +5010,8 @@ func TestDisableSelfLogCollection(t *testing.T) {
 
 		time.Sleep(2 * time.Minute)
 
-		startTime := time.Now()
+		// Subtract 10s to account for slight clock skew between the Kokoro runner and GCE VM.
+		startTime := time.Now().Add(-10 * time.Second)
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
