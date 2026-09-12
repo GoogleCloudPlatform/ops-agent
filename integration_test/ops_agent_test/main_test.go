@@ -4946,6 +4946,7 @@ func TestParsingFailureCheck(t *testing.T) {
       time_key: time
       time_format: "%s"
   service:
+    experimental_otel_logging: false
     pipelines:
       my_pipeline:
         receivers: [mylog_source]

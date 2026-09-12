@@ -643,6 +643,303 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
+  transform/apache__access_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\"))"
+      - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
+      - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
+      - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
+      - set(cache["__time_valid"], false)
+      - set(cache["__time_valid"], true) where ((body != nil and body["time"] != nil) and Time(body["time"], "%d/%b/%Y:%H:%M:%S %z") != nil)
+      - set(time, Time(body["time"], "%d/%b/%Y:%H:%M:%S %z")) where cache["__time_valid"] == true
+      - delete_key(body, "time") where ((body != nil and body["time"] != nil) and cache["__time_valid"] == true)
+      - set(body["http_request_status"], Int(body["http_request_status"])) where ((body != nil and body["http_request_status"] != nil) and Int(body["http_request_status"]) != nil)
+      - merge_maps(attributes, body["logging.googleapis.com/labels"], "upsert") where body["logging.googleapis.com/labels"] != nil
+      - delete_key(body, "logging.googleapis.com/labels") where (body != nil and body["logging.googleapis.com/labels"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/httpRequest"]) where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
+      - delete_key(body, "logging.googleapis.com/httpRequest") where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.http_request"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/logName"]) where (body != nil and body["logging.googleapis.com/logName"] != nil)
+      - delete_key(body, "logging.googleapis.com/logName") where (body != nil and body["logging.googleapis.com/logName"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
+      - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
+      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
+      - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(span_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/trace"]) where (body != nil and body["logging.googleapis.com/trace"] != nil)
+      - delete_key(body, "logging.googleapis.com/trace") where (body != nil and body["logging.googleapis.com/trace"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - delete_key(cache, "__setif_value") where (cache != nil and cache["__setif_value"] != nil)
+      - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
+      - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+  transform/apache__access_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["http_request_protocol"]) where (body != nil and body["http_request_protocol"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["http_request_referer"]) where (body != nil and body["http_request_referer"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], body["http_request_remoteIp"]) where (body != nil and body["http_request_remoteIp"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], body["http_request_requestMethod"]) where (body != nil and body["http_request_requestMethod"] != nil)
+      - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
+      - set(cache["__field_4"], body["http_request_requestUrl"]) where (body != nil and body["http_request_requestUrl"] != nil)
+      - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
+      - set(cache["__field_5"], body["http_request_responseSize"]) where (body != nil and body["http_request_responseSize"] != nil)
+      - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
+      - set(cache["__field_6"], body["http_request_status"]) where (body != nil and body["http_request_status"] != nil)
+      - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
+      - set(cache["__field_7"], body["http_request_userAgent"]) where (body != nil and body["http_request_userAgent"] != nil)
+      - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
+      - set(cache["__field_8"], body["gzip_ratio"]) where (body != nil and body["gzip_ratio"] != nil)
+      - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
+      - set(cache["__field_9"], body["host"]) where (body != nil and body["host"] != nil)
+      - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
+      - set(cache["__field_10"], body["user"]) where (body != nil and body["user"] != nil)
+      - set(cache["__omit_0"], false)
+      - set(cache["__omit_0"], true) where ((body != nil and body["http_request_referer"] != nil) and IsMatch(body["http_request_referer"], "(?i)^-$"))
+      - set(cache["__omit_1"], false)
+      - set(cache["__omit_1"], true) where ((body != nil and body["gzip_ratio"] != nil) and IsMatch(body["gzip_ratio"], "(?i)^-$"))
+      - set(cache["__omit_2"], false)
+      - set(cache["__omit_2"], true) where ((body != nil and body["host"] != nil) and IsMatch(body["host"], "(?i)^-$"))
+      - set(cache["__omit_3"], false)
+      - set(cache["__omit_3"], true) where ((body != nil and body["user"] != nil) and IsMatch(body["user"], "(?i)^-$"))
+      - delete_key(body, "http_request_protocol") where (body != nil and body["http_request_protocol"] != nil)
+      - delete_key(body, "http_request_referer") where (body != nil and body["http_request_referer"] != nil)
+      - delete_key(body, "http_request_remoteIp") where (body != nil and body["http_request_remoteIp"] != nil)
+      - delete_key(body, "http_request_requestMethod") where (body != nil and body["http_request_requestMethod"] != nil)
+      - delete_key(body, "http_request_requestUrl") where (body != nil and body["http_request_requestUrl"] != nil)
+      - delete_key(body, "http_request_responseSize") where (body != nil and body["http_request_responseSize"] != nil)
+      - delete_key(body, "http_request_status") where (body != nil and body["http_request_status"] != nil)
+      - delete_key(body, "http_request_userAgent") where (body != nil and body["http_request_userAgent"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.http_request"]["protocol"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(attributes["gcp.http_request"]["referer"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes["gcp.http_request"], "referer") where ((attributes != nil and attributes["gcp.http_request"] != nil and attributes["gcp.http_request"]["referer"] != nil) and cache["__omit_0"] == true)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(attributes["gcp.http_request"]["remoteIp"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(attributes["gcp.http_request"]["requestMethod"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_4"]) where (cache != nil and cache["__field_4"] != nil)
+      - set(attributes["gcp.http_request"]["requestUrl"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_5"]) where (cache != nil and cache["__field_5"] != nil)
+      - set(attributes["gcp.http_request"]["responseSize"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_6"]) where (cache != nil and cache["__field_6"] != nil)
+      - set(attributes["gcp.http_request"]["status"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_7"]) where (cache != nil and cache["__field_7"] != nil)
+      - set(attributes["gcp.http_request"]["userAgent"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_8"]) where (cache != nil and cache["__field_8"] != nil)
+      - set(body["gzip_ratio"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(body, "gzip_ratio") where ((body != nil and body["gzip_ratio"] != nil) and cache["__omit_1"] == true)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_9"]) where (cache != nil and cache["__field_9"] != nil)
+      - set(body["host"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(body, "host") where ((body != nil and body["host"] != nil) and cache["__omit_2"] == true)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_10"]) where (cache != nil and cache["__field_10"] != nil)
+      - set(body["user"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(body, "user") where ((body != nil and body["user"] != nil) and cache["__omit_3"] == true)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "agent.googleapis.com/apache_access")
+      - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/apache__access_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "apache_access") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/apache__error_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^\\\\[(?<time>[^\\\\]]+)\\\\] \\\\[(?:(?<module>\\\\w+):)?(?<level>[\\\\w\\\\d]+)\\\\](?: \\\\[pid (?<pid>\\\\d+)(?::tid (?<tid>[0-9]+))?\\\\])?(?: (?<errorCode>[^\\\\[:]*):?)?(?: \\\\[client (?<client>[^\\\\]]*)\\\\])? (?<message>.*)$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^\\\\[(?<time>[^\\\\]]+)\\\\] \\\\[(?:(?<module>\\\\w+):)?(?<level>[\\\\w\\\\d]+)\\\\](?: \\\\[pid (?<pid>\\\\d+)(?::tid (?<tid>[0-9]+))?\\\\])?(?: (?<errorCode>[^\\\\[:]*):?)?(?: \\\\[client (?<client>[^\\\\]]*)\\\\])? (?<message>.*)$\"))"
+      - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
+      - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
+      - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
+      - set(cache["__time_valid"], false)
+      - set(cache["__time_valid"], true) where ((body != nil and body["time"] != nil) and Time(body["time"], "%a %b %d %H:%M:%S.%L %Y") != nil)
+      - set(time, Time(body["time"], "%a %b %d %H:%M:%S.%L %Y")) where cache["__time_valid"] == true
+      - delete_key(body, "time") where ((body != nil and body["time"] != nil) and cache["__time_valid"] == true)
+      - set(body["pid"], Int(body["pid"])) where ((body != nil and body["pid"] != nil) and Int(body["pid"]) != nil)
+      - set(body["tid"], Int(body["tid"])) where ((body != nil and body["tid"] != nil) and Int(body["tid"]) != nil)
+      - merge_maps(attributes, body["logging.googleapis.com/labels"], "upsert") where body["logging.googleapis.com/labels"] != nil
+      - delete_key(body, "logging.googleapis.com/labels") where (body != nil and body["logging.googleapis.com/labels"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/httpRequest"]) where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
+      - delete_key(body, "logging.googleapis.com/httpRequest") where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.http_request"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/logName"]) where (body != nil and body["logging.googleapis.com/logName"] != nil)
+      - delete_key(body, "logging.googleapis.com/logName") where (body != nil and body["logging.googleapis.com/logName"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
+      - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
+      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
+      - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(span_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/trace"]) where (body != nil and body["logging.googleapis.com/trace"] != nil)
+      - delete_key(body, "logging.googleapis.com/trace") where (body != nil and body["logging.googleapis.com/trace"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - delete_key(cache, "__setif_value") where (cache != nil and cache["__setif_value"] != nil)
+      - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
+      - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+  transform/apache__error_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["level"]) where (body != nil and body["level"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "agent.googleapis.com/apache_error")
+      - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["mapped_value"], "ALERT") where cache["value"] == "alert"
+      - set(cache["mapped_value"], "CRITICAL") where cache["value"] == "crit"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "debug"
+      - set(cache["mapped_value"], "EMERGENCY") where cache["value"] == "emerg"
+      - set(cache["mapped_value"], "ERROR") where cache["value"] == "error"
+      - set(cache["mapped_value"], "INFO") where cache["value"] == "info"
+      - set(cache["mapped_value"], "NOTICE") where cache["value"] == "notice"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "trace1"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "trace2"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "trace3"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "trace4"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "trace5"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "trace6"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "trace7"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "trace8"
+      - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
+      - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
+  transform/apache__error_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "apache_error") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -706,6 +1003,40 @@ processors:
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
+  file_log/apache__access:
+    exclude: []
+    fingerprint_size: 5kb
+    include:
+    - /var/log/apache2/access.log
+    - /var/log/apache2/access_log
+    - /var/log/httpd/access_log
+    include_file_name: false
+    operators:
+    - from: body
+      id: body
+      to: body.message
+      type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
+    start_at: beginning
+    storage: file_storage
+  file_log/apache__error:
+    exclude: []
+    fingerprint_size: 5kb
+    include:
+    - /var/log/apache2/error.log
+    - /var/log/apache2/error_log
+    - /var/log/httpd/error_log
+    include_file_name: false
+    operators:
+    - from: body
+      id: body
+      to: body.message
+      type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
+    start_at: beginning
+    storage: file_storage
   file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
@@ -771,6 +1102,26 @@ service:
   extensions:
   - file_storage
   pipelines:
+    logs/logs_apache_apache__access:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/apache__access_0
+      - transform/apache__access_1
+      - transform/apache__access_2
+      - resourcedetection/_global_0
+      receivers:
+      - file_log/apache__access
+    logs/logs_apache_apache__error:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/apache__error_0
+      - transform/apache__error_1
+      - transform/apache__error_2
+      - resourcedetection/_global_0
+      receivers:
+      - file_log/apache__error
     logs/logs_default__pipeline_syslog:
       exporters:
       - googlecloud/logging
