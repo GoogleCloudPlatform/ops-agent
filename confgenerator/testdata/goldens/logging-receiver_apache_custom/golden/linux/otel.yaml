@@ -614,7 +614,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/apache__custom__access_0:
+  transform/logging_apache__custom__access_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -676,7 +676,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__custom__access_1:
+  transform/logging_apache__custom__access_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -759,7 +759,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/apache_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__custom__access_2:
+  transform/logging_apache__custom__access_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -788,7 +788,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "apache_custom_access") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__custom__error_0:
+  transform/logging_apache__custom__error_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -851,7 +851,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__custom__error_1:
+  transform/logging_apache__custom__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -882,7 +882,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/apache__custom__error_2:
+  transform/logging_apache__custom__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -911,7 +911,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "apache_custom_error") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__default__access_0:
+  transform/logging_apache__default__access_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -973,7 +973,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__default__access_1:
+  transform/logging_apache__default__access_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1056,7 +1056,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/apache_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__default__access_2:
+  transform/logging_apache__default__access_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1085,7 +1085,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "apache_default_access") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__default__error_0:
+  transform/logging_apache__default__error_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1148,7 +1148,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__default__error_1:
+  transform/logging_apache__default__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1179,7 +1179,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/apache__default__error_2:
+  transform/logging_apache__default__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1208,7 +1208,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "apache_default_error") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__syslog__access_0:
+  transform/logging_apache__syslog__access_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1221,7 +1221,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/apache__syslog__access_1:
+  transform/logging_apache__syslog__access_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1250,7 +1250,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "apache_syslog_access") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/apache__syslog__error_0:
+  transform/logging_apache__syslog__error_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1263,7 +1263,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/apache__syslog__error_1:
+  transform/logging_apache__syslog__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1292,6 +1292,35 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "apache_syslog_error") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "syslog") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -1313,7 +1342,7 @@ processors:
       - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
       - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
       - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
-  transform/logs_apache__syslog__access_apache__syslog__access_0:
+  transform/logs_apache__syslog__access_logging_apache__syslog__access_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1375,7 +1404,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logs_apache__syslog__access_apache__syslog__access_1:
+  transform/logs_apache__syslog__access_logging_apache__syslog__access_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1458,7 +1487,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/apache_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logs_apache__syslog__error_apache__syslog__error_0:
+  transform/logs_apache__syslog__error_logging_apache__syslog__error_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1521,7 +1550,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logs_apache__syslog__error_apache__syslog__error_1:
+  transform/logs_apache__syslog__error_logging_apache__syslog__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1564,37 +1593,8 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/syslog_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["value"], "test-mig") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["value"], "test-zone") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], "syslog") where cache["value"] == nil
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  file_log/apache__custom__access:
+  file_log/logging_apache__custom__access:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1610,7 +1610,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/apache__custom__error:
+  file_log/logging_apache__custom__error:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1626,7 +1626,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/apache__default__access:
+  file_log/logging_apache__default__access:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1643,7 +1643,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/apache__default__error:
+  file_log/logging_apache__default__error:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1660,7 +1660,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/syslog:
+  file_log/logging_syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1719,11 +1719,11 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  syslog/apache__syslog__access:
+  syslog/logging_apache__syslog__access:
     protocol: rfc5424
     udp:
       listen_address: 1.1.1.1:1
-  syslog/apache__syslog__error:
+  syslog/logging_apache__syslog__error:
     protocol: rfc5424
     tcp:
       listen_address: 1.1.1.1:2
@@ -1731,76 +1731,76 @@ service:
   extensions:
   - file_storage
   pipelines:
-    logs/logs_apache__custom_apache__custom__access:
+    logs/logs_apache__custom_logging_apache__custom__access:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/apache__custom__access_0
-      - transform/apache__custom__access_1
-      - transform/apache__custom__access_2
+      - transform/logging_apache__custom__access_0
+      - transform/logging_apache__custom__access_1
+      - transform/logging_apache__custom__access_2
       - resourcedetection/_global_0
       receivers:
-      - file_log/apache__custom__access
-    logs/logs_apache__custom_apache__custom__error:
+      - file_log/logging_apache__custom__access
+    logs/logs_apache__custom_logging_apache__custom__error:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/apache__custom__error_0
-      - transform/apache__custom__error_1
-      - transform/apache__custom__error_2
+      - transform/logging_apache__custom__error_0
+      - transform/logging_apache__custom__error_1
+      - transform/logging_apache__custom__error_2
       - resourcedetection/_global_0
       receivers:
-      - file_log/apache__custom__error
-    logs/logs_apache__default_apache__default__access:
+      - file_log/logging_apache__custom__error
+    logs/logs_apache__default_logging_apache__default__access:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/apache__default__access_0
-      - transform/apache__default__access_1
-      - transform/apache__default__access_2
+      - transform/logging_apache__default__access_0
+      - transform/logging_apache__default__access_1
+      - transform/logging_apache__default__access_2
       - resourcedetection/_global_0
       receivers:
-      - file_log/apache__default__access
-    logs/logs_apache__default_apache__default__error:
+      - file_log/logging_apache__default__access
+    logs/logs_apache__default_logging_apache__default__error:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/apache__default__error_0
-      - transform/apache__default__error_1
-      - transform/apache__default__error_2
+      - transform/logging_apache__default__error_0
+      - transform/logging_apache__default__error_1
+      - transform/logging_apache__default__error_2
       - resourcedetection/_global_0
       receivers:
-      - file_log/apache__default__error
-    logs/logs_apache__syslog__access_apache__syslog__access:
+      - file_log/logging_apache__default__error
+    logs/logs_apache__syslog__access_logging_apache__syslog__access:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/apache__syslog__access_0
-      - transform/apache__syslog__access_1
-      - transform/logs_apache__syslog__access_apache__syslog__access_0
-      - transform/logs_apache__syslog__access_apache__syslog__access_1
+      - transform/logging_apache__syslog__access_0
+      - transform/logging_apache__syslog__access_1
+      - transform/logs_apache__syslog__access_logging_apache__syslog__access_0
+      - transform/logs_apache__syslog__access_logging_apache__syslog__access_1
       - resourcedetection/_global_0
       receivers:
-      - syslog/apache__syslog__access
-    logs/logs_apache__syslog__error_apache__syslog__error:
+      - syslog/logging_apache__syslog__access
+    logs/logs_apache__syslog__error_logging_apache__syslog__error:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/apache__syslog__error_0
-      - transform/apache__syslog__error_1
-      - transform/logs_apache__syslog__error_apache__syslog__error_0
-      - transform/logs_apache__syslog__error_apache__syslog__error_1
+      - transform/logging_apache__syslog__error_0
+      - transform/logging_apache__syslog__error_1
+      - transform/logs_apache__syslog__error_logging_apache__syslog__error_0
+      - transform/logs_apache__syslog__error_logging_apache__syslog__error_1
       - resourcedetection/_global_0
       receivers:
-      - syslog/apache__syslog__error
-    logs/logs_default__pipeline_syslog:
+      - syslog/logging_apache__syslog__error
+    logs/logs_default__pipeline_logging_syslog:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/syslog_0
+      - transform/logging_syslog_0
       - resourcedetection/_global_0
       receivers:
-      - file_log/syslog
+      - file_log/logging_syslog
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

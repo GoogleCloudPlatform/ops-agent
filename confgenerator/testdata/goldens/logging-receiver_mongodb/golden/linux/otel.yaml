@@ -614,28 +614,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/loggingmetrics_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/loggingmetrics_5:
-    metric_statements:
-    - context: metric
-      statements:
-      - set(unit, "1")
-    - context: datapoint
-      statements:
-      - set(time, Now())
-      - set(start_time_unix_nano, 0)
-      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
-      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
-  transform/mongodb_0:
+  transform/logging_mongodb_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -694,7 +673,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_1:
+  transform/logging_mongodb_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -705,7 +684,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["time"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_10:
+  transform/logging_mongodb_10:
     error_mode: ignore
     log_statements:
     - context: log
@@ -771,7 +750,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_11:
+  transform/logging_mongodb_11:
     error_mode: ignore
     log_statements:
     - context: log
@@ -800,7 +779,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "W"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/mongodb_12:
+  transform/logging_mongodb_12:
     error_mode: ignore
     log_statements:
     - context: log
@@ -819,7 +798,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
       - set(body["message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_13:
+  transform/logging_mongodb_13:
     error_mode: ignore
     log_statements:
     - context: log
@@ -848,13 +827,13 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "mongodb") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_2:
+  transform/logging_mongodb_2:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - delete_key(body, "t") where ((body != nil and body["t"] != nil) and (body != nil and body["t"] != nil))
-  transform/mongodb_3:
+  transform/logging_mongodb_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -915,7 +894,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_4:
+  transform/logging_mongodb_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -926,14 +905,14 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["temp_attributes_message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_5:
+  transform/logging_mongodb_5:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - set(body["msg"], body["temp_attributes_message"]) where (body != nil and body["temp_attributes_message"] != nil)
       - delete_key(body, "temp_attributes_message") where ((body != nil and body["temp_attributes_message"] != nil) and (body != nil and body["temp_attributes_message"] != nil))
-  transform/mongodb_6:
+  transform/logging_mongodb_6:
     error_mode: ignore
     log_statements:
     - context: log
@@ -944,7 +923,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["component"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_7:
+  transform/logging_mongodb_7:
     error_mode: ignore
     log_statements:
     - context: log
@@ -955,7 +934,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["context"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_8:
+  transform/logging_mongodb_8:
     error_mode: ignore
     log_statements:
     - context: log
@@ -966,7 +945,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["json_message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_9:
+  transform/logging_mongodb_9:
     error_mode: ignore
     log_statements:
     - context: log
@@ -977,19 +956,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["attributes"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/ops_agent_0:
-    error_mode: ignore
-    metric_statements:
-    - context: datapoint
-      statements:
-      - set(time, Now())
-  transform/otel_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/syslog_0:
+  transform/logging_syslog_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1018,8 +985,41 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/loggingmetrics_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/loggingmetrics_5:
+    metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
+    - context: datapoint
+      statements:
+      - set(time, Now())
+      - set(start_time_unix_nano, 0)
+      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
+      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
+  transform/otel_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
-  file_log/mongodb:
+  file_log/logging_mongodb:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1034,7 +1034,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/syslog:
+  file_log/logging_syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1097,35 +1097,35 @@ service:
   extensions:
   - file_storage
   pipelines:
-    logs/logs_default__pipeline_syslog:
+    logs/logs_default__pipeline_logging_syslog:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/syslog_0
+      - transform/logging_syslog_0
       - resourcedetection/_global_0
       receivers:
-      - file_log/syslog
-    logs/logs_mongodb_mongodb:
+      - file_log/logging_syslog
+    logs/logs_mongodb_logging_mongodb:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/mongodb_0
-      - transform/mongodb_1
-      - transform/mongodb_2
-      - transform/mongodb_3
-      - transform/mongodb_4
-      - transform/mongodb_5
-      - transform/mongodb_6
-      - transform/mongodb_7
-      - transform/mongodb_8
-      - transform/mongodb_9
-      - transform/mongodb_10
-      - transform/mongodb_11
-      - transform/mongodb_12
-      - transform/mongodb_13
+      - transform/logging_mongodb_0
+      - transform/logging_mongodb_1
+      - transform/logging_mongodb_2
+      - transform/logging_mongodb_3
+      - transform/logging_mongodb_4
+      - transform/logging_mongodb_5
+      - transform/logging_mongodb_6
+      - transform/logging_mongodb_7
+      - transform/logging_mongodb_8
+      - transform/logging_mongodb_9
+      - transform/logging_mongodb_10
+      - transform/logging_mongodb_11
+      - transform/logging_mongodb_12
+      - transform/logging_mongodb_13
       - resourcedetection/_global_0
       receivers:
-      - file_log/mongodb
+      - file_log/logging_mongodb
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud
