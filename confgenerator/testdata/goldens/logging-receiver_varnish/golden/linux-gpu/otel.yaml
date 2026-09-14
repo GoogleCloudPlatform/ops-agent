@@ -643,40 +643,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/loggingmetrics_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/loggingmetrics_5:
-    metric_statements:
-    - context: metric
-      statements:
-      - set(unit, "1")
-    - context: datapoint
-      statements:
-      - set(time, Now())
-      - set(start_time_unix_nano, 0)
-      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
-      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
-  transform/ops_agent_0:
-    error_mode: ignore
-    metric_statements:
-    - context: datapoint
-      statements:
-      - set(time, Now())
-  transform/otel_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/syslog_0:
+  transform/logging_syslog_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -705,7 +672,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/varnish_0:
+  transform/logging_varnish_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -767,7 +734,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/varnish_1:
+  transform/logging_varnish_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -850,7 +817,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/varnish")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/varnish_2:
+  transform/logging_varnish_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -879,8 +846,41 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "varnish") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/loggingmetrics_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/loggingmetrics_5:
+    metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
+    - context: datapoint
+      statements:
+      - set(time, Now())
+      - set(start_time_unix_nano, 0)
+      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
+      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
+  transform/otel_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
-  file_log/syslog:
+  file_log/logging_syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -896,7 +896,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/varnish:
+  file_log/logging_varnish:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -960,24 +960,24 @@ service:
   extensions:
   - file_storage
   pipelines:
-    logs/logs_default__pipeline_syslog:
+    logs/logs_default__pipeline_logging_syslog:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/syslog_0
+      - transform/logging_syslog_0
       - resourcedetection/_global_0
       receivers:
-      - file_log/syslog
-    logs/logs_varnish_varnish:
+      - file_log/logging_syslog
+    logs/logs_varnish_logging_varnish:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/varnish_0
-      - transform/varnish_1
-      - transform/varnish_2
+      - transform/logging_varnish_0
+      - transform/logging_varnish_1
+      - transform/logging_varnish_2
       - resourcedetection/_global_0
       receivers:
-      - file_log/varnish
+      - file_log/logging_varnish
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

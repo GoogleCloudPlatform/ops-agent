@@ -614,40 +614,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/loggingmetrics_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/loggingmetrics_5:
-    metric_statements:
-    - context: metric
-      statements:
-      - set(unit, "1")
-    - context: datapoint
-      statements:
-      - set(time, Now())
-      - set(start_time_unix_nano, 0)
-      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
-      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
-  transform/ops_agent_0:
-    error_mode: ignore
-    metric_statements:
-    - context: datapoint
-      statements:
-      - set(time, Now())
-  transform/otel_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/syslog_0:
+  transform/logging_syslog_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -676,7 +643,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/systemd__logs_0:
+  transform/logging_systemd__logs_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -712,7 +679,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], Int(cache["value"])) where ((cache != nil and cache["value"] != nil) and Int(cache["value"]) != nil)
       - set(attributes["gcp.source_location"]["line"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/systemd__logs_1:
+  transform/logging_systemd__logs_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -741,8 +708,41 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "systemd_logs") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/loggingmetrics_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/loggingmetrics_5:
+    metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
+    - context: datapoint
+      statements:
+      - set(time, Now())
+      - set(start_time_unix_nano, 0)
+      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
+      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
+  transform/otel_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
-  file_log/syslog:
+  file_log/logging_syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -780,7 +780,7 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
-  journald/systemd__logs:
+  journald/logging_systemd__logs:
     priority: debug
     start_at: beginning
     storage: file_storage
@@ -809,23 +809,23 @@ service:
   extensions:
   - file_storage
   pipelines:
-    logs/logs_default__pipeline_syslog:
+    logs/logs_default__pipeline_logging_syslog:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/syslog_0
+      - transform/logging_syslog_0
       - resourcedetection/_global_0
       receivers:
-      - file_log/syslog
-    logs/logs_systemd__pipeline_systemd__logs:
+      - file_log/logging_syslog
+    logs/logs_systemd__pipeline_logging_systemd__logs:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/systemd__logs_0
-      - transform/systemd__logs_1
+      - transform/logging_systemd__logs_0
+      - transform/logging_systemd__logs_1
       - resourcedetection/_global_0
       receivers:
-      - journald/systemd__logs
+      - journald/logging_systemd__logs
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

@@ -96,7 +96,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
-  logstransform/mysql__general_0:
+  logstransform/logging_mysql__general_0:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -109,7 +109,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/mysql__slow_0:
+  logstransform/logging_mysql__slow_0:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -669,28 +669,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/loggingmetrics_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/loggingmetrics_5:
-    metric_statements:
-    - context: metric
-      statements:
-      - set(unit, "1")
-    - context: datapoint
-      statements:
-      - set(time, Now())
-      - set(start_time_unix_nano, 0)
-      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
-      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
-  transform/mysql__error_0:
+  transform/logging_mysql__error_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -752,7 +731,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__error_1:
+  transform/logging_mysql__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -813,7 +792,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__error_2:
+  transform/logging_mysql__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -875,7 +854,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__error_3:
+  transform/logging_mysql__error_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -898,7 +877,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "Warning"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/mysql__error_4:
+  transform/logging_mysql__error_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -927,7 +906,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "mysql_error") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__general_1:
+  transform/logging_mysql__general_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -989,7 +968,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__general_2:
+  transform/logging_mysql__general_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1051,7 +1030,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__general_3:
+  transform/logging_mysql__general_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1059,7 +1038,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/mysql_general")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__general_4:
+  transform/logging_mysql__general_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1088,7 +1067,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "mysql_general") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__slow_1:
+  transform/logging_mysql__slow_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1171,7 +1150,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__slow_2:
+  transform/logging_mysql__slow_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1243,7 +1222,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__slow_3:
+  transform/logging_mysql__slow_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1311,7 +1290,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/mysql_slow")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__slow_4:
+  transform/logging_mysql__slow_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1340,19 +1319,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "mysql_slow") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/ops_agent_0:
-    error_mode: ignore
-    metric_statements:
-    - context: datapoint
-      statements:
-      - set(time, Now())
-  transform/otel_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/syslog_0:
+  transform/logging_syslog_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1381,8 +1348,41 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/loggingmetrics_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/loggingmetrics_5:
+    metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
+    - context: datapoint
+      statements:
+      - set(time, Now())
+      - set(start_time_unix_nano, 0)
+      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
+      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
+  transform/otel_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
-  file_log/mysql__error:
+  file_log/logging_mysql__error:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1401,7 +1401,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/mysql__general:
+  file_log/logging_mysql__general:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1416,7 +1416,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/mysql__slow:
+  file_log/logging_mysql__slow:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1431,7 +1431,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/syslog:
+  file_log/logging_syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1496,50 +1496,50 @@ service:
   extensions:
   - file_storage
   pipelines:
-    logs/logs_default__pipeline_syslog:
+    logs/logs_default__pipeline_logging_syslog:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/syslog_0
+      - transform/logging_syslog_0
       - resourcedetection/_global_0
       receivers:
-      - file_log/syslog
-    logs/logs_mysql_mysql__error:
+      - file_log/logging_syslog
+    logs/logs_mysql_logging_mysql__error:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/mysql__error_0
-      - transform/mysql__error_1
-      - transform/mysql__error_2
-      - transform/mysql__error_3
-      - transform/mysql__error_4
+      - transform/logging_mysql__error_0
+      - transform/logging_mysql__error_1
+      - transform/logging_mysql__error_2
+      - transform/logging_mysql__error_3
+      - transform/logging_mysql__error_4
       - resourcedetection/_global_0
       receivers:
-      - file_log/mysql__error
-    logs/logs_mysql_mysql__general:
+      - file_log/logging_mysql__error
+    logs/logs_mysql_logging_mysql__general:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/mysql__general_0
-      - transform/mysql__general_1
-      - transform/mysql__general_2
-      - transform/mysql__general_3
-      - transform/mysql__general_4
+      - logstransform/logging_mysql__general_0
+      - transform/logging_mysql__general_1
+      - transform/logging_mysql__general_2
+      - transform/logging_mysql__general_3
+      - transform/logging_mysql__general_4
       - resourcedetection/_global_0
       receivers:
-      - file_log/mysql__general
-    logs/logs_mysql_mysql__slow:
+      - file_log/logging_mysql__general
+    logs/logs_mysql_logging_mysql__slow:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/mysql__slow_0
-      - transform/mysql__slow_1
-      - transform/mysql__slow_2
-      - transform/mysql__slow_3
-      - transform/mysql__slow_4
+      - logstransform/logging_mysql__slow_0
+      - transform/logging_mysql__slow_1
+      - transform/logging_mysql__slow_2
+      - transform/logging_mysql__slow_3
+      - transform/logging_mysql__slow_4
       - resourcedetection/_global_0
       receivers:
-      - file_log/mysql__slow
+      - file_log/logging_mysql__slow
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud
