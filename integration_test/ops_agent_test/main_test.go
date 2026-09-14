@@ -1157,6 +1157,30 @@ func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	return nil
 }
 
+var expectedLargePayload = fmt.Sprintf("start%send", strings.Repeat("a", 250_000))
+
+func verifyLargeLog(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, logName string, query string) {
+	t.Helper()
+	entry, err := gce.QueryLog(ctx, logger, vm, logName, time.Hour, query, gce.LogQueryMaxAttempts)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	rawJSON, err := json.Marshal(entry.Payload)
+	if err != nil {
+		t.Errorf("Failed to marshal log payload: %v", err)
+		return
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rawJSON, &payload); err != nil {
+		t.Errorf("Failed to unmarshal log payload: %v", err)
+		return
+	}
+	if got, ok := payload["large"].(string); !ok || got != expectedLargePayload {
+		t.Errorf("got jsonPayload.large of length %d (ok=%v), want exact match of length %d", len(got), ok, len(expectedLargePayload))
+	}
+}
+
 func TestTCPLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -1196,9 +1220,9 @@ func TestTCPLog(t *testing.T) {
 			`{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}`,
 
 			// Verify a large log that's reasonably close to the limit of 256 KB.
-			// Use "start" and "end" for querying later because the max query size
-			// is only 20 KB.
-			fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000)),
+			// Include a short exact-match identifier ("msg") for fast lookup to avoid
+			// Cloud Logging's 20 KB query filter limit and substring indexer lag on a 250 KB token.
+			fmt.Sprintf(`{"msg":"large_tcp_log", "large":%q}`, expectedLargePayload),
 		}
 		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, linesToWrite...); err != nil {
 			t.Fatalf("Error writing dummy TCP log lines: %v", err)
@@ -1218,7 +1242,11 @@ func TestTCPLog(t *testing.T) {
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 2"`)
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 3"`)
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 4"`)
-		addQueryToWaitGroup(`jsonPayload.large:"start" AND jsonPayload.large:"end"`)
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			verifyLargeLog(ctx, t, logger, vm, "tcp_logs", `jsonPayload.msg="large_tcp_log"`)
+		}()
 		waitGroup.Wait()
 	})
 }
@@ -1254,15 +1282,13 @@ func TestFluentForwardLog(t *testing.T) {
 		}
 
 		// Verify a large structured log that's reasonably close to the limit of 256 KB.
-		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
+		largeLog := fmt.Sprintf(`{"message":"large_fluent_forward_log", "large":%q}`, expectedLargePayload)
 		normalLog := `{"message":"some message", "field1":"value", "field2":"value" }`
 		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, largeLog, normalLog); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
-		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.large:"start" AND jsonPayload.large:"end"`); err != nil {
-			t.Error(err)
-		}
+		verifyLargeLog(ctx, t, logger, vm, "fluent_logs.forwarder_tag", `jsonPayload.message="large_fluent_forward_log"`)
 
 		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.message="some message" AND jsonPayload.field1="value" AND jsonPayload.field2="value"`); err != nil {
 			t.Error(err)
