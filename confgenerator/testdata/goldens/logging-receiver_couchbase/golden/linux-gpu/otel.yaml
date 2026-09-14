@@ -96,7 +96,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
-  logstransform/couchbase__general_0:
+  logstransform/logging_couchbase__general_0:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -109,7 +109,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/couchbase__goxdcr_0:
+  logstransform/logging_couchbase__goxdcr_0:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -669,7 +669,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/couchbase__general_1:
+  transform/logging_couchbase__general_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -730,7 +730,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/couchbase__general_2:
+  transform/logging_couchbase__general_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -749,7 +749,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/couchbase__general_3:
+  transform/logging_couchbase__general_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -778,7 +778,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "couchbase_general") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/couchbase__goxdcr_1:
+  transform/logging_couchbase__goxdcr_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -839,7 +839,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/couchbase__goxdcr_2:
+  transform/logging_couchbase__goxdcr_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -858,7 +858,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "WARN"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/couchbase__goxdcr_3:
+  transform/logging_couchbase__goxdcr_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -887,7 +887,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "couchbase_goxdcr") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/couchbase__http__access_0:
+  transform/logging_couchbase__http__access_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -950,7 +950,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/couchbase__http__access_1:
+  transform/logging_couchbase__http__access_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -958,7 +958,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/couchbase_http_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/couchbase__http__access_2:
+  transform/logging_couchbase__http__access_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1017,7 +1017,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/couchbase_http_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/couchbase__http__access_3:
+  transform/logging_couchbase__http__access_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1045,6 +1045,35 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "couchbase_http_access") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/loggingmetrics_0:
     error_mode: ignore
@@ -1079,37 +1108,8 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/syslog_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["value"], "test-mig") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["value"], "test-zone") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], "syslog") where cache["value"] == nil
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  file_log/couchbase__general:
+  file_log/logging_couchbase__general:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1128,7 +1128,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/couchbase__goxdcr:
+  file_log/logging_couchbase__goxdcr:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1143,7 +1143,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/couchbase__http__access:
+  file_log/logging_couchbase__http__access:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1159,7 +1159,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/syslog:
+  file_log/logging_syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1224,47 +1224,47 @@ service:
   extensions:
   - file_storage
   pipelines:
-    logs/logs_couchbase_couchbase__general:
+    logs/logs_couchbase_logging_couchbase__general:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/couchbase__general_0
-      - transform/couchbase__general_1
-      - transform/couchbase__general_2
-      - transform/couchbase__general_3
+      - logstransform/logging_couchbase__general_0
+      - transform/logging_couchbase__general_1
+      - transform/logging_couchbase__general_2
+      - transform/logging_couchbase__general_3
       - resourcedetection/_global_0
       receivers:
-      - file_log/couchbase__general
-    logs/logs_couchbase_couchbase__goxdcr:
+      - file_log/logging_couchbase__general
+    logs/logs_couchbase_logging_couchbase__goxdcr:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/couchbase__goxdcr_0
-      - transform/couchbase__goxdcr_1
-      - transform/couchbase__goxdcr_2
-      - transform/couchbase__goxdcr_3
+      - logstransform/logging_couchbase__goxdcr_0
+      - transform/logging_couchbase__goxdcr_1
+      - transform/logging_couchbase__goxdcr_2
+      - transform/logging_couchbase__goxdcr_3
       - resourcedetection/_global_0
       receivers:
-      - file_log/couchbase__goxdcr
-    logs/logs_couchbase_couchbase__http__access:
+      - file_log/logging_couchbase__goxdcr
+    logs/logs_couchbase_logging_couchbase__http__access:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/couchbase__http__access_0
-      - transform/couchbase__http__access_1
-      - transform/couchbase__http__access_2
-      - transform/couchbase__http__access_3
+      - transform/logging_couchbase__http__access_0
+      - transform/logging_couchbase__http__access_1
+      - transform/logging_couchbase__http__access_2
+      - transform/logging_couchbase__http__access_3
       - resourcedetection/_global_0
       receivers:
-      - file_log/couchbase__http__access
-    logs/logs_default__pipeline_syslog:
+      - file_log/logging_couchbase__http__access
+    logs/logs_default__pipeline_logging_syslog:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/syslog_0
+      - transform/logging_syslog_0
       - resourcedetection/_global_0
       receivers:
-      - file_log/syslog
+      - file_log/logging_syslog
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud
