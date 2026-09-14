@@ -465,6 +465,10 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 		if i > 0 {
 			receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
 		}
+		if p.ReceiverSection != "" && p.ReceiverSection != "combined" {
+			// Prevent collision between a logging receiver named `foo` and a metrics receiver named `foo`.
+			receiverPipelineName = fmt.Sprintf("%s_%s", p.ReceiverSection, receiverPipelineName)
+		}
 
 		prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(p.PID, "_", "__"), receiverPipelineName)
 		if p.PipelineType != "metrics" {
