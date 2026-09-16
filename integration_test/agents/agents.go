@@ -984,13 +984,23 @@ func GetUAPPluginStatusForImage(imageSpec string) string {
 }
 
 func StartOpsAgentPluginWithBackoff(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	recoverWindowsServer := func(reason string, cause error) {
+		if gce.IsWindows(vm.ImageSpec) {
+			logger.Printf("%s failed on Windows (%v); re-running StartOpsAgentPluginServer...", reason, cause)
+			if serverErr := StartOpsAgentPluginServer(ctx, logger, vm, OpsAgentPluginServerPort); serverErr != nil {
+				logger.Printf("StartOpsAgentPluginServer recovery failed: %v", serverErr)
+			}
+		}
+	}
 	tryStartOpsAgent := func() error {
 		if _, err := gce.RunRemotely(ctx, logger, vm, StartCommandForImage(vm.ImageSpec)); err != nil {
+			recoverWindowsServer("StartCommandForImage", err)
 			return fmt.Errorf("failed to start Ops Agent: %v", err)
 		}
 		time.Sleep(8 * time.Second)
 		cmdOut, err := gce.RunRemotely(ctx, logger, vm, GetUAPPluginStatusForImage(vm.ImageSpec))
 		if err != nil {
+			recoverWindowsServer("GetUAPPluginStatusForImage", err)
 			return fmt.Errorf("failed to retrieve Ops Agent status: %v", err)
 		}
 		if !strings.Contains(cmdOut.Stdout, "is running ok") {
