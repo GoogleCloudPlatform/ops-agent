@@ -517,4 +517,102 @@
                 stringValue: test_user
         observedTimeUnixNano: now
         timeUnixNano: "1755509100000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: POST
+              - key: requestUrl
+                value:
+                  stringValue: /_event
+              - key: responseSize
+                value:
+                  stringValue: "2"
+              - key: status
+                value:
+                  stringValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: -
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: -
+            - key: message
+              value:
+                stringValue: "2"
+            - key: user
+              value:
+                stringValue: "@ns_server"
+        observedTimeUnixNano: now
+        timeUnixNano: "1789677760000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: POST
+              - key: requestUrl
+                value:
+                  stringValue: /_event
+              - key: responseSize
+                value:
+                  stringValue: "2"
+              - key: status
+                value:
+                  stringValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: -
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: -
+            - key: message
+              value:
+                stringValue: "1"
+            - key: user
+              value:
+                stringValue: "@ns_server"
+        observedTimeUnixNano: now
+        timeUnixNano: "1789677760000000000"
       scope: {}
