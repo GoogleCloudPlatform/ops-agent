@@ -216,25 +216,6 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
-// RunForEachImageAndFeatureFlag runs a subtest for each image and provide feature flags.
-func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody func(t *testing.T, imageSpec string, feature string)) {
-	t.Helper()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		t.Run(agents.DefaultFeatureFlag, func(t *testing.T) {
-			testBody(t, imageSpec, agents.DefaultFeatureFlag)
-		})
-		for _, feature := range features {
-			t.Run(feature, func(t *testing.T) {
-				// Feature flags currently don't work with how Ops Agent UAP Plugin runs.
-				if gce.IsOpsAgentUAPPlugin() {
-					t.SkipNow()
-				}
-				testBody(t, imageSpec, feature)
-			})
-		}
-	})
-}
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
@@ -4251,12 +4232,11 @@ traces:
 									Bounds: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
 								},
 							},
-							BucketCounts: []int64{0, 3},
 						},
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
+						BucketCounts: []int64{0, 3},
 					},
-					Optional: false,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
 				},
 				Optional: false,
 			},
@@ -4325,121 +4305,8 @@ traces:
 					MonitoredResources: []string{"prometheus_target"},
 					Labels:             expectedLabels,
 				},
-			}
-		} else {
-			tests = []metadata.ExpectedMetric{
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:               "prometheus.googleapis.com/otlp_test_gauge/gauge",
-						Kind:               metric.MetricDescriptor_GAUGE.String(),
-						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-						Value:              5.0,
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:               "prometheus.googleapis.com/otlp_test_cumulative/counter",
-						Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
-						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-						Value:              15.0,
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:      "prometheus.googleapis.com/otlp_test_histogram/histogram",
-						Kind:      metric.MetricDescriptor_CUMULATIVE.String(),
-						ValueType: metric.MetricDescriptor_DISTRIBUTION.String(),
-						Value: &distribution.Distribution{
-							Count:                 3,
-							Mean:                  2,
-							SumOfSquaredDeviation: 0.75,
-							BucketOptions: &distribution.Distribution_BucketOptions{
-								Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
-									ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
-										Bounds: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-									},
-								},
-							},
-							BucketCounts: []int64{0, 3},
-						},
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:               "prometheus.googleapis.com/otlp_test_updowncounter/gauge",
-						Kind:               metric.MetricDescriptor_GAUGE.String(),
-						ValueType:          metric.MetricDescriptor_INT64.String(),
-						Value:              3,
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:               "prometheus.googleapis.com/workload_googleapis_com_otlp_test_prefix1/gauge",
-						Kind:               metric.MetricDescriptor_GAUGE.String(),
-						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-						Value:              5.0,
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:               "prometheus.googleapis.com/invalid_googleapis_com_otlp_test_prefix2/gauge",
-						Kind:               metric.MetricDescriptor_GAUGE.String(),
-						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-						Value:              5.0,
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:               "prometheus.googleapis.com/otlp_test_prefix3_workload_googleapis_com_abc/gauge",
-						Kind:               metric.MetricDescriptor_GAUGE.String(),
-						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-						Value:              5.0,
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:               "prometheus.googleapis.com/WORKLOAD_GOOGLEAPIS_COM_otlp_test_prefix4/gauge",
-						Kind:               metric.MetricDescriptor_GAUGE.String(),
-						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-						Value:              5.0,
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-				{
-					MetricSpec: metadata.MetricSpec{
-						Type:               "prometheus.googleapis.com/WORKLOAD_googleapis_com_otlp_test_prefix5/gauge",
-						Kind:               metric.MetricDescriptor_GAUGE.String(),
-						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-						Value:              5.0,
-						MonitoredResources: []string{"prometheus_target"},
-						Labels:             expectedLabels,
-					},
-					Optional: false,
-				},
-			}
+				Optional: false,
+			},
 		}
 		var multiErr error
 		for _, test := range tests {
@@ -5677,7 +5544,6 @@ Environment="%s=40001"
 		// Verify that we can scrape metrics from the new ports with retries (waiting up to 60s for agent startup)
 		if err := verifyMetricsPort(ctx, logger, vm, 40001, "otelcol_"); err != nil {
 			t.Fatalf("Failed to scrape OTel Collector metrics on port 40001: %v", err)
-		}
 		}
 	})
 }
