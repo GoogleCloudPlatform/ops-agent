@@ -606,15 +606,14 @@ logging:
 		// level of the LogEntry and the rest to jsonPayload.
 		// N.B. sourceLocation.function is currently not working under OTel logging due to exporter/ingestion gaps.
 		// Tracked in b/517603547.
-		expectedTrace := fmt.Sprintf("projects/%s/traces/0123456789abcdef0123456789abcdef", vm.Project)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
-			fmt.Sprintf(`severity="WARNING" AND `+
+			`severity="WARNING" AND `+
 				`labels.label1="value1" AND labels.label2="value2" AND `+
 				`operation.id="id" AND operation.producer="producer" AND operation.first=true AND operation.last=true AND `+
 				`sourceLocation.file="file" AND sourceLocation.line="1" AND `+
-				`trace=%q AND `+
+				`trace="0123456789abcdef0123456789abcdef" AND `+
 				`spanId="0f1e2d3c4b5a6f7e" AND `+
-				`jsonPayload.normal_field="value"`, expectedTrace)); err != nil {
+				`jsonPayload.normal_field="value"`); err != nil {
 			t.Error(err)
 		}
 	})
