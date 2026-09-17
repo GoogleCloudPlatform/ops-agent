@@ -1157,6 +1157,30 @@ func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	return nil
 }
 
+var expectedLargePayload = fmt.Sprintf("start%send", strings.Repeat("a", 250_000))
+
+func verifyLargeLog(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, logName string, query string) {
+	t.Helper()
+	entry, err := gce.QueryLog(ctx, logger, vm, logName, time.Hour, query, gce.LogQueryMaxAttempts)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	rawJSON, err := json.Marshal(entry.Payload)
+	if err != nil {
+		t.Errorf("Failed to marshal log payload: %v", err)
+		return
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rawJSON, &payload); err != nil {
+		t.Errorf("Failed to unmarshal log payload: %v", err)
+		return
+	}
+	if got, ok := payload["large"].(string); !ok || got != expectedLargePayload {
+		t.Errorf("got jsonPayload.large of length %d (ok=%v), want exact match of length %d", len(got), ok, len(expectedLargePayload))
+	}
+}
+
 func TestTCPLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -1196,9 +1220,9 @@ func TestTCPLog(t *testing.T) {
 			`{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}`,
 
 			// Verify a large log that's reasonably close to the limit of 256 KB.
-			// Use "start" and "end" for querying later because the max query size
-			// is only 20 KB.
-			fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000)),
+			// Include a short exact-match identifier ("msg") for fast lookup to avoid
+			// Cloud Logging's 20 KB query filter limit and substring indexer lag on a 250 KB token.
+			fmt.Sprintf(`{"msg":"large_tcp_log", "large":%q}`, expectedLargePayload),
 		}
 		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, linesToWrite...); err != nil {
 			t.Fatalf("Error writing dummy TCP log lines: %v", err)
@@ -1218,7 +1242,11 @@ func TestTCPLog(t *testing.T) {
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 2"`)
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 3"`)
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 4"`)
-		addQueryToWaitGroup(`jsonPayload.large:"start" AND jsonPayload.large:"end"`)
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			verifyLargeLog(ctx, t, logger, vm, "tcp_logs", `jsonPayload.msg="large_tcp_log"`)
+		}()
 		waitGroup.Wait()
 	})
 }
@@ -1254,15 +1282,13 @@ func TestFluentForwardLog(t *testing.T) {
 		}
 
 		// Verify a large structured log that's reasonably close to the limit of 256 KB.
-		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
+		largeLog := fmt.Sprintf(`{"message":"large_fluent_forward_log", "large":%q}`, expectedLargePayload)
 		normalLog := `{"message":"some message", "field1":"value", "field2":"value" }`
 		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, largeLog, normalLog); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
-		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.large:"start" AND jsonPayload.large:"end"`); err != nil {
-			t.Error(err)
-		}
+		verifyLargeLog(ctx, t, logger, vm, "fluent_logs.forwarder_tag", `jsonPayload.message="large_fluent_forward_log"`)
 
 		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.message="some message" AND jsonPayload.field1="value" AND jsonPayload.field2="value"`); err != nil {
 			t.Error(err)
@@ -3828,6 +3854,14 @@ func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 	return nil
 }
 
+func runRemotelyWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM, cmd string, maxRetries uint64, interval time.Duration) error {
+	b := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(interval), maxRetries), ctx)
+	return backoff.Retry(func() error {
+		_, err := gce.RunRemotely(ctx, logger, vm, cmd)
+		return err
+	}, b)
+}
+
 // installGolang downloads and sets up go on the given VM. The caller is still
 // responsible for updating PATH to point to the installed binaries, see
 // `goPathCommandForImage`. If go is already installed, uninstall it first.
@@ -3850,9 +3884,15 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if gce.IsWindows(vm.ImageSpec) {
 		// TODO: host go windows installer in GCS if `go.dev` throttles us.
 		installCmd = fmt.Sprintf(`
-			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
-			Invoke-WebRequest "https://go.dev/dl/go%s.windows-%s.msi" -OutFile golang.msi
-			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion, goArch)
+			$ErrorActionPreference = "Stop"
+			[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+			if (-not (Test-Path C:\golang.msi)) {
+				Invoke-WebRequest -UseBasicParsing "https://go.dev/dl/go%s.windows-%s.msi" -OutFile C:\golang.msi.tmp
+				Move-Item -Force C:\golang.msi.tmp C:\golang.msi
+			}
+			$p = Start-Process msiexec.exe -ArgumentList "/i","C:\golang.msi","/quiet" -Wait -PassThru
+			if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit $p.ExitCode }
+			if (-not (Test-Path "C:\Program Files\Go\bin\go.exe")) { exit 1 }`, goVersion, goArch)
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -o pipefail
@@ -3860,8 +3900,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
-	_, err = gce.RunRemotely(ctx, logger, vm, installCmd)
-	return err
+	return runRemotelyWithRetry(ctx, logger, vm, installCmd, 10, 5*time.Second)
 }
 
 func goPathCommandForImage(imageSpec string) string {
@@ -3879,15 +3918,26 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 	if err := gce.UploadContent(ctx, logger, vm, content, path.Join(workDir, "main.go")); err != nil {
 		return err
 	}
-	goInitAndRun := fmt.Sprintf(`
-		%s
-		cd %s
-		go mod init main
-		go get ./...
-		go run main.go %s`,
-		goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
-	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
-	return err
+	var goInitAndRun string
+	if gce.IsWindows(vm.ImageSpec) {
+		goInitAndRun = fmt.Sprintf(`
+			%s
+			cd %s
+			if (-not (Test-Path go.mod)) { go mod init main; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }
+			go get ./...; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+			go run main.go %s; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }`,
+			goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
+	} else {
+		goInitAndRun = fmt.Sprintf(`
+			set -e
+			%s
+			cd %s
+			if [ ! -f go.mod ]; then go mod init main; fi
+			go get ./...
+			go run main.go %s`,
+			goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
+	}
+	return runRemotelyWithRetry(ctx, logger, vm, goInitAndRun, 5, 5*time.Second)
 }
 
 func TestOTLPMetricsGCM(t *testing.T) {
