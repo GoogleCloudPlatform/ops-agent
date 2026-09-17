@@ -642,7 +642,7 @@ logging:
 				`labels.label1="value1" AND labels.label2="value2" AND `+
 				`operation.id="id" AND operation.producer="producer" AND operation.first=true AND operation.last=true AND `+
 				`sourceLocation.file="file" AND sourceLocation.line="1" AND sourceLocation.function="function" AND `+
-				`trace="projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe" AND `+
+				`trace=~"projects/.*/traces/deadcafedeadc0defacefeedb0bacafe" AND `+
 				`spanId="facefeedb0bacafe" AND `+
 				`jsonPayload.normal_field="value"`); err != nil {
 			t.Error(err)
