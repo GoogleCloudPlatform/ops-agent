@@ -3857,6 +3857,14 @@ func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 	return nil
 }
 
+func runRemotelyWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM, cmd string, maxRetries uint64, interval time.Duration) error {
+	b := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(interval), maxRetries), ctx)
+	return backoff.Retry(func() error {
+		_, err := gce.RunRemotely(ctx, logger, vm, cmd)
+		return err
+	}, b)
+}
+
 // installGolang downloads and sets up go on the given VM. The caller is still
 // responsible for updating PATH to point to the installed binaries, see
 // `goPathCommandForImage`. If go is already installed, uninstall it first.
@@ -3879,10 +3887,15 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if gce.IsWindows(vm.ImageSpec) {
 		// TODO: host go windows installer in GCS if `go.dev` throttles us.
 		installCmd = fmt.Sprintf(`
+			$ErrorActionPreference = "Stop"
 			[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
-			Invoke-WebRequest -UseBasicParsing "https://go.dev/dl/go%s.windows-%s.msi" -OutFile golang.msi
-			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion, goArch)
+			if (-not (Test-Path C:\golang.msi)) {
+				Invoke-WebRequest -UseBasicParsing "https://go.dev/dl/go%s.windows-%s.msi" -OutFile C:\golang.msi.tmp
+				Move-Item -Force C:\golang.msi.tmp C:\golang.msi
+			}
+			$p = Start-Process msiexec.exe -ArgumentList "/i","C:\golang.msi","/quiet" -Wait -PassThru
+			if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit $p.ExitCode }
+			if (-not (Test-Path "C:\Program Files\Go\bin\go.exe")) { exit 1 }`, goVersion, goArch)
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -o pipefail
@@ -3890,8 +3903,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
-	_, err = gce.RunRemotely(ctx, logger, vm, installCmd)
-	return err
+	return runRemotelyWithRetry(ctx, logger, vm, installCmd, 10, 5*time.Second)
 }
 
 func goPathCommandForImage(imageSpec string) string {
@@ -3909,15 +3921,26 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 	if err := gce.UploadContent(ctx, logger, vm, content, path.Join(workDir, "main.go")); err != nil {
 		return err
 	}
-	goInitAndRun := fmt.Sprintf(`
-		%s
-		cd %s
-		go mod init main
-		go get ./...
-		go run main.go %s`,
-		goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
-	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
-	return err
+	var goInitAndRun string
+	if gce.IsWindows(vm.ImageSpec) {
+		goInitAndRun = fmt.Sprintf(`
+			%s
+			cd %s
+			if (-not (Test-Path go.mod)) { go mod init main; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }
+			go get ./...; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+			go run main.go %s; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }`,
+			goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
+	} else {
+		goInitAndRun = fmt.Sprintf(`
+			set -e
+			%s
+			cd %s
+			if [ ! -f go.mod ]; then go mod init main; fi
+			go get ./...
+			go run main.go %s`,
+			goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
+	}
+	return runRemotelyWithRetry(ctx, logger, vm, goInitAndRun, 5, 5*time.Second)
 }
 
 func TestOTLPMetricsGCM(t *testing.T) {
