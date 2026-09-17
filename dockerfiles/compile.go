@@ -82,9 +82,20 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "rpm",
 	},
 	{
-		from_image:  "rockylinux/rockylinux:10",
+		// Build against the oldest supported EL10 minor (10.0, OpenSSL 3.2).
+		// RHEL 10.1+ rebased OpenSSL to 3.5; binaries built there depend on
+		// OPENSSL_3.4.0 symbol versions that RHEL 10.0 (EUS) does not provide.
+		// Rocky mirrors only serve the latest 10.x, so the repos below are
+		// pointed at the 10.0 vault; pinning the image tag alone is not enough.
+		// TODO: b/558217946 - Revisit the 10.0 pin once fluent-bit no longer
+		// needs OpenSSL 3.4 symbols or RHEL 10.0 EUS is out of support.
+		from_image:  "rockylinux/rockylinux:10.0",
 		target_name: "rockylinux10",
-		install_packages: `RUN set -x; dnf -y update && \
+		install_packages: `RUN set -x; \
+		sed -i -e 's|^mirrorlist=|#mirrorlist=|' \
+		  -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir/$releasever|baseurl=https://dl.rockylinux.org/vault/rocky/10.0|' \
+		  /etc/yum.repos.d/rocky*.repo && \
+		dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
@@ -104,17 +115,6 @@ var dockerfileArguments = []templateArguments{
 		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bookworm",
-		package_extension: "deb",
-	},
-	{
-		from_image:  "debian:bullseye",
-		target_name: "bullseye",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
-		file libsystemd-dev \
-		devscripts cdbs pkg-config zip`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "debian-bullseye",
 		package_extension: "deb",
 	},
 	{
@@ -195,14 +195,14 @@ RUN ln -fs /usr/lib/systemd /lib/systemd`,
 		package_extension: "deb",
 	},
 	{
-		from_image:  "ubuntu:questing",
-		target_name: "questing",
+		from_image:  "ubuntu:resolute",
+		target_name: "resolute",
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
 		file systemd-dev debhelper libsystemd-dev tzdata \
 		devscripts cdbs pkg-config zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-questing",
+		tar_distro_name:   "ubuntu-resolute",
 		package_extension: "deb",
 	},
 }

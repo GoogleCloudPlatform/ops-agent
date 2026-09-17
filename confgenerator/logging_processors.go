@@ -72,15 +72,17 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 		}
 		switch fieldType {
 		case "string":
-			out = out.Append(a.Set(ottl.ToString(a)))
+			out = out.Append(a.SetIf(ottl.ToString(a), ottl.And(a.IsPresent(), ottl.IsNotNil(ottl.ToString(a)))))
 		case "integer":
-			out = out.Append(a.Set(ottl.ToInt(a)))
+			out = out.Append(a.SetIf(ottl.ToInt(a), ottl.And(a.IsPresent(), ottl.IsNotNil(ottl.ToInt(a)))))
 		case "bool":
 			out = out.Append(a.SetToBool(a))
 		case "float":
-			out = out.Append(a.Set(ottl.ToFloat(a)))
+			out = out.Append(a.SetIf(ottl.ToFloat(a), ottl.And(a.IsPresent(), ottl.IsNotNil(ottl.ToFloat(a)))))
 		case "hex":
-			out = out.Append(a.Set(ottl.ParseInt(a, 16)))
+			// ottl.ParseInt only parses hexadecimal strings without a leading "0x" prefix (e.g., "AF111", "-123F") and does not allow trailing whitespace. It does accept a leading "+" or "-" sign.
+			// ottl.ParseInt parses the string to an int64.
+			out = out.Append(a.SetIf(ottl.ParseInt(a, 16), ottl.And(a.IsPresent(), ottl.IsNotNil(ottl.ParseInt(a, 16)))))
 		default:
 			return nil, fmt.Errorf("type %q not supported for field %s", fieldType, m)
 		}

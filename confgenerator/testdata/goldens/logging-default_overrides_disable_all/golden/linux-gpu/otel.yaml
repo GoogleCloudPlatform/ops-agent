@@ -500,6 +500,7 @@ processors:
         label_set:
         - response_code
     - action: combine
+      aggregation_type: sum
       include: ^agent/log_entry_count$
       match_type: regexp
       new_name: agent/log_entry_count
@@ -672,6 +673,7 @@ processors:
         label_set:
         - status
     - action: combine
+      aggregation_type: sum
       include: otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points
       match_type: regexp
       new_name: agent/monitoring/point_count
@@ -789,7 +791,14 @@ receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
-      cpu: {}
+      cpu:
+        metrics:
+          system.cpu.logical.count:
+            enabled: false
+          system.cpu.time:
+            attributes:
+            - cpu
+            - state
       disk: {}
       filesystem: {}
       load: {}

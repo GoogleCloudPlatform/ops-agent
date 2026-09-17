@@ -80,7 +80,7 @@ type ExpectedMetric struct {
 	// Exclusive metric to a particular kind of platform.
 	Platform string `yaml:"platform,omitempty" validate:"excluded_with=Representative,omitempty,oneof=linux windows"`
 	// A list of platforms that this metric is not available on.
-	// Examples: debian-11. Not valid are linux,windows.
+	// Examples: debian-12. Not valid are linux,windows.
 	UnavailableOn []string `yaml:"unavailable_on,omitempty" validate:"excluded_with=Representative"`
 }
 
@@ -91,7 +91,7 @@ type LogField struct {
 	Description string `yaml:"description" validate:"excludesall=‘’“”"`
 	Optional    bool   `yaml:"optional,omitempty"`
 	// A list of platforms that this field is not available on.
-	// Examples: debian-11.
+	// Examples: debian-12.
 	UnavailableOn []string `yaml:"unavailable_on,omitempty"`
 	// Annotations/footnotes about the field.
 	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`

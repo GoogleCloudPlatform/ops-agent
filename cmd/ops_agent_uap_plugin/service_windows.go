@@ -108,7 +108,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Subagents config validation and generation.
-	if err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir); err != nil {
+	_, err = generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir)
+	if err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
 			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config, and generate sub-agents config: %s", err),
 			ShouldRestart: false,
@@ -202,10 +203,10 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 	return alreadyInstalledAgentServiceNames, nil
 }
 
-func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string) error {
+func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string) (*confgenerator.UnifiedConfig, error) {
 	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Printf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"])
@@ -213,7 +214,7 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 
 	// The generated otlp metric json files are used only by the otel service.
 	if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := uc.GenerateFilesFromConfig(
@@ -221,9 +222,9 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 		filepath.Join(pluginStateDir, LogsDirectory),
 		filepath.Join(pluginStateDir, RuntimeDirectory),
 		filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return uc, nil
 }
 
 func createWindowsJobHandle() (windows.Handle, error) {

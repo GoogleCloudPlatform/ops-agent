@@ -541,7 +541,7 @@ func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, err
 }
 
 func formatSystemTime(v ottl.LValue) ottl.Statements {
-	return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
+	return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s %z"))
 }
 
 func init() {

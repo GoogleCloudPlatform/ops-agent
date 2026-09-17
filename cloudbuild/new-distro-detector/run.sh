@@ -54,17 +54,32 @@ LAST_KNOWN_LIST="gs://stackdriver-test-143416-new-distro-detector/list_of_famili
 gcloud storage -q cp "${LAST_KNOWN_LIST}" - \
   | tee known_families.txt
 
-# If there is a difference, print the diff, and...
-if ! diff --ignore-all-space --ignore-blank-lines known_families.txt current_families.txt; then
-  # Print instructions for handling the error.
-  # Set +x temporarily so that the banner is only printed once.
+# Calculate added and removed distro families explicitly instead of using raw diff.
+ADDED="$(comm -13 <(sort known_families.txt) <(sort current_families.txt) | sed '/^$/d')"
+REMOVED="$(comm -23 <(sort known_families.txt) <(sort current_families.txt) | sed '/^$/d')"
+
+if [ -n "${ADDED}" ] || [ -n "${REMOVED}" ]; then
+  # Print explicit lists and instructions for handling the error.
+  # Set +x temporarily so that the banner is only printed once and remains easy to read.
   set +x
   echo '
-    ####################################################
-    #  See go/sdi-new-distro-detector#handling-errors  #
-    #  for instructions on handling this error.        #
-    ####################################################
-  '
+================================================================
+                    DISTRO CHANGES DETECTED                     
+================================================================'
+  if [ -n "${ADDED}" ]; then
+    echo "NEW DISTRO FAMILY ADDED (requires triage):"
+    echo "${ADDED}" | sed 's/^/  + /'
+    echo ""
+  fi
+  if [ -n "${REMOVED}" ]; then
+    echo "DISTRO FAMILY DEPRECATED / REMOVED:"
+    echo "${REMOVED}" | sed 's/^/  - /'
+    echo ""
+  fi
+  echo '####################################################
+#  See go/sdi-new-distro-detector#handling-errors  #
+#  for instructions on handling this error.        #
+####################################################'
   set -x
   # Upload the current list to the GCS bucket so that the next run passes.
   gcloud storage -q cp current_families.txt "${LAST_KNOWN_LIST}"

@@ -614,6 +614,8 @@ func FetchPackageVersions(ctx context.Context, logger *log.Logger, vm *gce.VM, p
 // isRetriableInstallError checks to see if the error may be transient.
 func isRetriableInstallError(imageSpec string, err error) bool {
 	if strings.Contains(err.Error(), "Could not refresh zypper repositories.") ||
+		strings.Contains(err.Error(), "Could not get lock") ||
+		strings.Contains(err.Error(), "Unable to acquire the dpkg frontend lock") ||
 		strings.Contains(err.Error(), "Credentials are invalid") ||
 		strings.Contains(err.Error(), "Resource temporarily unavailable") ||
 		strings.Contains(err.Error(), "System management is locked by the application") {
@@ -769,6 +771,24 @@ func windowsEnvironment(environment map[string]string) string {
 	return toEnvironment(environment, `$env:%s='%s'`, "\n")
 }
 
+func disableBrokenRepos(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	logger.Println("Attempting to disable known broken third-party repositories...")
+	// We disable 'ciq-sigcloud-next' on Rocky Linux/RHEL VMs because depot.ciq.com
+	// frequently times out, causing package manager commands (yum/dnf) to fail.
+	// This is a systemic external infrastructure flake.
+	disableCmd := `
+if command -v dnf &>/dev/null; then
+  sudo dnf config-manager --set-disabled ciq-sigcloud-next || true
+  if [ -f /etc/yum.repos.d/ciq-sigcloud-next.repo ]; then
+    sudo sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/ciq-sigcloud-next.repo || true
+  fi
+  sudo sed -i '/\[ciq-sigcloud-next\]/,/^\[/ s/enabled=1/enabled=0/' /etc/yum.repos.d/*.repo 2>/dev/null || true
+fi
+`
+	_, err := gce.RunRemotely(ctx, logger, vm, disableCmd)
+	return err
+}
+
 // InstallOpsAgent installs the Ops Agent on the given VM. Consults the given
 // PackageLocation to determine where to install the agent from. For details
 // about PackageLocation, see the documentation for the PackageLocation struct.
@@ -779,6 +799,12 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
+	}
+
+	if !gce.IsWindows(vm.ImageSpec) {
+		if err := disableBrokenRepos(ctx, logger, vm); err != nil {
+			logger.Printf("Warning: failed to disable broken repos (continuing anyway): %v", err)
+		}
 	}
 
 	if gce.IsOpsAgentUAPPlugin() {
@@ -1233,7 +1259,6 @@ func GetOtelConfigPath(imageSpec string) string {
 	}
 	return "/var/run/google-cloud-ops-agent/otel.yaml"
 }
-
 
 func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !IsRPMBased(vm.ImageSpec) {

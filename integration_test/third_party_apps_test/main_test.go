@@ -599,6 +599,18 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
+	if exporter == "otlphttp" {
+		configPath := agents.OpsAgentConfigPath(vm.ImageSpec)
+		content, err := gce.RetrieveContent(ctx, logger.ToMainLog(), vm, configPath)
+		if err != nil {
+			return nonRetryable, fmt.Errorf("error retrieving config: %v", err)
+		}
+		content = agents.SetOtlpExporterInConfig(content)
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(content), configPath); err != nil {
+			return nonRetryable, fmt.Errorf("error uploading config: %v", err)
+		}
+	}
+
 	if err := agents.RestartOpsAgent(ctx, logger.ToMainLog(), vm); err != nil {
 		return nonRetryable, fmt.Errorf("error restarting agent: %v", err)
 	}
@@ -850,7 +862,7 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-cloud:debian-11":     true,
+	"debian-cloud:debian-12":     true,
 	"windows-cloud:windows-2019": true,
 }
 

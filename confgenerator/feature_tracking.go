@@ -76,6 +76,7 @@ type CustomFeatures interface {
 // tag will be used instead of value from UnifiedConfig.
 func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Feature, error) {
 	allFeatures := getOverriddenDefaultPipelines(userUc)
+
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
 

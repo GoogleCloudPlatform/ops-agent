@@ -6,7 +6,7 @@ parameters as desired) and run:
 
 ```
 PROJECT=my_project \
-  DISTRO=debian-cloud:debian-11 \
+  DISTRO=debian-cloud:debian-12 \
   ZONES=us-central1-b \
   TTL=100m \
   LOG_SIZE_IN_BYTES=1000 \
@@ -26,7 +26,7 @@ You can set "FEATURE" to run the Ops Agent with an specific "EXPERIMENTAL_FEATUR
 
 ```
 PROJECT=my_project \
-  DISTRO=debian-cloud:debian-11 \
+  DISTRO=debian-cloud:debian-12 \
   ZONES=us-central1-b \
   TTL=100m \
   LOG_SIZE_IN_BYTES=1000 \

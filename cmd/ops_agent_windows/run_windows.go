@@ -53,6 +53,7 @@ type service struct {
 	log          debug.Log
 	userConf     string
 	outDirectory string
+	uc           *confgenerator.UnifiedConfig
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -162,6 +163,7 @@ func (s *service) generateConfigs(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	s.uc = uc
 
 	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"]))
 	s.log.Info(EngineEventID, fmt.Sprintf("Merged config:\n%s\n", uc))

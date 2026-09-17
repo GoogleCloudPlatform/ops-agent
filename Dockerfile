@@ -16,7 +16,7 @@
 # To re-generate, run from the repository root: go run ./dockerfiles
 
 # Build as DOCKER_BUILDKIT=1 docker build -o /tmp/out .
-# or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=bullseye
+# or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=bookworm
 # Generated tarball(s) will end up in /tmp/out
 
 
@@ -251,9 +251,13 @@ COPY --from=rockylinux9-build /google-cloud-ops-agent-plugin*.tar.gz /
 # Build Ops Agent for rockylinux-10
 # ======================================
 
-FROM rockylinux/rockylinux:10 AS rockylinux10-build-base
+FROM rockylinux/rockylinux:10.0 AS rockylinux10-build-base
 
-RUN set -x; dnf -y update && \
+RUN set -x; \
+		sed -i -e 's|^mirrorlist=|#mirrorlist=|' \
+		  -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir/$releasever|baseurl=https://dl.rockylinux.org/vault/rocky/10.0|' \
+		  /etc/yum.repos.d/rocky*.repo && \
+		dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
@@ -347,55 +351,6 @@ FROM scratch AS bookworm
 COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bookworm.tgz
 COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
 COPY --from=bookworm-build /google-cloud-ops-agent-plugin*.tar.gz /
-
-# ======================================
-# Build Ops Agent for debian-bullseye
-# ======================================
-
-FROM debian:bullseye AS bullseye-build-base
-
-RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
-		file libsystemd-dev \
-		devscripts cdbs pkg-config zip
-
-SHELL ["/bin/bash", "-c"]
-
-
-
-FROM bullseye-build-base AS bullseye-build-systemd
-WORKDIR /work
-COPY ./systemd systemd
-COPY ./builds/systemd.sh .
-RUN ./systemd.sh /work/cache/
-
-
-
-
-FROM bullseye-build-base AS bullseye-build
-WORKDIR /work
-COPY . /work
-
-# Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
-COPY --from=go-build /work/cache /work/cache
-
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-
-COPY --from=bullseye-build-systemd /work/cache /work/cache
-
-RUN ./pkg/deb/build.sh
-
-# Copy prebuilt plugin files to cache before packaging the plugin
-COPY --from=go-build /work/plugin-cache /work/cache
-
-RUN ./pkg/plugin/build.sh /work/cache bullseye
-
-
-FROM scratch AS bullseye
-COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bullseye.tgz
-COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
-COPY --from=bullseye-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for debian-trixie
@@ -701,10 +656,10 @@ COPY --from=noble-build /google-cloud-ops-agent*.deb /
 COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
-# Build Ops Agent for ubuntu-questing
+# Build Ops Agent for ubuntu-resolute
 # ======================================
 
-FROM ubuntu:questing AS questing-build-base
+FROM ubuntu:resolute AS resolute-build-base
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install systemd \
@@ -715,7 +670,7 @@ SHELL ["/bin/bash", "-c"]
 
 
 
-FROM questing-build-base AS questing-build-systemd
+FROM resolute-build-base AS resolute-build-systemd
 WORKDIR /work
 COPY ./systemd systemd
 COPY ./builds/systemd.sh .
@@ -724,7 +679,7 @@ RUN ./systemd.sh /work/cache/
 
 
 
-FROM questing-build-base AS questing-build
+FROM resolute-build-base AS resolute-build
 WORKDIR /work
 COPY . /work
 
@@ -734,31 +689,30 @@ COPY --from=go-build /work/cache /work/cache
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
-COPY --from=questing-build-systemd /work/cache /work/cache
+COPY --from=resolute-build-systemd /work/cache /work/cache
 
 RUN ./pkg/deb/build.sh
 
 # Copy prebuilt plugin files to cache before packaging the plugin
 COPY --from=go-build /work/plugin-cache /work/cache
 
-RUN ./pkg/plugin/build.sh /work/cache questing
+RUN ./pkg/plugin/build.sh /work/cache resolute
 
 
-FROM scratch AS questing
-COPY --from=questing-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-questing.tgz
-COPY --from=questing-build /google-cloud-ops-agent*.deb /
-COPY --from=questing-build /google-cloud-ops-agent-plugin*.tar.gz /
+FROM scratch AS resolute
+COPY --from=resolute-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-resolute.tgz
+COPY --from=resolute-build /google-cloud-ops-agent*.deb /
+COPY --from=resolute-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 FROM scratch
 COPY --from=centos8 /* /
 COPY --from=rockylinux9 /* /
 COPY --from=rockylinux10 /* /
 COPY --from=bookworm /* /
-COPY --from=bullseye /* /
 COPY --from=trixie /* /
 COPY --from=sles12 /* /
 COPY --from=sles15 /* /
 COPY --from=sles16 /* /
 COPY --from=jammy /* /
 COPY --from=noble /* /
-COPY --from=questing /* /
+COPY --from=resolute /* /

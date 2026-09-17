@@ -5,6 +5,7 @@ To upgrade the version of Go that the Ops Agent uses, update the version in the 
 * `go.mod` version restriction
 * The `GO_VERSION` arg in `dockerfiles/template-header`
 * `Dockerfile.windows` in the spot where it downloads and runs the Go MSI
+* The test runner container used in Kokoro tests, following the instructions at `go/sdi-integ-test#updating-the-test-runner-container`
 
 Once you have updated the Go version in the following places, verify the new version works:
 
