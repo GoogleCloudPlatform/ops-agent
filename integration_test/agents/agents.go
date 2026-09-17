@@ -1071,6 +1071,21 @@ func CommonSetupWithExtraCreateArguments(t *testing.T, imageSpec string, extraCr
 	return CommonSetupWithExtraCreateArgumentsAndMetadata(t, imageSpec, extraCreateArguments, nil)
 }
 
+// MetadataWithDLVMDefaults sets install-unattended-upgrades=false on additionalMetadata
+// for Deep Learning VM images (b/562959213).
+func MetadataWithDLVMDefaults(imageSpec string, additionalMetadata map[string]string) map[string]string {
+	if !gce.IsDLVMImage(imageSpec) {
+		return additionalMetadata
+	}
+	if additionalMetadata == nil {
+		additionalMetadata = make(map[string]string)
+	}
+	if _, ok := additionalMetadata["install-unattended-upgrades"]; !ok {
+		additionalMetadata["install-unattended-upgrades"] = "false"
+	}
+	return additionalMetadata
+}
+
 // CommonSetupWithExtraCreateArgumentsAndMetadata sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
 func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	t.Helper()
@@ -1089,7 +1104,7 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 		TimeToLive:           "3h",
 		MachineType:          RecommendedMachineType(imageSpec),
 		ExtraCreateArguments: extraCreateArguments,
-		Metadata:             additionalMetadata,
+		Metadata:             MetadataWithDLVMDefaults(imageSpec, additionalMetadata),
 	}
 	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
@@ -1117,7 +1132,7 @@ func ManagedInstanceGroupVMSetup(t *testing.T, imageSpec string, extraCreateArgu
 		TimeToLive:           "3h",
 		MachineType:          RecommendedMachineType(imageSpec),
 		ExtraCreateArguments: extraCreateArguments,
-		Metadata:             additionalMetadata,
+		Metadata:             MetadataWithDLVMDefaults(imageSpec, additionalMetadata),
 	}
 	migVM := gce.SetupManagedInstanceGroupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("ManagedInstanceGroupVM is ready: %#v", migVM.VM)
