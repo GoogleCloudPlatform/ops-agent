@@ -203,7 +203,7 @@ func Test_generateSubAgentConfigs(t *testing.T) {
 			}
 			userConfigFile.Close()
 
-			err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir)
+			_, err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir)
 			if (err != nil) != tc.wantError {
 				t.Errorf("generateSubAgentConfigs() returned error: %v, want error: %v", err, tc.wantError)
 			}

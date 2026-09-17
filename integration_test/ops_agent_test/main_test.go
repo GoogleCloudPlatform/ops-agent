@@ -64,6 +64,8 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	trace "cloud.google.com/go/trace/apiv1"
+	cloudtrace "cloud.google.com/go/trace/apiv1/tracepb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
@@ -77,7 +79,6 @@ import (
 	"google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v2"
 )
@@ -215,497 +216,6 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
-func TestParseMultilineFileJava(t *testing.T) {
-	t.Skip("Disabled until native OTel multiline parsing is implemented.")
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`logging:
-  receivers:
-    files_1:
-      type: files
-      include_paths: [%s]
-      record_log_file_path: true
-      wildcard_refresh_interval: 30s
-  processors:
-    multiline_parser_1:
-      type: parse_multiline
-      match_any:
-      - type: language_exceptions
-        language: java
-  service:
-    pipelines:
-      p1:
-        receivers: [files_1]
-        processors: [multiline_parser_1]`, logPath)
-
-		//Below lines comes from 3 java exception stacktraces, thus expect 3 logEntries.
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
-  at com.my.app.Object.do$a1(MakeLog.java:50)
-  at java.lang.Thing.call(Thing.java:10)
-javax.servlet.ServletException: Something bad happened
-    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)
-    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
-    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)
-    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
-    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)
-    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
-    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)
-    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)
-    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)
-    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)
-    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)
-    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)
-    at org.mortbay.jetty.Server.handle(Server.java:326)
-    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)
-    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)
-    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)
-    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)
-    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)
-    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)
-    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)
-Caused by: com.example.myproject.MyProjectServletException
-    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)
-    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)
-    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)
-    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)
-    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)
-    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)
-    ... 27 common frames omitted
-java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
-  nested exception is:
-com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
-	at java.util.Optional.ifPresent(Optional.java:159)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
-	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
-	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
-	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.base/java.lang.Thread.run(Thread.java:748)
-Caused by: javax.mail.SendFailedException: Invalid Addresses;
-  nested exception is:
-com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
-	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
-	... 12 more
-Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-`), logPath); err != nil {
-			t.Fatalf("error writing dummy log lines for Java: %v", err)
-		}
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted"`); err != nil {
-			t.Error(err)
-		}
-	})
-}
-
-func TestParseMultilineFileJavaPython(t *testing.T) {
-	t.Skip("Disabled until native OTel multiline parsing is implemented.")
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`logging:
-  receivers:
-    files_1:
-      type: files
-      include_paths: [%s]
-      wildcard_refresh_interval: 30s
-  processors:
-    multiline_parser_1:
-      type: parse_multiline
-      match_any:
-      - type: language_exceptions
-        language: java
-      - type: language_exceptions
-        language: python
-  service:
-    pipelines:
-      p1:
-        receivers: [files_1]
-        processors: [multiline_parser_1]`, logPath)
-
-		//Below lines comes from 3 java and 3 python exception stacktraces, thus expect 6 logEntries.
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
-  at com.my.app.Object.do$a1(MakeLog.java:50)
-  at java.lang.Thing.call(Thing.java:10)
-Traceback (most recent call last):
-  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
-    rv = self.handle_exception(request, response, e)
-  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
-    return get()
-  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
-    raise Exception('spam', 'eggs')
-Exception: ('spam', 'eggs')
-javax.servlet.ServletException: Something bad happened
-    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)
-    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
-    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)
-    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
-    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)
-    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
-    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)
-    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)
-    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)
-    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)
-    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)
-    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)
-    at org.mortbay.jetty.Server.handle(Server.java:326)
-    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)
-    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)
-    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)
-    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)
-    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)
-    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)
-    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)
-Caused by: com.example.myproject.MyProjectServletException
-    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)
-    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)
-    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)
-    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)
-    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)
-    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)
-    ... 27 common frames omitted
-java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
-  nested exception is:
-com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
-	at java.util.Optional.ifPresent(Optional.java:159)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
-	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
-	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
-	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.base/java.lang.Thread.run(Thread.java:748)
-Caused by: javax.mail.SendFailedException: Invalid Addresses;
-  nested exception is:
-com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
-	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
-	... 12 more
-Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-Traceback (most recent call last):
-  File "/test/exception.py", line 21, in <module>
-    conn.request("GET", "/")
-  File "/usr/lib/python3.10/http/client.py", line 1282, in request
-    self._send_request(method, url, body, headers, encode_chunked)
-  File "/usr/lib/python3.10/http/client.py", line 1328, in _send_request
-    self.endheaders(body, encode_chunked=encode_chunked)
-  File "/usr/lib/python3.10/http/client.py", line 1277, in endheaders
-    self._send_output(message_body, encode_chunked=encode_chunked)
-  File "/usr/lib/python3.10/http/client.py", line 1037, in _send_output
-    self.send(msg)
-  File "/usr/lib/python3.10/http/client.py", line 975, in send
-    self.connect()
-  File "/usr/lib/python3.10/http/client.py", line 941, in connect
-    self.sock = self._create_connection(
-  File "/usr/lib/python3.10/socket.py", line 824, in create_connection
-    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
-  File "/usr/lib/python3.10/socket.py", line 955, in getaddrinfo
-    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
-socket.gaierror: [Errno -2] Name or service not known
-Traceback (most recent call last):
-  File "/usr/local/google/home/lujieduan/source/test/exception.py", line 11, in <module>
-    '2' + 2
-TypeError: can only concatenate str (not "int") to str
-`), logPath); err != nil {
-			t.Fatalf("error writing dummy log lines for Java + Python: %v", err)
-		}
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		// 1st one is Java
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)"`); err != nil {
-			t.Error(err)
-		}
-
-		// 2nd Python
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')"`); err != nil {
-			t.Error(err)
-		}
-
-		// 3rd Java
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted"`); err != nil {
-			t.Error(err)
-		}
-
-		// 4th Java
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied"`); err != nil {
-			t.Error(err)
-		}
-
-		// 5th Python
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/test/exception.py\", line 21, in <module>\n    conn.request(\"GET\", \"/\")\n  File \"/usr/lib/python3.10/http/client.py\", line 1282, in request\n    self._send_request(method, url, body, headers, encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1328, in _send_request\n    self.endheaders(body, encode_chunked=encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1277, in endheaders\n    self._send_output(message_body, encode_chunked=encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1037, in _send_output\n    self.send(msg)\n  File \"/usr/lib/python3.10/http/client.py\", line 975, in send\n    self.connect()\n  File \"/usr/lib/python3.10/http/client.py\", line 941, in connect\n    self.sock = self._create_connection(\n  File \"/usr/lib/python3.10/socket.py\", line 824, in create_connection\n    for res in getaddrinfo(host, port, 0, SOCK_STREAM):\n  File \"/usr/lib/python3.10/socket.py\", line 955, in getaddrinfo\n    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):\nsocket.gaierror: [Errno -2] Name or service not known"`); err != nil {
-			t.Error(err)
-		}
-
-		// 6th Python
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/usr/local/google/home/lujieduan/source/test/exception.py\", line 11, in <module>\n    '2' + 2\nTypeError: can only concatenate str (not \"int\") to str"`); err != nil {
-			t.Error(err)
-		}
-	})
-}
-
-func TestParseMultilineFileGolangJavaPython(t *testing.T) {
-	t.Skip("Disabled until native OTel multiline parsing is implemented.")
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`logging:
-  receivers:
-    files_1:
-      type: files
-      include_paths: [%s]
-      wildcard_refresh_interval: 30s
-  processors:
-    multiline_parser_1:
-      type: parse_multiline
-      match_any:
-      - type: language_exceptions
-        language: go
-      - type: language_exceptions
-        language: java
-      - type: language_exceptions
-        language: python
-  service:
-    pipelines:
-      p1:
-        receivers: [files_1]
-        processors: [multiline_parser_1]`, logPath)
-
-		//Below lines comes from Go, Python and Java exception stacktraces.
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
-goroutine 24 [running]:
-net/http.(*conn).serve.func1(0xc00007eaa0)
-	/usr/local/go/src/net/http/server.go:1746 +0xd0
-panic(0x12472a0, 0x12ece10)
-	/usr/local/go/src/runtime/panic.go:513 +0x1b9
-main.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)
-	/Users/ingvar/src/go/src/httppanic.go:8 +0x39
-net/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
-	/usr/local/go/src/net/http/server.go:1964 +0x44
-net/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
-	/usr/local/go/src/net/http/server.go:2361 +0x127
-net/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
-	/usr/local/go/src/net/http/server.go:2741 +0xab
-net/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)
-	/usr/local/go/src/net/http/server.go:1847 +0x646
-created by net/http.(*Server).Serve
-	/usr/local/go/src/net/http/server.go:2851 +0x2f5
-Traceback (most recent call last):
-  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
-    rv = self.handle_exception(request, response, e)
-  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
-    return get()
-  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
-    raise Exception('spam', 'eggs')
-Exception: ('spam', 'eggs')
-2023-07-09 00:00:00,000 ERROR    some_app custom string prefix to the exception: Traceback (most recent call last):
-  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
-    rv = self.handle_exception(request, response, e)
-  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
-    return get()
-  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
-    raise Exception('spam', 'eggs')
-Exception: ('spam', 'eggs')
-java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
-  nested exception is:
-com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
-	at java.util.Optional.ifPresent(Optional.java:159)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
-	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
-	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
-	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.base/java.lang.Thread.run(Thread.java:748)
-Caused by: javax.mail.SendFailedException: Invalid Addresses;
-  nested exception is:
-com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
-	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
-	... 12 more
-Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-`), logPath); err != nil {
-			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
-		}
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		// 1st one is Golang
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5"`); err != nil {
-			t.Error(err)
-		}
-
-		// 2nd Python
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')"`); err != nil {
-			t.Error(err)
-		}
-
-		// 3nd Python - With custom string prefix, common when using https://docs.python.org/3/library/logging.html#logging.Logger.exception
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2023-07-09 00:00:00,000 ERROR    some_app custom string prefix to the exception: Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')"`); err != nil {
-			t.Error(err)
-		}
-
-		// 3rd Java
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied"`); err != nil {
-			t.Error(err)
-		}
-	})
-}
-
-func TestParseMultilineFileMissingParser(t *testing.T) {
-	t.Skip("Disabled until native OTel multiline parsing is implemented.")
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		logPath := logPathForImage(vm.ImageSpec)
-		// In the config file, only match for Golang exceptions
-		config := fmt.Sprintf(`logging:
-  receivers:
-    files_1:
-      type: files
-      include_paths: [%s]
-      wildcard_refresh_interval: 30s
-  processors:
-    multiline_parser_1:
-      type: parse_multiline
-      match_any:
-      - type: language_exceptions
-        language: go
-  service:
-    pipelines:
-      p1:
-        receivers: [files_1]
-        processors: [multiline_parser_1]`, logPath)
-
-		//Below lines comes from Go, Python and Java exception stacktraces.
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
-goroutine 24 [running]:
-net/http.(*conn).serve.func1(0xc00007eaa0)
-	/usr/local/go/src/net/http/server.go:1746 +0xd0
-panic(0x12472a0, 0x12ece10)
-	/usr/local/go/src/runtime/panic.go:513 +0x1b9
-main.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)
-	/Users/ingvar/src/go/src/httppanic.go:8 +0x39
-net/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
-	/usr/local/go/src/net/http/server.go:1964 +0x44
-net/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
-	/usr/local/go/src/net/http/server.go:2361 +0x127
-net/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
-	/usr/local/go/src/net/http/server.go:2741 +0xab
-net/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)
-	/usr/local/go/src/net/http/server.go:1847 +0x646
-created by net/http.(*Server).Serve
-	/usr/local/go/src/net/http/server.go:2851 +0x2f5
-Traceback (most recent call last):
-  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
-    rv = self.handle_exception(request, response, e)
-  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
-    return get()
-  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
-    raise Exception('spam', 'eggs')
-Exception: ('spam', 'eggs')
-java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
-  nested exception is:
-com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
-	at java.util.Optional.ifPresent(Optional.java:159)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
-	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
-	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
-	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.base/java.lang.Thread.run(Thread.java:748)
-Caused by: javax.mail.SendFailedException: Invalid Addresses;
-  nested exception is:
-com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
-	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
-	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
-	... 12 more
-Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
-`), logPath); err != nil {
-			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
-		}
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		// 1st one is Golang
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5"`); err != nil {
-			t.Error(err)
-		}
-
-		// 2nd one is Python - the golang parser will send those lines as single-line logs
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):"`); err != nil {
-			t.Error(err)
-		}
-
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="    raise Exception('spam', 'eggs')"`); err != nil {
-			t.Error(err)
-		}
-
-		// 3rd one is Java - the golang parser will send those lines as single-line logs
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;"`); err != nil {
-			t.Error(err)
-		}
-
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied"`); err != nil {
-			t.Error(err)
-		}
-	})
-}
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
@@ -864,9 +374,11 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 		time.Sleep(10 * time.Second)
 
-		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
-		if pid != "" {
-			t.Error("expected the plugin to terminate otel subagent process when the parent gRPC server process terminates")
+		for _, pn := range metricsAgentProcessNamesForImage(vm.ImageSpec) {
+			pid, _ := fetchPID(ctx, logger, vm, pn)
+			if pid != "" {
+				t.Errorf("expected the plugin to terminate %s subagent process when the parent gRPC server process terminates", pn)
+			}
 		}
 
 	})
@@ -1231,78 +743,6 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
 	})
 }
 
-func TestProcessorOrder(t *testing.T) {
-	// See b/194632049 and b/195105380.  In that bug, the generated Fluent Bit
-	// config had mis-ordered filters: json2 came before json1 because "log"
-	// sorts before "message".  The correct order is json1 then json2.
-	//
-	// Due to the bug, the log contents came through as a string, not as
-	// parsed JSON.
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-
-		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`logging:
-  receivers:
-    mylog_source:
-      type: files
-      include_paths:
-      - %s
-  exporters:
-    google:
-      type: google_cloud_logging
-  processors:
-    json1:
-      type: parse_json
-      field: message
-      time_key: time
-      time_format: "%s"
-    json2:
-      type: parse_json
-      field: log
-  service:
-    pipelines:
-      my_pipeline:
-        receivers: [mylog_source]
-        processors: [json1, json2]
-        exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
-		// correctly in windows (b/218888265).
-		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\",\"overwritten\":\"yes\"}\n","time":"%s","preserved":"yes","overwritten":"no"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
-		}
-
-		entry, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, "", gce.LogQueryMaxAttempts)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		want := &structpb.Struct{Fields: map[string]*structpb.Value{
-			"level":       {Kind: &structpb.Value_StringValue{StringValue: "info"}},
-			"message":     {Kind: &structpb.Value_StringValue{StringValue: "start"}},
-			"preserved":   {Kind: &structpb.Value_StringValue{StringValue: "yes"}},
-			"overwritten": {Kind: &structpb.Value_StringValue{StringValue: "yes"}},
-		}}
-
-		got, ok := entry.Payload.(proto.Message)
-		if !ok {
-			t.Fatalf("got %+v of type %T, want type proto.Message", entry.Payload, entry.Payload)
-		}
-		if !proto.Equal(got, want) {
-			t.Errorf("got %+v, want %+v", got, want)
-		}
-	})
-}
-
 func TestSyslogTCP(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -1412,268 +852,6 @@ func TestSyslogUDP(t *testing.T) {
 	})
 }
 
-func TestExcludeLogs(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
-		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
-
-		// p1: validate the contains operator
-		// p2: validate that a rule which doesn't exclude a log but still matches
-		//     an individual regex pattern cleans up the temporary __match fields
-		config := fmt.Sprintf(`logging:
-  receivers:
-    f1:
-      type: files
-      include_paths:
-      - %s
-    f2:
-      type: files
-      include_paths:
-      - %s
-  processors:
-    exclude1:
-      type: exclude_logs
-      match_any:
-      - 'jsonPayload.field: "pattern"'
-    exclude2:
-      type: exclude_logs
-      match_any:
-      - 'jsonPayload.field1 = "first" AND jsonPayload.field2 =~ "second"'
-    json:
-      type: parse_json
-  service:
-    pipelines:
-      p1:
-        receivers: [f1]
-        processors: [json, exclude1]
-      p2:
-        receivers: [f2]
-        processors: [json, exclude2]
-`, file1, file2)
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		logContents1 := `{"field":"string containing pattern"}` + "\n"
-		logContents1 += `{"field":"other"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(logContents1), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-
-		logContents2 := `{"field1":"nope, include me!", "field2":"second"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(logContents2), file2); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-
-		// p1: Expect to see the log that doesn't have pattern in it.
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"other"`); err != nil {
-			t.Error(err)
-		}
-		// p1: Give the excluded log some time to show up.
-		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		// p2: Expect to see the log.
-		resultingLog2, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.LogQueryMaxAttempts)
-		if err != nil {
-			t.Error(err)
-		}
-		// p2: Verify that there are no vestigial __match_ fields.
-		payload := &structpb.Struct{}
-		if resultingLog2 != nil && resultingLog2.Payload != nil {
-			payload = resultingLog2.Payload.(*structpb.Struct)
-		}
-
-		for k := range payload.GetFields() {
-			if strings.HasPrefix(k, "__match_") {
-				t.Errorf("unexpected vestigial field: %s", k)
-			}
-		}
-	})
-}
-
-func TestExcludeLogsParseJsonOrder(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
-		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
-
-		// This exclude_logs processor operates on a non-default field which is
-		// present if and only if the log is structured accordingly.
-		// The intended mechanism for inputting structured logs from a file is to
-		// use a parse_json processor. Since processors operate in the order in
-		// which they're written, the expectation is that if a parse_json processor
-		// comes before the exclude_logs processor then the log is
-		// excluded. (pipeline p1)
-		// Conversely, if a parse_json processor comes after the exclude_logs
-		// processor then the log is not excluded: the log inputted to exclude_logs
-		// is unstructured, and unstructured logs do not contain non-default
-		// fields, so it cannot be matched by the match_any expression
-		// below. (pipeline p2)
-		config := fmt.Sprintf(`logging:
-  receivers:
-    f1:
-      type: files
-      include_paths:
-      - %s
-    f2:
-      type: files
-      include_paths:
-      - %s
-  processors:
-    exclude:
-      type: exclude_logs
-      match_any:
-      - jsonPayload.field =~ "value"
-    json:
-      type: parse_json
-  exporters:
-    google:
-      type: google_cloud_logging
-  service:
-    pipelines:
-      p1:
-        receivers: [f1]
-        processors: [exclude, json]
-        exporters: [google]
-      p2:
-        receivers: [f2]
-        processors: [json, exclude]
-        exporters: [google]
-`, file1, file2)
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		line := `{"field":"value"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file2); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-
-		// Expect to see the log included in p1 but not p2.
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field="value"`); err != nil {
-			t.Error(err)
-		}
-		// Give the excluded log some time to show up.
-		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field="value"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-}
-
-func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
-		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
-		file3 := fmt.Sprintf("%s_3", logPathForImage(vm.ImageSpec))
-
-		// This exclude_logs processor operates on a non-default field which is
-		// present if and only if the log is structured accordingly.
-		// The intended mechanism for inputting structured logs from a file is
-		// to use a parse_json processor, and the processor will automatically
-		// recongnize special fields for the LogEntry and place them at the top
-		// level and can be used by the exclude_logs processor to filter logs.
-		// (pipeline p1)
-		// For top level fields that set by modify_fields, since processors
-		// operate in the order in which they're written, the expectation is
-		// that if a modify_fields processor comes before the exclude_logs
-		// processor then the log is excluded. (pipeline p2)
-		// Conversely, if a modify_fields processor comes after the exclude_logs
-		// processor then the log is not excluded. (pipeline p3)
-		config := fmt.Sprintf(`logging:
-  receivers:
-    f1:
-      type: files
-      include_paths:
-      - %s
-    f2:
-      type: files
-      include_paths:
-      - %s
-    f3:
-      type: files
-      include_paths:
-      - %s
-  processors:
-    exclude_trace:
-      type: exclude_logs
-      match_any:
-      - trace =~ "deadcafedeadc0defacefeedb0bacafe"
-    exclude_span_id:
-      type: exclude_logs
-      match_any:
-      - spanId =~ "facefeedb0bacafe"
-    modify:
-      type: modify_fields
-      fields:
-        trace:
-          move_from: jsonPayload.none
-          default_value: deadcafedeadc0defacefeedb0bacafe
-    json:
-      type: parse_json
-  service:
-    pipelines:
-      p1:
-        receivers: [f1]
-        processors: [json, exclude_span_id]
-      p2:
-        receivers: [f2]
-        processors: [json, modify, exclude_trace]
-      p3:
-        receivers: [f3]
-        processors: [json, exclude_trace, modify]
-`, file1, file2, file3)
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		line := `{"logging.googleapis.com/spanId":"facefeedb0bacafe", "query_field": "value"}` + "\n"
-		for _, file := range []string{file1, file2, file3} {
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file); err != nil {
-				t.Fatalf("error uploading log: %v", err)
-			}
-		}
-
-		// Expect to see the log included in p3 but not p1 and p2.
-		if err := gce.WaitForLog(ctx, logger, vm, "f3", time.Hour, `jsonPayload.query_field="value"`); err != nil {
-			t.Error(err)
-		}
-		// Give the excluded log some time to show up.
-		time.Sleep(60 * time.Second)
-		for _, name := range []string{"f1", "f2"} {
-			_, err := gce.QueryLog(ctx, logger, vm, name, time.Hour, `jsonPayload.query_field="value"`, 5)
-			if err == nil {
-				t.Error("expected log to be excluded but was included")
-			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-				t.Fatalf("unexpected error: %v", err)
-			}
-		}
-	})
-}
-
 func TestModifyFields(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -1748,73 +926,6 @@ func TestModifyFields(t *testing.T) {
 
 		// Expect to see the log with the modifications applied
 		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace =~ "deadcafedeadc0defacefeedb0bacafe" AND NOT jsonPayload.trace:* AND spanId = "facefeedb0bacafe" AND jsonPayload.spanId = "facefeedb0bacafe"`); err != nil {
-			t.Error(err)
-		}
-	})
-}
-
-func TestParseWithConflictsWithRecord(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
-		configStr := `
-logging:
-  receivers:
-    f1:
-      type: files
-      include_paths:
-        - %s
-  processors:
-    modify:
-      type: modify_fields
-      fields:
-        labels."non-overwritten-label":
-          static_value: non-overwritten
-        labels."overwritten-label":
-          static_value: non-overwritten
-        labels."original-label":
-          static_value: original-label
-        severity:
-          static_value: WARNING
-        sourceLocation.file:
-          static_value: non-overwritten-file-path
-        jsonPayload."non-overwritten-field":
-          static_value: non-overwritten
-        jsonPayload."overwritten-field":
-          static_value: non-overwritten
-        jsonPayload."original-field":
-          static_value: original-value
-    json:
-      type: parse_json
-  exporters:
-    google:
-      type: google_cloud_logging
-  service:
-    pipelines:
-      p1:
-        receivers:
-          - f1
-        processors:
-          - modify
-          - json
-        exporters:
-          - google
-`
-		config := fmt.Sprintf(configStr, file1)
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		line := `{"parsed-field":"parsed-value", "overwritten-field":"overwritten", "logging.googleapis.com/labels": {"parsed-label":"parsed-label", "overwritten-label":"overwritten"}, "logging.googleapis.com/sourceLocation": {"file": "overwritten-file-path"}}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-
-		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour,
-			`jsonPayload.original-field="original-value" AND jsonPayload.parsed-field="parsed-value" AND jsonPayload.non-overwritten-field="non-overwritten" AND jsonPayload.overwritten-field="overwritten" AND labels.original-label="original-label" AND labels.parsed-label="parsed-label" AND labels.non-overwritten-label="non-overwritten" AND labels.overwritten-label="overwritten" AND severity="WARNING" AND sourceLocation.file="overwritten-file-path"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -2016,6 +1127,30 @@ func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	return nil
 }
 
+var expectedLargePayload = fmt.Sprintf("start%send", strings.Repeat("a", 250_000))
+
+func verifyLargeLog(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, logName string, query string) {
+	t.Helper()
+	entry, err := gce.QueryLog(ctx, logger, vm, logName, time.Hour, query, gce.LogQueryMaxAttempts)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	rawJSON, err := json.Marshal(entry.Payload)
+	if err != nil {
+		t.Errorf("Failed to marshal log payload: %v", err)
+		return
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rawJSON, &payload); err != nil {
+		t.Errorf("Failed to unmarshal log payload: %v", err)
+		return
+	}
+	if got, ok := payload["large"].(string); !ok || got != expectedLargePayload {
+		t.Errorf("got jsonPayload.large of length %d (ok=%v), want exact match of length %d", len(got), ok, len(expectedLargePayload))
+	}
+}
+
 func TestTCPLog(t *testing.T) {
 	t.Skip("Disabled until native OTel TCP receiver is implemented.")
 	t.Parallel()
@@ -2056,9 +1191,9 @@ func TestTCPLog(t *testing.T) {
 			`{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}`,
 
 			// Verify a large log that's reasonably close to the limit of 256 KB.
-			// Use "start" and "end" for querying later because the max query size
-			// is only 20 KB.
-			fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000)),
+			// Include a short exact-match identifier ("msg") for fast lookup to avoid
+			// Cloud Logging's 20 KB query filter limit and substring indexer lag on a 250 KB token.
+			fmt.Sprintf(`{"msg":"large_tcp_log", "large":%q}`, expectedLargePayload),
 		}
 		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, linesToWrite...); err != nil {
 			t.Fatalf("Error writing dummy TCP log lines: %v", err)
@@ -2078,7 +1213,11 @@ func TestTCPLog(t *testing.T) {
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 2"`)
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 3"`)
 		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 4"`)
-		addQueryToWaitGroup(`jsonPayload.large:"start" AND jsonPayload.large:"end"`)
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			verifyLargeLog(ctx, t, logger, vm, "tcp_logs", `jsonPayload.msg="large_tcp_log"`)
+		}()
 		waitGroup.Wait()
 	})
 }
@@ -2115,15 +1254,13 @@ func TestFluentForwardLog(t *testing.T) {
 		}
 
 		// Verify a large structured log that's reasonably close to the limit of 256 KB.
-		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
+		largeLog := fmt.Sprintf(`{"message":"large_fluent_forward_log", "large":%q}`, expectedLargePayload)
 		normalLog := `{"message":"some message", "field1":"value", "field2":"value" }`
 		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, largeLog, normalLog); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
-		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.large:"start" AND jsonPayload.large:"end"`); err != nil {
-			t.Error(err)
-		}
+		verifyLargeLog(ctx, t, logger, vm, "fluent_logs.forwarder_tag", `jsonPayload.message="large_fluent_forward_log"`)
 
 		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.message="some message" AND jsonPayload.field1="value" AND jsonPayload.field2="value"`); err != nil {
 			t.Error(err)
@@ -4260,17 +3397,31 @@ func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName s
 }
 
 // fetchPIDAndProcessName returns the process ID and name of the first matching process from a given list of names on the given VM.
+// It retries for up to 30 seconds to allow asynchronously spawned subagents time to register in the process table.
 func fetchPIDAndProcessName(ctx context.Context, logger *log.Logger, vm *gce.VM, processNames []string) (string, string, error) {
-	var errors error
-	for _, pn := range processNames {
-		output, err := fetchPID(ctx, logger, vm, pn)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-		} else {
-			return output, pn, nil
+	b := backoff.WithContext(
+		backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 15),
+		ctx,
+	)
+	var output, matchedName string
+	err := backoff.Retry(func() error {
+		var errors error
+		for _, pn := range processNames {
+			out, err := fetchPID(ctx, logger, vm, pn)
+			if err != nil {
+				errors = multierr.Append(errors, err)
+			} else if out != "" {
+				output = out
+				matchedName = pn
+				return nil
+			}
 		}
+		return errors
+	}, b)
+	if err != nil {
+		return "", "", err
 	}
-	return "", "", errors
+	return output, matchedName, nil
 }
 
 func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, processName string) error {
@@ -4439,7 +3590,19 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 
 		// 3. Check the error log for a message about Ops Agent conflicting with standalone agent.
 		if gce.IsOpsAgentUAPPlugin() {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+			var cmdOut gce.CommandOutput
+			b := backoff.WithContext(
+				backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 30),
+				ctx,
+			)
+			err := backoff.Retry(func() error {
+				out, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+				if err != nil {
+					return err
+				}
+				cmdOut = out
+				return nil
+			}, b)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -4659,6 +3822,14 @@ func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 	return nil
 }
 
+func runRemotelyWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM, cmd string, maxRetries uint64, interval time.Duration) error {
+	b := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(interval), maxRetries), ctx)
+	return backoff.Retry(func() error {
+		_, err := gce.RunRemotely(ctx, logger, vm, cmd)
+		return err
+	}, b)
+}
+
 // installGolang downloads and sets up go on the given VM. The caller is still
 // responsible for updating PATH to point to the installed binaries, see
 // `goPathCommandForImage`. If go is already installed, uninstall it first.
@@ -4681,9 +3852,15 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if gce.IsWindows(vm.ImageSpec) {
 		// TODO: host go windows installer in GCS if `go.dev` throttles us.
 		installCmd = fmt.Sprintf(`
-			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
-			Invoke-WebRequest "https://go.dev/dl/go%s.windows-%s.msi" -OutFile golang.msi
-			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion, goArch)
+			$ErrorActionPreference = "Stop"
+			[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+			if (-not (Test-Path C:\golang.msi)) {
+				Invoke-WebRequest -UseBasicParsing "https://go.dev/dl/go%s.windows-%s.msi" -OutFile C:\golang.msi.tmp
+				Move-Item -Force C:\golang.msi.tmp C:\golang.msi
+			}
+			$p = Start-Process msiexec.exe -ArgumentList "/i","C:\golang.msi","/quiet" -Wait -PassThru
+			if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit $p.ExitCode }
+			if (-not (Test-Path "C:\Program Files\Go\bin\go.exe")) { exit 1 }`, goVersion, goArch)
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -o pipefail
@@ -4691,8 +3868,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
-	_, err = gce.RunRemotely(ctx, logger, vm, installCmd)
-	return err
+	return runRemotelyWithRetry(ctx, logger, vm, installCmd, 10, 5*time.Second)
 }
 
 func goPathCommandForImage(imageSpec string) string {
@@ -4710,15 +3886,26 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 	if err := gce.UploadContent(ctx, logger, vm, content, path.Join(workDir, "main.go")); err != nil {
 		return err
 	}
-	goInitAndRun := fmt.Sprintf(`
-		%s
-		cd %s
-		go mod init main
-		go get ./...
-		go run main.go %s`,
-		goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
-	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
-	return err
+	var goInitAndRun string
+	if gce.IsWindows(vm.ImageSpec) {
+		goInitAndRun = fmt.Sprintf(`
+			%s
+			cd %s
+			if (-not (Test-Path go.mod)) { go mod init main; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }
+			go get ./...; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+			go run main.go %s; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }`,
+			goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
+	} else {
+		goInitAndRun = fmt.Sprintf(`
+			set -e
+			%s
+			cd %s
+			if [ ! -f go.mod ]; then go mod init main; fi
+			go get ./...
+			go run main.go %s`,
+			goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
+	}
+	return runRemotelyWithRetry(ctx, logger, vm, goInitAndRun, 5, 5*time.Second)
 }
 
 func TestOTLPMetricsGCM(t *testing.T) {
@@ -5170,7 +4357,7 @@ traces:
 	})
 }
 
-func TestOTLPTraces(t *testing.T) {
+func TestOTLPTracesLegacy(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -5215,6 +4402,112 @@ metrics:
 		}
 		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
 			t.Error(err)
+		}
+	})
+}
+
+func TestOTLPTraces(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		otlpConfig := `
+global:
+  otlp_exporter: true
+combined:
+  receivers:
+    otlp:
+      type: otlp
+traces:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+metrics:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate trace traffic with dummy app
+		traceFile, err := testdataDir.Open(path.Join("testdata", "otlp", "traces.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer traceFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, traceFile); err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify the new flow trace has arrived in GCE.
+		// We filter for "host.id" since the agent's host-level resource detection processor
+		// appends host information (like host.id, which matches vm.ID) onto the trace resource attributes.
+		options := gce.WaitForTraceOptions{
+			Window: time.Hour,
+			Filters: []string{
+				fmt.Sprintf("+host.id:%d", vm.ID),
+			},
+		}
+		traceVal, err := gce.WaitForTrace(ctx, logger, vm, options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// gce.WaitForTrace only performs a lightweight check to ensure trace arrival and returns
+		// a shell structure containing only the Project ID and Trace ID. It does not fetch full
+		// span labels or trace metadata. To retrieve complete attributes (like custom resource
+		// and span attributes) for assertions, we must instantiate a cloud trace client and
+		// request full trace details using the retrieved Trace ID.
+		client, err := trace.NewClient(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer client.Close()
+		fullTrace, err := client.GetTrace(ctx, &cloudtrace.GetTraceRequest{
+			ProjectId: vm.Project,
+			TraceId:   traceVal.TraceId,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify that none of the spans have the legacy g.co attribute.
+		// Also verify span and resource attributes.
+		var foundSpan bool
+		for _, span := range fullTrace.Spans {
+			t.Logf("Span %q labels: %v", span.Name, span.Labels)
+			if span.Name == "test_trace" {
+				foundSpan = true
+				if span.Labels == nil {
+					t.Errorf("Span %q has no labels", span.Name)
+					continue
+				}
+				if _, ok := span.Labels["g.co/r/gce_instance/instance_id"]; ok {
+					t.Errorf("Unexpected legacy attribute g.co/r/gce_instance/instance_id found in span %q", span.Name)
+				}
+				if val, ok := span.Labels["custom.resource.attribute"]; ok {
+					if val != "my-resource-value" {
+						t.Errorf("Expected custom.resource.attribute to be 'my-resource-value', got %q", val)
+					}
+				} else {
+					t.Error("Resource attribute 'custom.resource.attribute' not found in span")
+				}
+				if val, ok := span.Labels["custom.span.attribute"]; ok {
+					if val != "my-span-value" {
+						t.Errorf("Expected custom.span.attribute to be 'my-span-value', got %q", val)
+					}
+				} else {
+					t.Error("Span attribute 'custom.span.attribute' not found in span")
+				}
+			}
+		}
+		if !foundSpan {
+			t.Error("Expected span 'test_trace' not found in trace")
 		}
 	})
 }
@@ -5299,6 +4592,25 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
+func waitForExpectedHealthCheckResults(ctx context.Context, logger *log.Logger, vm *gce.VM, maxWait time.Duration, checks map[string]string) error {
+	ctx, cancel := context.WithTimeout(ctx, maxWait)
+	defer cancel()
+
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(5*time.Second), ctx)
+	return backoff.Retry(func() error {
+		output, err := getHealthCheckResultsForImage(ctx, logger, vm)
+		if err != nil {
+			return err
+		}
+		for name, expected := range checks {
+			if !strings.Contains(output, healthCheckResultMessage(name, expected, "")) {
+				return fmt.Errorf("expected %s check to %s in service output:\n%s", name, expected, output)
+			}
+		}
+		return nil
+	}, backoffPolicy)
+}
+
 func getRecentServiceOutputForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
@@ -5308,7 +4620,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 		}, ";")
 		return cmd
 	}
-	return "sudo journalctl -u google-cloud-ops-agent.service --no-pager -n 200"
+	return "sudo journalctl -b 0 -u google-cloud-ops-agent --no-pager"
 }
 
 func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
@@ -5433,7 +4745,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !isHealthCheckTestImage(imageSpec) {
+		if !isHealthCheckTestImage(imageSpec) || gce.IsOpsAgentUAPPlugin() {
 			t.SkipNow()
 		}
 
@@ -5550,6 +4862,8 @@ func TestDisableSelfLogCollection(t *testing.T) {
 
 		time.Sleep(2 * time.Minute)
 
+		// Subtract 10s to account for slight clock skew between the Kokoro runner and GCE VM.
+		startTime := time.Now().Add(-10 * time.Second)
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
@@ -5558,8 +4872,8 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3*time.Minute, query); err != nil {
+		query := fmt.Sprintf(`timestamp >= "%s" AND severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`, startTime.Format(time.RFC3339))
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
@@ -5736,14 +5050,14 @@ func TestRestartVM(t *testing.T) {
 			}
 
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
+			// Ensure all healthchecks pass before the restart with backoff polling
+			if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+				"Network": "PASS",
+				"Ports":   "PASS",
+				"API":     "PASS",
+			}); err != nil {
+				t.Error(err)
 			}
-			// Ensure sure all healthchecks pass before the restart
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
 
 		logger.Printf(`Restarting instance. For details, see "VM_restart.txt".`)
@@ -5769,13 +5083,13 @@ func TestRestartVM(t *testing.T) {
 				t.Error("expected the plugin to be running after the VM restart, but is not running")
 			}
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
+			if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+				"Network": "PASS",
+				"Ports":   "PASS",
+				"API":     "PASS",
+			}); err != nil {
+				t.Error(err)
 			}
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
 	})
 }
@@ -5842,8 +5156,10 @@ func TestFileOffset(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Wait 1 min for all logs to be ingested after first start.
-		time.Sleep(1 * time.Minute)
+		// Wait for the first line to be ingested before stopping the agent.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`); err != nil {
+			t.Fatalf("Failed waiting for initial log ingestion: %v", err)
+		}
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
@@ -5858,20 +5174,34 @@ func TestFileOffset(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Wait 1 min for logs to be ingested after restart.
-		time.Sleep(1 * time.Minute)
+		// Verify second log was ingested after restart.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
+			t.Fatalf("Failed waiting for log ingestion after restart: %v", err)
+		}
 
-		// We should only observe one instance of the "first line" log.
-		matchingLogs, err := gce.QueryAllLogs(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, gce.LogQueryMaxAttempts)
+		// We should only observe one instance of the "first line" log (offset was preserved).
+		// QueryAllLogs returns immediately on attempt 1 with an empty slice if err == nil (intended for AssertLogMissing).
+		// To account for Cloud Logging query index propagation, retry until at least one log is returned.
+		queryCtx, queryCancel := context.WithTimeout(ctx, 3*time.Minute)
+		defer queryCancel()
+
+		var matchingLogs []*cloudlogging.Entry
+		err := backoff.Retry(func() error {
+			var qErr error
+			matchingLogs, qErr = gce.QueryAllLogs(queryCtx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, 1)
+			if qErr != nil {
+				return qErr
+			}
+			if len(matchingLogs) == 0 {
+				return errors.New("matching logs is empty")
+			}
+			return nil
+		}, backoff.WithContext(backoff.NewConstantBackOff(10*time.Second), queryCtx))
 		if err != nil {
-			t.Error(err)
+			logger.Printf("Failed waiting for 'first line' query matches: %v", err)
 		}
 		if len(matchingLogs) != 1 {
 			t.Errorf(`Expected to find exactly one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
-		}
-		// Verify second log was ingested.
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
-			t.Error(err)
 		}
 	})
 }
@@ -6130,6 +5460,27 @@ func TestUninstallRemovesService(t *testing.T) {
 	})
 }
 
+func verifyMetricsPort(ctx context.Context, logger *log.Logger, vm *gce.VM, port int, expectedContent string) error {
+	cmd := fmt.Sprintf("curl -s localhost:%d/metrics", port)
+	if gce.IsWindows(vm.ImageSpec) {
+		cmd = fmt.Sprintf("Invoke-RestMethod -Uri http://localhost:%d/metrics", port)
+	}
+	b := backoff.WithContext(
+		backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 30),
+		ctx,
+	)
+	return backoff.Retry(func() error {
+		out, err := gce.RunRemotely(ctx, logger, vm, cmd)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(out.Stdout, expectedContent) {
+			return fmt.Errorf("%q not found in metrics output on port %d: %s", expectedContent, port, out.Stdout)
+		}
+		return nil
+	}, b)
+}
+
 func TestMetricsPortOverrideEnv(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -6181,33 +5532,18 @@ Environment="%s=40001"
 				t.Fatal(err)
 			}
 
-			// Reload systemd and restart agent
+			// Reload systemd daemon and restart agent
 			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload"); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl start google-cloud-ops-agent"); err != nil {
+			if err := agents.RestartOpsAgent(ctx, logger, vm); err != nil {
 				t.Fatal(err)
 			}
 		}
 
-		// Wait for agent to start up
-		time.Sleep(20 * time.Second)
-
-		// Verify that we can scrape metrics from the new ports
-		var otelMetricsOut gce.CommandOutput
-		var err error
-
-		// OTel Collector metrics on 40001
-		if gce.IsWindows(imageSpec) {
-			otelMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "Invoke-RestMethod -Uri http://localhost:40001/metrics")
-		} else {
-			otelMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "curl -s localhost:40001/metrics")
-		}
-		if err != nil {
+		// Verify that we can scrape metrics from the new ports with retries (waiting up to 60s for agent startup)
+		if err := verifyMetricsPort(ctx, logger, vm, 40001, "otelcol_"); err != nil {
 			t.Fatalf("Failed to scrape OTel Collector metrics on port 40001: %v", err)
-		}
-		if !strings.Contains(otelMetricsOut.Stdout, "otelcol_") {
-			t.Fatalf("OTel Collector metrics on port 40001 do not contain expected content. Output: %s", otelMetricsOut.Stdout)
 		}
 	})
 }

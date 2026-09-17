@@ -98,7 +98,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Ops Agent config validation
-	if err := validateOpsAgentConfig(pContext, OpsAgentConfigLocationLinux); err != nil {
+	_, err = validateOpsAgentConfig(pContext, OpsAgentConfigLocationLinux)
+	if err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to validate the custom Ops Agent config: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
@@ -175,9 +176,8 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 	return string(out), err
 }
 
-func validateOpsAgentConfig(ctx context.Context, opsAgentConfigLocation string) error {
-	_, err := confgenerator.MergeConfFiles(ctx, opsAgentConfigLocation)
-	return err
+func validateOpsAgentConfig(ctx context.Context, opsAgentConfigLocation string) (*confgenerator.UnifiedConfig, error) {
+	return confgenerator.MergeConfFiles(ctx, opsAgentConfigLocation)
 }
 
 func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {

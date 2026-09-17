@@ -141,6 +141,10 @@ Write-Host "Copying artifacts to $GcsBucket"
 
 # Upload .goo files
 $GooFiles = Join-Path $OutputDir "*.goo"
+# Temporarily remove _LOUHI_CHANGED_FILES to avoid breaking gcloud (Python) env var char limit
+$cachedLouhiChangedFiles = $env:_LOUHI_CHANGED_FILES
+Remove-Item -Path "Env:\_LOUHI_CHANGED_FILES" -ErrorAction SilentlyContinue
+
 gcloud storage cp $GooFiles "$GcsBucket"
 
 # Upload tar.gz plugin files
@@ -150,5 +154,9 @@ gcloud storage cp $PluginTar "$GcsBucket"
 # Upload SHA256 text file
 $ShaFile = Join-Path $InputDir "result\google-cloud-ops-agent-plugin-sha256.txt"
 gcloud storage cp $ShaFile "$GcsBucket"
+
+if ($cachedLouhiChangedFiles) {
+    $env:_LOUHI_CHANGED_FILES = $cachedLouhiChangedFiles
+}
 
 Write-Host "Script finished successfully."

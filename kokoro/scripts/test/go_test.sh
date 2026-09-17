@@ -33,8 +33,8 @@
 #   * AGENTS_TO_TEST: comma-separated list of agents to test.
 #   * SCRIPTS_DIR: path to installation scripts to test.
 # os_config_test and gcloud_policies_test:
-#   * GCLOUD_LITE_BLAZE_PATH: path to just-built copy of gcloud_lite to use for
-#     testing.
+#   * GCLOUD_BLAZE_PATH (or legacy GCLOUD_LITE_BLAZE_PATH): path to just-built
+#     copy of gcloud to use for testing.
 # ops_agent_policies_test:
 #   * POLICIES_DIR: path to policy .yaml files to test.
 #   * ZONE: a single zone to run tests in (ZONES is ignored).
@@ -185,7 +185,7 @@ else
 fi
 
 if [[ "${TEST_SUITE_NAME}" == "os_config_test" || "${TEST_SUITE_NAME}" == "gcloud_policies_test" ]]; then
-  GCLOUD_TO_TEST="${KOKORO_BLAZE_DIR}/${GCLOUD_LITE_BLAZE_PATH}"
+  GCLOUD_TO_TEST="${KOKORO_BLAZE_DIR}/${GCLOUD_BLAZE_PATH:-${GCLOUD_LITE_BLAZE_PATH:-}}"
   export GCLOUD_TO_TEST
 fi
 

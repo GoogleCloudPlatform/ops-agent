@@ -59,6 +59,7 @@ var (
 		".*hadoop.*",
 		".*hbase.*",
 		".*kafka.*",
+		".*Multiline.*",
 		".*mysql.*",
 		".*oracledb.*",
 		".*postgresql.*",

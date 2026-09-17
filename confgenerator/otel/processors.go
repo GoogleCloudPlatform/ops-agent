@@ -490,11 +490,12 @@ func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[
 // CombineMetrics returns a config snippet that renames metrics matching the regex old to new, applying zero or more transformations.
 func CombineMetrics(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"include":       old,
-		"match_type":    "regexp",
-		"action":        "combine",
-		"new_name":      new,
-		"submatch_case": "lower",
+		"include":          old,
+		"match_type":       "regexp",
+		"action":           "combine",
+		"new_name":         new,
+		"submatch_case":    "lower",
+		"aggregation_type": "sum",
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations
@@ -687,6 +688,14 @@ func MetricUnknownCounter() Component {
 		"convert_gauge_to_sum(\"cumulative\", true) where HasSuffix(metric.name, \":unknowncounter\")",
 		// Delete the extra suffix once we are done.
 		"set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(\":unknowncounter\"))) where HasSuffix(metric.name, \":unknowncounter\")",
+	})
+}
+
+// AddPrometheusPrefix ensures prometheus metrics exported via OTLP have the "prometheus.googleapis.com/" prefix
+// so the backend treats them as prometheus metrics even if they contain custom domain prefixes.
+func AddPrometheusPrefix() Component {
+	return Transform("metric", "metric", []ottl.Statement{
+		`set(metric.name, Concat(["prometheus.googleapis.com/", metric.name], "")) where not HasPrefix(metric.name, "prometheus.googleapis.com/")`,
 	})
 }
 

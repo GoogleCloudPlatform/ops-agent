@@ -14,7 +14,7 @@
 
 # To edit this file, follow these instructions: go/sdi-integ-test#updating-the-test-runner-container.
 
-FROM golang:1.25-bookworm
+FROM golang:1.26-bookworm
 
 RUN curl -sSL https://sdk.cloud.google.com | bash
 
