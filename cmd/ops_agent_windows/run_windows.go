@@ -26,8 +26,6 @@ import (
 	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/apps"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/logs"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/self_metrics"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -70,13 +68,12 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 0x00000057
 	}
 
-	if err := s.generateConfigs(ctx); err != nil {
-		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
+	if err := s.validateConfig(ctx); err != nil {
+		s.log.Error(EngineEventID, fmt.Sprintf("failed to validate config: %v", err))
 		// 2 is "file not found"
 		return false, 2
 	}
-	s.log.Info(EngineEventID, "generated configuration files")
-	s.runHealthChecks()
+	s.log.Info(EngineEventID, "validated configuration")
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
@@ -150,15 +147,7 @@ func getHealthCheckResults() []healthchecks.HealthCheckResult {
 	return gceHealthChecks.RunAllHealthChecks(logger)
 }
 
-func (srv *service) runHealthChecks() {
-	healthCheckResults := getHealthCheckResults()
-	logger := logs.WindowsServiceLogger{EventID: EngineEventID, Logger: srv.log}
-	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
-	srv.log.Info(EngineEventID, "Startup checks finished")
-}
-
-func (s *service) generateConfigs(ctx context.Context) error {
-	// TODO(lingshi) Move this to a shared place across Linux and Windows.
+func (s *service) validateConfig(ctx context.Context) error {
 	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf)
 	if err != nil {
 		return err
@@ -168,17 +157,6 @@ func (s *service) generateConfigs(ctx context.Context) error {
 	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"]))
 	s.log.Info(EngineEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
 	if err := s.checkForStandaloneAgents(uc); err != nil {
-		return err
-	}
-	// TODO: Add flag for passing in log/run path?
-	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	stateDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run")
-	outDir := filepath.Join(s.outDirectory, "otel")
-	// The generated otlp metric json files are used only by the otel service.
-	if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, s.userConf, outDir); err != nil {
-		return err
-	}
-	if err := uc.GenerateFilesFromConfig(ctx, logsDir, stateDir, outDir); err != nil {
 		return err
 	}
 	return nil

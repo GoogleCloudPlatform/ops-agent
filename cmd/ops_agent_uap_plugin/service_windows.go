@@ -30,8 +30,6 @@ import (
 
 	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/apps"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/self_metrics"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -107,19 +105,15 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return &pb.StartResponse{}, nil
 	}
 
-	// Subagents config validation and generation.
-	_, err = generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir)
+	// Ops Agent config validation.
+	_, err = validateOpsAgentConfig(ctx, OpsAgentConfigLocationWindows)
 	if err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
-			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config, and generate sub-agents config: %s", err),
+			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config: %s", err),
 			ShouldRestart: false,
 		})
 		return &pb.StartResponse{}, nil
 	}
-
-	// Trigger Healthchecks.
-	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-	runHealthChecks(healthCheckFileLogger)
 
 	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
 	_, err = createWindowsJobHandle()
@@ -203,28 +197,8 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 	return alreadyInstalledAgentServiceNames, nil
 }
 
-func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string) (*confgenerator.UnifiedConfig, error) {
-	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"])
-	log.Printf("Merged config:\n%s\n", uc)
-
-	// The generated otlp metric json files are used only by the otel service.
-	if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
-		return nil, err
-	}
-
-	if err := uc.GenerateFilesFromConfig(
-		ctx,
-		filepath.Join(pluginStateDir, LogsDirectory),
-		filepath.Join(pluginStateDir, RuntimeDirectory),
-		filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
-		return nil, err
-	}
-	return uc, nil
+func validateOpsAgentConfig(ctx context.Context, userConfigPath string) (*confgenerator.UnifiedConfig, error) {
+	return confgenerator.MergeConfFiles(ctx, userConfigPath)
 }
 
 func createWindowsJobHandle() (windows.Handle, error) {
@@ -275,7 +249,12 @@ func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPlug
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
-		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
+		"--config", "opsagentconf:"+OpsAgentConfigLocationWindows,
+	)
+	runOtelCmd.Env = append(os.Environ(),
+		"RUNTIME_DIRECTORY="+filepath.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel"),
+		"STATE_DIRECTORY="+filepath.Join(pluginStateDirectory, RuntimeDirectory),
+		"LOGS_DIRECTORY="+filepath.Join(pluginStateDirectory, LogsDirectory),
 	)
 	runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand)
 }

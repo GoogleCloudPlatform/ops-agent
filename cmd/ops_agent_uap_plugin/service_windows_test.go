@@ -167,23 +167,20 @@ func Test_runHealthChecks_LogFileNonEmpty(t *testing.T) {
 	healthCheckLogFile.Close()
 }
 
-func Test_generateSubAgentConfigs(t *testing.T) {
+func Test_validateOpsAgentConfig(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name              string
 		userConfigContent string // Content for the user config file
-		pluginStateDir    string // Directory for the plugin state
 		wantError         bool
 	}{
 		{
-			name:              "happy path: successfully generate sub-agent configs",
+			name:              "happy path: successfully validate sub-agent configs",
 			userConfigContent: "",
-			pluginStateDir:    t.TempDir(),
 		},
 		{
 			name:              "invalid user config",
 			userConfigContent: "invalid content",
-			pluginStateDir:    t.TempDir(),
 			wantError:         true,
 		},
 	}
@@ -203,9 +200,9 @@ func Test_generateSubAgentConfigs(t *testing.T) {
 			}
 			userConfigFile.Close()
 
-			_, err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir)
+			_, err = validateOpsAgentConfig(ctx, userConfigFile.Name())
 			if (err != nil) != tc.wantError {
-				t.Errorf("generateSubAgentConfigs() returned error: %v, want error: %v", err, tc.wantError)
+				t.Errorf("validateOpsAgentConfig() returned error: %v, want error: %v", err, tc.wantError)
 			}
 
 		})

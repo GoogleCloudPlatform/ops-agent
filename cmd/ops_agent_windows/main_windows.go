@@ -132,7 +132,7 @@ func initServices() error {
 		displayName: fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
 		exepath:     filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 		args: []string{
-			"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
+			"--config=opsagentconf:" + filepath.Join(base, "../config/config.yaml"),
 		},
 	}
 	return nil

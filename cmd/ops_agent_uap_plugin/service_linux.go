@@ -32,12 +32,10 @@ import (
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
 )
 
 const (
 	OpsAgentConfigLocationLinux = "/etc/google-cloud-ops-agent/config.yaml"
-	ConfGeneratorBinary         = "libexec/google_cloud_ops_agent_engine"
 	OtelBinary                  = "subagents/opentelemetry-collector/otelopscol"
 
 	LogsDirectory               = "log/google-cloud-ops-agent"
@@ -104,16 +102,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return &pb.StartResponse{}, nil
 	}
 
-	// Trigger Healthchecks.
-	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-	runHealthChecks(healthCheckFileLogger)
-
-	// Subagent config generation
-	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
-		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to generate subagent configs: %s", err), ShouldRestart: false})
-		return &pb.StartResponse{}, nil
-	}
-
 	// the subagent startups
 	go runSubagents(pContext, ps.cancelAndSetPluginError, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
@@ -138,7 +126,12 @@ func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPlug
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
-		"--config", path.Join(pluginStateDirectory, OtelRuntimeDirectory, "otel.yaml"),
+		"--config", "opsagentconf:"+OpsAgentConfigLocationLinux,
+	)
+	runOtelCmd.Env = append(os.Environ(),
+		"RUNTIME_DIRECTORY="+path.Join(pluginStateDirectory, OtelRuntimeDirectory),
+		"STATE_DIRECTORY="+path.Join(pluginStateDirectory, OtelStateDiectory),
+		"LOGS_DIRECTORY="+path.Join(pluginStateDirectory, LogsDirectory),
 	)
 	runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand)
 }
@@ -178,22 +171,6 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 
 func validateOpsAgentConfig(ctx context.Context, opsAgentConfigLocation string) (*confgenerator.UnifiedConfig, error) {
 	return confgenerator.MergeConfFiles(ctx, opsAgentConfigLocation)
-}
-
-func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
-	confGeneratorBinaryFullPath := path.Join(pluginInstallDirectory, ConfGeneratorBinary)
-	otelConfigGenerationCmd := exec.CommandContext(ctx,
-		confGeneratorBinaryFullPath,
-		"-in", OpsAgentConfigLocationLinux,
-		"-out", path.Join(pluginStateDirectory, OtelRuntimeDirectory),
-		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
-		"-state", path.Join(pluginStateDirectory, OtelStateDiectory))
-
-	if output, err := runCommand(otelConfigGenerationCmd); err != nil {
-		return fmt.Errorf("failed to generate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
-	}
-
-	return nil
 }
 
 func findPreExistentAgents(ctx context.Context, runCommand RunCommandFunc, agentSystemdServiceNames []string) (bool, error) {

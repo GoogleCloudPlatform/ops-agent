@@ -133,50 +133,10 @@ func Test_validateOpsAgentConfig(t *testing.T) {
 	}
 }
 
-func Test_generateSubagentConfigs(t *testing.T) {
-	cases := []struct {
-		name          string
-		mockCmdOutput string
-		mockCmdErr    error
-		wantSuccess   bool
-	}{
-		{
-			name:          "configs generation successful",
-			mockCmdOutput: "",
-			mockCmdErr:    nil,
-			wantSuccess:   true,
-		},
-		{
-			name:          "configs generation failed",
-			mockCmdOutput: "",
-			mockCmdErr:    fmt.Errorf("error"),
-			wantSuccess:   false,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock RunCommand function
-			mockRunCommand := func(cmd *exec.Cmd) (string, error) {
-				return tc.mockCmdOutput, tc.mockCmdErr
-			}
-
-			ctx := context.Background()
-			err := generateSubagentConfigs(ctx, mockRunCommand, "", "")
-			gotSuccess := (err == nil)
-			if gotSuccess != tc.wantSuccess {
-				t.Errorf("%s: generateSubagentConfigs() failed to generate subagents configs: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
-			}
-		})
-	}
-}
-
 func mockRunCommandSuccess(cmd *exec.Cmd) (string, error) {
 	switch {
 	case strings.HasSuffix(cmd.Path, "systemctl"):
 		return "0 unit files listed.", nil
-	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
-		return "", nil
 	default:
 		time.Sleep(2 * time.Minute) // Simulate subagent running.
 		return "", nil
@@ -224,8 +184,6 @@ func mockRunCommandFailure(cmd *exec.Cmd) (string, error) {
 	switch {
 	case strings.HasSuffix(cmd.Path, "systemctl"):
 		return "0 unit files listed.", nil
-	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
-		return "", nil
 	default:
 		return "", fmt.Errorf("error") // Simulate subagent process exiting with error.
 	}
