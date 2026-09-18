@@ -1,1 +1,1 @@
-receiver "mysql_slow" has invalid configuration: unimplemented
+receiver "mysql_error" has invalid configuration: unimplemented: ${HOSTNAME} is unsupported in OTel filelog
