@@ -335,9 +335,13 @@ func (p LoggingProcessorMacroCouchbaseHTTPAccess) Expand(ctx context.Context) []
 		mf.Fields[dest] = &confgenerator.ModifyField{
 			MoveFrom: src,
 		}
-		if field == "referer" {
+		if field == "referer" || field == "userAgent" {
 			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
 		}
+	}
+	
+	mf.Fields["jsonPayload.host"] = &confgenerator.ModifyField{
+		OmitIf: `jsonPayload.host = "-"`,
 	}
 
 	return []confgenerator.InternalLoggingProcessor{

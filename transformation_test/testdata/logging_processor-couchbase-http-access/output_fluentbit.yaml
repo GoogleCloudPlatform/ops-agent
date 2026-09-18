@@ -253,9 +253,8 @@
       responseSize: 2.0
       serverIp: ""
       status: 200.0
-      userAgent: -
+      userAgent: ""
     jsonPayload:
-      host: -
       message: "2"
       user: "@ns_server"
     labels:
@@ -277,9 +276,8 @@
       responseSize: 2.0
       serverIp: ""
       status: 200.0
-      userAgent: -
+      userAgent: ""
     jsonPayload:
-      host: -
       message: "1"
       user: "@ns_server"
     labels:
