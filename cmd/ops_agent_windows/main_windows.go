@@ -21,8 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/logs"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
 )

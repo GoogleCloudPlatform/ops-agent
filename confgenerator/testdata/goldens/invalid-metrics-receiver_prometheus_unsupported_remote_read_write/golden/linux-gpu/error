@@ -1,3 +1,0 @@
-Key: 'PrometheusMetrics.config.config' Error:Field validation for 'config' failed on the 'unsupported features:
-	remote_read
-	remote_write' tag

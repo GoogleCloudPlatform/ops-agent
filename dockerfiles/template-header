@@ -92,12 +92,12 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 
 WORKDIR /work
 
-# 1. Download dependencies for the main repository
+# 1. Copy go.mod files for both main and submodule
 COPY go.mod go.sum ./
-RUN go mod download
-
-# 2. Download dependencies for the OTEL submodule
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+
+# 2. Download dependencies
+RUN go mod download
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 # Copy full source code
@@ -111,13 +111,8 @@ RUN \
     ./builds/otel.sh /work/cache/
 
 # 4. Build ops-agent-engine (CGO disabled)
-RUN . VERSION && \
-    BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version" && \
-    BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=sles12" && \
-    BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}" && \
-    LD_FLAGS="-s -w ${BUILD_X1} ${BUILD_X2}" && \
-    CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
-      -ldflags "${LD_FLAGS}" \
+RUN CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
+      -ldflags "-s -w" \
       github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
 
 # 5. Build ops_agent plugin helper (CGO disabled)

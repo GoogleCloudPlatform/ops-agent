@@ -1,5 +1,0 @@
-[3:30] Key: 'LogFileRotation.max_file_size_megabytes' Error:Field validation for 'max_file_size_megabytes' failed on the 'gte' tag
-   1 | global:
-   2 |   default_self_log_file_rotation:
->  3 |     max_file_size_megabytes: 0
-                                    ^
