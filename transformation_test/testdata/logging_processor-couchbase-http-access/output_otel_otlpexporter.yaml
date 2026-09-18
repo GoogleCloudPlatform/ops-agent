@@ -543,9 +543,6 @@
               - key: status
                 value:
                   stringValue: "200"
-              - key: userAgent
-                value:
-                  stringValue: -
         - key: gcp.log_name
           value:
             stringValue: my-log-name
@@ -555,9 +552,6 @@
         body:
           kvlistValue:
             values:
-            - key: host
-              value:
-                stringValue: -
             - key: message
               value:
                 stringValue: "2"
@@ -592,9 +586,6 @@
               - key: status
                 value:
                   stringValue: "200"
-              - key: userAgent
-                value:
-                  stringValue: -
         - key: gcp.log_name
           value:
             stringValue: my-log-name
@@ -604,9 +595,6 @@
         body:
           kvlistValue:
             values:
-            - key: host
-              value:
-                stringValue: -
             - key: message
               value:
                 stringValue: "1"

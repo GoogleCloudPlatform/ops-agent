@@ -222,9 +222,7 @@
       requestUrl: /_event
       responseSize: "2"
       status: 200
-      userAgent: -
     jsonPayload:
-      host: -
       message: "2"
       user: "@ns_server"
     labels:
@@ -244,9 +242,7 @@
       requestUrl: /_event
       responseSize: "2"
       status: 200
-      userAgent: -
     jsonPayload:
-      host: -
       message: "1"
       user: "@ns_server"
     labels:
