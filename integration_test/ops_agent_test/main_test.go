@@ -628,8 +628,8 @@ logging:
 			`"logging.googleapis.com/labels": {"label1":"value1", "label2":"value2"}, ` +
 			`"logging.googleapis.com/operation": {"id": "id", "producer": "producer", "first": true, "last": true}, ` +
 			`"logging.googleapis.com/sourceLocation": {"file": "file", "line": "1", "function": "function"}, ` +
-			`"logging.googleapis.com/trace":"trace", ` +
-			`"logging.googleapis.com/spanId":"spanId", ` +
+			`"logging.googleapis.com/trace":"projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe", ` +
+			`"logging.googleapis.com/spanId":"facefeedb0bacafe", ` +
 			`"normal_field": "value"}` + "\n"
 		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
@@ -642,8 +642,8 @@ logging:
 				`labels.label1="value1" AND labels.label2="value2" AND `+
 				`operation.id="id" AND operation.producer="producer" AND operation.first=true AND operation.last=true AND `+
 				`sourceLocation.file="file" AND sourceLocation.line="1" AND sourceLocation.function="function" AND `+
-				`trace="trace" AND `+
-				`spanId="spanId" AND `+
+				`trace=~"projects/.*/traces/deadcafedeadc0defacefeedb0bacafe" AND `+
+				`spanId="facefeedb0bacafe" AND `+
 				`jsonPayload.normal_field="value"`); err != nil {
 			t.Error(err)
 		}
@@ -4998,6 +4998,7 @@ func TestParsingFailureCheck(t *testing.T) {
       time_key: time
       time_format: "%s"
   service:
+    experimental_otel_logging: false
     pipelines:
       my_pipeline:
         receivers: [mylog_source]

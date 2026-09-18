@@ -259,6 +259,8 @@ type SelfLogTranslationEntry struct {
 	Code       string
 }
 
+// N.B. We do not have an equivalent set of translations for OpenTelemetry
+// because otelopscol's logs end up in the `syslog` log, which has no parsing.
 var FluentBitSelfLogTranslationList = []SelfLogTranslationEntry{
 	{
 		RegexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,

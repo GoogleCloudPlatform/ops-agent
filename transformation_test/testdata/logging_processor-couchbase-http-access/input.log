@@ -8,3 +8,10 @@
 192.168.1.18 couchbase.local test_user [18/Aug/2025:09:23:40 +0000] "OPTIONS /pools/default/buckets/travel-data HTTP/1.1" 204 0 - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" Preflight check passed
 192.168.1.19 couchbase.local test_user [18/Aug/2025:09:24:15 +0000] "GET /pools/default/buckets/travel-data/docs?limit=1000 HTTP/1.1" 413 0 - "curl/8.0.1" Payload too large
 192.168.1.20 couchbase.local test_user [18/Aug/2025:09:25:00 +0000] "PATCH /pools/default/buckets/travel-data/docs/user:321 HTTP/1.1" 409 128 - "python-requests/2.31.0" Document conflict
+127.0.0.1 - @ns_server [17/Sep/2026:20:42:40 +0000] "POST /_event HTTP/1.1" 200 2 - - 2
+127.0.0.1 - @ns_server [17/Sep/2026:20:42:40 +0000] "POST /_event HTTP/1.1" 200 2 - - 1
+127.0.0.1 - @ns_server [17/Sep/2026:20:42:40 +0000] "POST /_event HTTP/1.1" 200 2 - - 2
+127.0.0.1 - - [17/Sep/2026:20:42:40 +0000] "GET / HTTP/1.1" 301 216 - "curl/8.14.1" 6
+127.0.0.1 - @ [17/Sep/2026:20:42:40 +0000] "RPCCONNECT /saslauthd-saslauthd-port HTTP/1.1" 200 0 - "saslauthd-port-service" 6
+127.0.0.1 - @goxdcr [17/Sep/2026:20:42:40 +0000] "GET /_metakv/remoteCluster/ HTTP/1.1" 200 chunked - "goxdcr-metakv" 3
+127.0.0.1 - @goxdcr [17/Sep/2026:20:42:40 +0000] "GET /_metakv/remoteCluster/ HTTP/1.1" 200 - - "goxdcr-metakv" 3

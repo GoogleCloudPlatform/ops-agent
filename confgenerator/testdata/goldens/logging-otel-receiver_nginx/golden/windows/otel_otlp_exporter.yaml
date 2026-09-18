@@ -938,49 +938,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
-  transform/loggingmetrics_0:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - extract_count_metric(true) where name == "rpc.client.call.duration"
-  transform/loggingmetrics_5:
-    metric_statements:
-    - context: metric
-      statements:
-      - set(unit, "1")
-    - context: datapoint
-      statements:
-      - set(time, Now())
-      - set(start_time_unix_nano, 0)
-      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
-      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
-      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
-      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
-  transform/mssql_1:
-    metric_statements:
-    - context: scope
-      statements:
-      - set(name, "agent.googleapis.com/mssql")
-      - set(version, "1.0")
-  transform/mssql_2:
-    metric_statements:
-    - context: scope
-      statements:
-      - set(name, "")
-      - set(version, "")
-  transform/mssql_3:
-    metric_statements:
-    - context: resource
-      error_mode: silent
-      statements:
-      - delete_key(attributes, "service.name")
-      - delete_key(attributes, "service.instance.id")
-      - delete_key(attributes, "service.namespace")
-      - delete_key(attributes, "service.version")
-  transform/nginx__access_0:
+  transform/logging_nginx__access_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1009,6 +967,12 @@ processors:
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1036,7 +1000,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/nginx__access_1:
+  transform/logging_nginx__access_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1119,7 +1083,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/nginx_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/nginx__access_2:
+  transform/logging_nginx__access_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1148,7 +1112,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "nginx_access") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/nginx__error_0:
+  transform/logging_nginx__error_0:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1179,6 +1143,12 @@ processors:
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1206,7 +1176,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/nginx__error_1:
+  transform/logging_nginx__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1229,7 +1199,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/nginx__error_2:
+  transform/logging_nginx__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1258,6 +1228,411 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "nginx_error") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_windows__event__log_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(body["parsed_xml"], ParseSimplifiedXML(attributes["log.record.original"])) where (attributes != nil and attributes["log.record.original"] != nil)
+      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
+  transform/logging_windows__event__log_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["computer"]) where (body != nil and body["computer"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], body["event_data"]["binary"]) where (body != nil and body["event_data"] != nil and body["event_data"]["binary"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
+      - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
+      - set(cache["__field_4"], body["event_id"]["id"]) where (body != nil and body["event_id"] != nil and body["event_id"]["id"] != nil)
+      - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
+      - set(cache["__field_5"], body["level"]) where (body != nil and body["level"] != nil)
+      - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
+      - set(cache["__field_6"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
+      - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
+      - set(cache["__field_7"], body["event_id"]["qualifiers"]) where (body != nil and body["event_id"] != nil and body["event_id"]["qualifiers"] != nil)
+      - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
+      - set(cache["__field_8"], body["record_id"]) where (body != nil and body["record_id"] != nil)
+      - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
+      - set(cache["__field_9"], body["security"]["user_id"]) where (body != nil and body["security"] != nil and body["security"]["user_id"] != nil)
+      - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
+      - set(cache["__field_10"], body["provider"]["name"]) where (body != nil and body["provider"] != nil and body["provider"]["name"] != nil)
+      - delete_key(cache, "__field_11") where (cache != nil and cache["__field_11"] != nil)
+      - set(cache["__field_11"], body["event_data"]["data"]) where (body != nil and body["event_data"] != nil and body["event_data"]["data"] != nil)
+      - delete_key(cache, "__field_12") where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["__field_12"], body["system_time"]) where (body != nil and body["system_time"] != nil)
+      - set(cache["body"], body)
+      - keep_keys(body, [])
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(body["ComputerName"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(cache["value"], ConvertCase(cache["value"], "lower"))
+      - set(body["Data"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], Int(cache["value"])) where ((cache != nil and cache["value"] != nil) and Int(cache["value"]) != nil)
+      - set(body["EventCategory"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_4"]) where (cache != nil and cache["__field_4"] != nil)
+      - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_5"]) where (cache != nil and cache["__field_5"] != nil)
+      - set(cache["value"], "SuccessAudit") where ContainsValue(cache["body"]["keywords"], "Audit Success")
+      - set(cache["value"], "FailureAudit") where ContainsValue(cache["body"]["keywords"], "Audit Failure")
+      - set(body["EventType"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_6"]) where (cache != nil and cache["__field_6"] != nil)
+      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_7"]) where (cache != nil and cache["__field_7"] != nil)
+      - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_8"]) where (cache != nil and cache["__field_8"] != nil)
+      - set(body["RecordNumber"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_9"]) where (cache != nil and cache["__field_9"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(body["Sid"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_10"]) where (cache != nil and cache["__field_10"] != nil)
+      - set(cache["value"], cache["body"]["provider"]["event_source"]) where ((cache != nil and cache["body"] != nil and cache["body"]["provider"] != nil and cache["body"]["provider"]["event_source"] != nil) and (not cache["body"]["provider"]["event_source"] == ""))
+      - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_11"]) where (cache != nil and cache["__field_11"] != nil)
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
+      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["value"], Concat([FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s")," +0000"], ""))
+      - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["value"], Concat([FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s")," +0000"], ""))
+      - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_windows__event__log_1_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(body["parsed_xml"], ParseSimplifiedXML(attributes["log.record.original"])) where (attributes != nil and attributes["log.record.original"] != nil)
+      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
+  transform/logging_windows__event__log_1_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["computer"]) where (body != nil and body["computer"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], body["event_data"]["binary"]) where (body != nil and body["event_data"] != nil and body["event_data"]["binary"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
+      - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
+      - set(cache["__field_4"], body["event_id"]["id"]) where (body != nil and body["event_id"] != nil and body["event_id"]["id"] != nil)
+      - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
+      - set(cache["__field_5"], body["level"]) where (body != nil and body["level"] != nil)
+      - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
+      - set(cache["__field_6"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
+      - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
+      - set(cache["__field_7"], body["event_id"]["qualifiers"]) where (body != nil and body["event_id"] != nil and body["event_id"]["qualifiers"] != nil)
+      - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
+      - set(cache["__field_8"], body["record_id"]) where (body != nil and body["record_id"] != nil)
+      - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
+      - set(cache["__field_9"], body["security"]["user_id"]) where (body != nil and body["security"] != nil and body["security"]["user_id"] != nil)
+      - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
+      - set(cache["__field_10"], body["provider"]["name"]) where (body != nil and body["provider"] != nil and body["provider"]["name"] != nil)
+      - delete_key(cache, "__field_11") where (cache != nil and cache["__field_11"] != nil)
+      - set(cache["__field_11"], body["event_data"]["data"]) where (body != nil and body["event_data"] != nil and body["event_data"]["data"] != nil)
+      - delete_key(cache, "__field_12") where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["__field_12"], body["system_time"]) where (body != nil and body["system_time"] != nil)
+      - set(cache["body"], body)
+      - keep_keys(body, [])
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(body["ComputerName"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(cache["value"], ConvertCase(cache["value"], "lower"))
+      - set(body["Data"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], Int(cache["value"])) where ((cache != nil and cache["value"] != nil) and Int(cache["value"]) != nil)
+      - set(body["EventCategory"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_4"]) where (cache != nil and cache["__field_4"] != nil)
+      - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_5"]) where (cache != nil and cache["__field_5"] != nil)
+      - set(cache["value"], "SuccessAudit") where ContainsValue(cache["body"]["keywords"], "Audit Success")
+      - set(cache["value"], "FailureAudit") where ContainsValue(cache["body"]["keywords"], "Audit Failure")
+      - set(body["EventType"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_6"]) where (cache != nil and cache["__field_6"] != nil)
+      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_7"]) where (cache != nil and cache["__field_7"] != nil)
+      - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_8"]) where (cache != nil and cache["__field_8"] != nil)
+      - set(body["RecordNumber"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_9"]) where (cache != nil and cache["__field_9"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(body["Sid"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_10"]) where (cache != nil and cache["__field_10"] != nil)
+      - set(cache["value"], cache["body"]["provider"]["event_source"]) where ((cache != nil and cache["body"] != nil and cache["body"]["provider"] != nil and cache["body"]["provider"]["event_source"] != nil) and (not cache["body"]["provider"]["event_source"] == ""))
+      - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_11"]) where (cache != nil and cache["__field_11"] != nil)
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
+      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["value"], Concat([FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s")," +0000"], ""))
+      - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["value"], Concat([FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s")," +0000"], ""))
+      - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_windows__event__log_1_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "windows_event_log") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_windows__event__log_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "windows_event_log") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_windows__event__log_2_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(body["parsed_xml"], ParseSimplifiedXML(attributes["log.record.original"])) where (attributes != nil and attributes["log.record.original"] != nil)
+      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
+  transform/logging_windows__event__log_2_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["computer"]) where (body != nil and body["computer"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], body["event_data"]["binary"]) where (body != nil and body["event_data"] != nil and body["event_data"]["binary"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
+      - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
+      - set(cache["__field_4"], body["event_id"]["id"]) where (body != nil and body["event_id"] != nil and body["event_id"]["id"] != nil)
+      - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
+      - set(cache["__field_5"], body["level"]) where (body != nil and body["level"] != nil)
+      - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
+      - set(cache["__field_6"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
+      - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
+      - set(cache["__field_7"], body["event_id"]["qualifiers"]) where (body != nil and body["event_id"] != nil and body["event_id"]["qualifiers"] != nil)
+      - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
+      - set(cache["__field_8"], body["record_id"]) where (body != nil and body["record_id"] != nil)
+      - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
+      - set(cache["__field_9"], body["security"]["user_id"]) where (body != nil and body["security"] != nil and body["security"]["user_id"] != nil)
+      - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
+      - set(cache["__field_10"], body["provider"]["name"]) where (body != nil and body["provider"] != nil and body["provider"]["name"] != nil)
+      - delete_key(cache, "__field_11") where (cache != nil and cache["__field_11"] != nil)
+      - set(cache["__field_11"], body["event_data"]["data"]) where (body != nil and body["event_data"] != nil and body["event_data"]["data"] != nil)
+      - delete_key(cache, "__field_12") where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["__field_12"], body["system_time"]) where (body != nil and body["system_time"] != nil)
+      - set(cache["body"], body)
+      - keep_keys(body, [])
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(body["ComputerName"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(cache["value"], ConvertCase(cache["value"], "lower"))
+      - set(body["Data"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], Int(cache["value"])) where ((cache != nil and cache["value"] != nil) and Int(cache["value"]) != nil)
+      - set(body["EventCategory"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_4"]) where (cache != nil and cache["__field_4"] != nil)
+      - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_5"]) where (cache != nil and cache["__field_5"] != nil)
+      - set(cache["value"], "SuccessAudit") where ContainsValue(cache["body"]["keywords"], "Audit Success")
+      - set(cache["value"], "FailureAudit") where ContainsValue(cache["body"]["keywords"], "Audit Failure")
+      - set(body["EventType"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_6"]) where (cache != nil and cache["__field_6"] != nil)
+      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_7"]) where (cache != nil and cache["__field_7"] != nil)
+      - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_8"]) where (cache != nil and cache["__field_8"] != nil)
+      - set(body["RecordNumber"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_9"]) where (cache != nil and cache["__field_9"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(body["Sid"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_10"]) where (cache != nil and cache["__field_10"] != nil)
+      - set(cache["value"], cache["body"]["provider"]["event_source"]) where ((cache != nil and cache["body"] != nil and cache["body"]["provider"] != nil and cache["body"]["provider"]["event_source"] != nil) and (not cache["body"]["provider"]["event_source"] == ""))
+      - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_11"]) where (cache != nil and cache["__field_11"] != nil)
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
+      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["value"], Concat([FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s")," +0000"], ""))
+      - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
+      - set(cache["value"], Concat([FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s")," +0000"], ""))
+      - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_windows__event__log_2_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "windows_event_log") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/loggingmetrics_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "rpc.client.call.duration"
+  transform/loggingmetrics_5:
+    metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
+    - context: datapoint
+      statements:
+      - set(time, Now())
+      - set(start_time_unix_nano, 0)
+      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
+      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+  transform/mssql_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/mssql")
+      - set(version, "1.0")
+  transform/mssql_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/mssql_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -1300,371 +1675,8 @@ processors:
       - set(attributes["service.name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil
       - set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil
       - set(attributes["service.instance.id"], resource.attributes["service.instance.id"]) where resource.attributes["service.instance.id"] != nil
-  transform/windows__event__log_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(body["parsed_xml"], ParseSimplifiedXML(attributes["log.record.original"])) where (attributes != nil and attributes["log.record.original"] != nil)
-      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
-  transform/windows__event__log_1:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], body["computer"]) where (body != nil and body["computer"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], body["event_data"]["binary"]) where (body != nil and body["event_data"] != nil and body["event_data"]["binary"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
-      - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
-      - set(cache["__field_4"], body["event_id"]["id"]) where (body != nil and body["event_id"] != nil and body["event_id"]["id"] != nil)
-      - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
-      - set(cache["__field_5"], body["level"]) where (body != nil and body["level"] != nil)
-      - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
-      - set(cache["__field_6"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
-      - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
-      - set(cache["__field_7"], body["event_id"]["qualifiers"]) where (body != nil and body["event_id"] != nil and body["event_id"]["qualifiers"] != nil)
-      - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
-      - set(cache["__field_8"], body["record_id"]) where (body != nil and body["record_id"] != nil)
-      - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
-      - set(cache["__field_9"], body["security"]["user_id"]) where (body != nil and body["security"] != nil and body["security"]["user_id"] != nil)
-      - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
-      - set(cache["__field_10"], body["provider"]["name"]) where (body != nil and body["provider"] != nil and body["provider"]["name"] != nil)
-      - delete_key(cache, "__field_11") where (cache != nil and cache["__field_11"] != nil)
-      - set(cache["__field_11"], body["event_data"]["data"]) where (body != nil and body["event_data"] != nil and body["event_data"]["data"] != nil)
-      - delete_key(cache, "__field_12") where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["__field_12"], body["system_time"]) where (body != nil and body["system_time"] != nil)
-      - set(cache["body"], body)
-      - keep_keys(body, [])
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(body["ComputerName"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(cache["value"], ConvertCase(cache["value"], "lower"))
-      - set(body["Data"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], Int(cache["value"])) where ((cache != nil and cache["value"] != nil) and Int(cache["value"]) != nil)
-      - set(body["EventCategory"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_4"]) where (cache != nil and cache["__field_4"] != nil)
-      - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_5"]) where (cache != nil and cache["__field_5"] != nil)
-      - set(cache["value"], "SuccessAudit") where ContainsValue(cache["body"]["keywords"], "Audit Success")
-      - set(cache["value"], "FailureAudit") where ContainsValue(cache["body"]["keywords"], "Audit Failure")
-      - set(body["EventType"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_6"]) where (cache != nil and cache["__field_6"] != nil)
-      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_7"]) where (cache != nil and cache["__field_7"] != nil)
-      - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_8"]) where (cache != nil and cache["__field_8"] != nil)
-      - set(body["RecordNumber"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_9"]) where (cache != nil and cache["__field_9"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(body["Sid"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_10"]) where (cache != nil and cache["__field_10"] != nil)
-      - set(cache["value"], cache["body"]["provider"]["event_source"]) where ((cache != nil and cache["body"] != nil and cache["body"]["provider"] != nil and cache["body"]["provider"]["event_source"] != nil) and (not cache["body"]["provider"]["event_source"] == ""))
-      - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_11"]) where (cache != nil and cache["__field_11"] != nil)
-      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
-      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s %z"))
-      - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s %z"))
-      - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/windows__event__log_1_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(body["parsed_xml"], ParseSimplifiedXML(attributes["log.record.original"])) where (attributes != nil and attributes["log.record.original"] != nil)
-      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
-  transform/windows__event__log_1_1:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], body["computer"]) where (body != nil and body["computer"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], body["event_data"]["binary"]) where (body != nil and body["event_data"] != nil and body["event_data"]["binary"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
-      - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
-      - set(cache["__field_4"], body["event_id"]["id"]) where (body != nil and body["event_id"] != nil and body["event_id"]["id"] != nil)
-      - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
-      - set(cache["__field_5"], body["level"]) where (body != nil and body["level"] != nil)
-      - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
-      - set(cache["__field_6"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
-      - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
-      - set(cache["__field_7"], body["event_id"]["qualifiers"]) where (body != nil and body["event_id"] != nil and body["event_id"]["qualifiers"] != nil)
-      - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
-      - set(cache["__field_8"], body["record_id"]) where (body != nil and body["record_id"] != nil)
-      - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
-      - set(cache["__field_9"], body["security"]["user_id"]) where (body != nil and body["security"] != nil and body["security"]["user_id"] != nil)
-      - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
-      - set(cache["__field_10"], body["provider"]["name"]) where (body != nil and body["provider"] != nil and body["provider"]["name"] != nil)
-      - delete_key(cache, "__field_11") where (cache != nil and cache["__field_11"] != nil)
-      - set(cache["__field_11"], body["event_data"]["data"]) where (body != nil and body["event_data"] != nil and body["event_data"]["data"] != nil)
-      - delete_key(cache, "__field_12") where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["__field_12"], body["system_time"]) where (body != nil and body["system_time"] != nil)
-      - set(cache["body"], body)
-      - keep_keys(body, [])
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(body["ComputerName"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(cache["value"], ConvertCase(cache["value"], "lower"))
-      - set(body["Data"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], Int(cache["value"])) where ((cache != nil and cache["value"] != nil) and Int(cache["value"]) != nil)
-      - set(body["EventCategory"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_4"]) where (cache != nil and cache["__field_4"] != nil)
-      - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_5"]) where (cache != nil and cache["__field_5"] != nil)
-      - set(cache["value"], "SuccessAudit") where ContainsValue(cache["body"]["keywords"], "Audit Success")
-      - set(cache["value"], "FailureAudit") where ContainsValue(cache["body"]["keywords"], "Audit Failure")
-      - set(body["EventType"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_6"]) where (cache != nil and cache["__field_6"] != nil)
-      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_7"]) where (cache != nil and cache["__field_7"] != nil)
-      - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_8"]) where (cache != nil and cache["__field_8"] != nil)
-      - set(body["RecordNumber"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_9"]) where (cache != nil and cache["__field_9"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(body["Sid"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_10"]) where (cache != nil and cache["__field_10"] != nil)
-      - set(cache["value"], cache["body"]["provider"]["event_source"]) where ((cache != nil and cache["body"] != nil and cache["body"]["provider"] != nil and cache["body"]["provider"]["event_source"] != nil) and (not cache["body"]["provider"]["event_source"] == ""))
-      - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_11"]) where (cache != nil and cache["__field_11"] != nil)
-      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
-      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s %z"))
-      - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s %z"))
-      - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/windows__event__log_1_2:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["value"], "test-mig") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["value"], "test-zone") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], "windows_event_log") where cache["value"] == nil
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/windows__event__log_2:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["value"], "test-mig") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["value"], "test-zone") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], "windows_event_log") where cache["value"] == nil
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/windows__event__log_2_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(body["parsed_xml"], ParseSimplifiedXML(attributes["log.record.original"])) where (attributes != nil and attributes["log.record.original"] != nil)
-      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
-  transform/windows__event__log_2_1:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], body["computer"]) where (body != nil and body["computer"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], body["event_data"]["binary"]) where (body != nil and body["event_data"] != nil and body["event_data"]["binary"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
-      - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
-      - set(cache["__field_4"], body["event_id"]["id"]) where (body != nil and body["event_id"] != nil and body["event_id"]["id"] != nil)
-      - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
-      - set(cache["__field_5"], body["level"]) where (body != nil and body["level"] != nil)
-      - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
-      - set(cache["__field_6"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
-      - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
-      - set(cache["__field_7"], body["event_id"]["qualifiers"]) where (body != nil and body["event_id"] != nil and body["event_id"]["qualifiers"] != nil)
-      - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
-      - set(cache["__field_8"], body["record_id"]) where (body != nil and body["record_id"] != nil)
-      - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
-      - set(cache["__field_9"], body["security"]["user_id"]) where (body != nil and body["security"] != nil and body["security"]["user_id"] != nil)
-      - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
-      - set(cache["__field_10"], body["provider"]["name"]) where (body != nil and body["provider"] != nil and body["provider"]["name"] != nil)
-      - delete_key(cache, "__field_11") where (cache != nil and cache["__field_11"] != nil)
-      - set(cache["__field_11"], body["event_data"]["data"]) where (body != nil and body["event_data"] != nil and body["event_data"]["data"] != nil)
-      - delete_key(cache, "__field_12") where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["__field_12"], body["system_time"]) where (body != nil and body["system_time"] != nil)
-      - set(cache["body"], body)
-      - keep_keys(body, [])
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(body["ComputerName"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(cache["value"], ConvertCase(cache["value"], "lower"))
-      - set(body["Data"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], Int(cache["value"])) where ((cache != nil and cache["value"] != nil) and Int(cache["value"]) != nil)
-      - set(body["EventCategory"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_4"]) where (cache != nil and cache["__field_4"] != nil)
-      - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_5"]) where (cache != nil and cache["__field_5"] != nil)
-      - set(cache["value"], "SuccessAudit") where ContainsValue(cache["body"]["keywords"], "Audit Success")
-      - set(cache["value"], "FailureAudit") where ContainsValue(cache["body"]["keywords"], "Audit Failure")
-      - set(body["EventType"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_6"]) where (cache != nil and cache["__field_6"] != nil)
-      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_7"]) where (cache != nil and cache["__field_7"] != nil)
-      - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_8"]) where (cache != nil and cache["__field_8"] != nil)
-      - set(body["RecordNumber"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_9"]) where (cache != nil and cache["__field_9"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(body["Sid"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_10"]) where (cache != nil and cache["__field_10"] != nil)
-      - set(cache["value"], cache["body"]["provider"]["event_source"]) where ((cache != nil and cache["body"] != nil and cache["body"]["provider"] != nil and cache["body"]["provider"]["event_source"] != nil) and (not cache["body"]["provider"]["event_source"] == ""))
-      - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_11"]) where (cache != nil and cache["__field_11"] != nil)
-      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
-      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s %z"))
-      - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_12"]) where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s %z"))
-      - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/windows__event__log_2_2:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["value"], "test-mig") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["value"], "test-zone") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], "windows_event_log") where cache["value"] == nil
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  file_log/nginx__access:
+  file_log/logging_nginx__access:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1679,7 +1691,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  file_log/nginx__error:
+  file_log/logging_nginx__error:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1740,7 +1752,7 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  windowseventlog/windows__event__log:
+  windowseventlog/logging_windows__event__log:
     channel: System
     event_data_format: array
     ignore_channel_errors: true
@@ -1748,7 +1760,7 @@ receivers:
     poll_interval: 1s
     start_at: beginning
     storage: file_storage
-  windowseventlog/windows__event__log_1:
+  windowseventlog/logging_windows__event__log_1:
     channel: Application
     event_data_format: array
     ignore_channel_errors: true
@@ -1756,7 +1768,7 @@ receivers:
     poll_interval: 1s
     start_at: beginning
     storage: file_storage
-  windowseventlog/windows__event__log_2:
+  windowseventlog/logging_windows__event__log_2:
     channel: Security
     event_data_format: array
     ignore_channel_errors: true
@@ -1801,76 +1813,76 @@ service:
   - file_storage
   - googleclientauth
   pipelines:
-    logs/logs_default__pipeline_windows__event__log:
+    logs/logs_default__pipeline_logging_windows__event__log:
       exporters:
       - otlp_grpc/otlp_logs
       processors:
-      - transform/windows__event__log_0
-      - transform/windows__event__log_1
-      - transform/windows__event__log_2
+      - transform/logging_windows__event__log_0
+      - transform/logging_windows__event__log_1
+      - transform/logging_windows__event__log_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
       - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - windowseventlog/windows__event__log
-    logs/logs_default__pipeline_windows__event__log_1:
+      - windowseventlog/logging_windows__event__log
+    logs/logs_default__pipeline_logging_windows__event__log_1:
       exporters:
       - otlp_grpc/otlp_logs
       processors:
-      - transform/windows__event__log_1_0
-      - transform/windows__event__log_1_1
-      - transform/windows__event__log_1_2
+      - transform/logging_windows__event__log_1_0
+      - transform/logging_windows__event__log_1_1
+      - transform/logging_windows__event__log_1_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
       - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - windowseventlog/windows__event__log_1
-    logs/logs_default__pipeline_windows__event__log_2:
+      - windowseventlog/logging_windows__event__log_1
+    logs/logs_default__pipeline_logging_windows__event__log_2:
       exporters:
       - otlp_grpc/otlp_logs
       processors:
-      - transform/windows__event__log_2_0
-      - transform/windows__event__log_2_1
-      - transform/windows__event__log_2_2
+      - transform/logging_windows__event__log_2_0
+      - transform/logging_windows__event__log_2_1
+      - transform/logging_windows__event__log_2_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
       - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - windowseventlog/windows__event__log_2
-    logs/logs_nginx_nginx__access:
+      - windowseventlog/logging_windows__event__log_2
+    logs/logs_nginx_logging_nginx__access:
       exporters:
       - otlp_grpc/otlp_logs
       processors:
-      - transform/nginx__access_0
-      - transform/nginx__access_1
-      - transform/nginx__access_2
+      - transform/logging_nginx__access_0
+      - transform/logging_nginx__access_1
+      - transform/logging_nginx__access_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
       - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - file_log/nginx__access
-    logs/logs_nginx_nginx__error:
+      - file_log/logging_nginx__access
+    logs/logs_nginx_logging_nginx__error:
       exporters:
       - otlp_grpc/otlp_logs
       processors:
-      - transform/nginx__error_0
-      - transform/nginx__error_1
-      - transform/nginx__error_2
+      - transform/logging_nginx__error_0
+      - transform/logging_nginx__error_1
+      - transform/logging_nginx__error_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
       - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - file_log/nginx__error
+      - file_log/logging_nginx__error
     metrics/default__pipeline_hostmetrics:
       exporters:
       - otlp_grpc/otlp_metrics
