@@ -49,7 +49,7 @@
                   stringValue: "512"
               - key: status
                 value:
-                  stringValue: "200"
+                  intValue: "200"
               - key: userAgent
                 value:
                   stringValue: curl/7.68.0
@@ -98,7 +98,7 @@
                   stringValue: "123"
               - key: status
                 value:
-                  stringValue: "201"
+                  intValue: "201"
               - key: userAgent
                 value:
                   stringValue: python-requests/2.26.0
@@ -147,7 +147,7 @@
                   stringValue: "0"
               - key: status
                 value:
-                  stringValue: "404"
+                  intValue: "404"
               - key: userAgent
                 value:
                   stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
@@ -196,7 +196,7 @@
                   stringValue: "64"
               - key: status
                 value:
-                  stringValue: "500"
+                  intValue: "500"
               - key: userAgent
                 value:
                   stringValue: node-fetch/1.0
@@ -245,7 +245,7 @@
                   stringValue: "64"
               - key: status
                 value:
-                  stringValue: "403"
+                  intValue: "403"
               - key: userAgent
                 value:
                   stringValue: curl/7.88.1
@@ -297,7 +297,7 @@
                   stringValue: "0"
               - key: status
                 value:
-                  stringValue: "302"
+                  intValue: "302"
               - key: userAgent
                 value:
                   stringValue: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36
@@ -346,7 +346,7 @@
                   stringValue: "0"
               - key: status
                 value:
-                  stringValue: "304"
+                  intValue: "304"
               - key: userAgent
                 value:
                   stringValue: Go-http-client/1.1
@@ -395,7 +395,7 @@
                   stringValue: "0"
               - key: status
                 value:
-                  stringValue: "204"
+                  intValue: "204"
               - key: userAgent
                 value:
                   stringValue: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
@@ -444,7 +444,7 @@
                   stringValue: "0"
               - key: status
                 value:
-                  stringValue: "413"
+                  intValue: "413"
               - key: userAgent
                 value:
                   stringValue: curl/8.0.1
@@ -493,7 +493,7 @@
                   stringValue: "128"
               - key: status
                 value:
-                  stringValue: "409"
+                  intValue: "409"
               - key: userAgent
                 value:
                   stringValue: python-requests/2.31.0
@@ -542,7 +542,7 @@
                   stringValue: "2"
               - key: status
                 value:
-                  stringValue: "200"
+                  intValue: "200"
         - key: gcp.log_name
           value:
             stringValue: my-log-name
@@ -585,7 +585,7 @@
                   stringValue: "2"
               - key: status
                 value:
-                  stringValue: "200"
+                  intValue: "200"
         - key: gcp.log_name
           value:
             stringValue: my-log-name
@@ -601,6 +601,227 @@
             - key: user
               value:
                 stringValue: "@ns_server"
+        observedTimeUnixNano: now
+        timeUnixNano: "1789677760000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: POST
+              - key: requestUrl
+                value:
+                  stringValue: /_event
+              - key: responseSize
+                value:
+                  stringValue: "2"
+              - key: status
+                value:
+                  intValue: "200"
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "2"
+            - key: user
+              value:
+                stringValue: "@ns_server"
+        observedTimeUnixNano: now
+        timeUnixNano: "1789677760000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /
+              - key: responseSize
+                value:
+                  stringValue: "216"
+              - key: status
+                value:
+                  intValue: "301"
+              - key: userAgent
+                value:
+                  stringValue: curl/8.14.1
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "6"
+            - key: user
+              value:
+                stringValue: -
+        observedTimeUnixNano: now
+        timeUnixNano: "1789677760000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: RPCCONNECT
+              - key: requestUrl
+                value:
+                  stringValue: /saslauthd-saslauthd-port
+              - key: responseSize
+                value:
+                  stringValue: "0"
+              - key: status
+                value:
+                  intValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: saslauthd-port-service
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "6"
+            - key: user
+              value:
+                stringValue: "@"
+        observedTimeUnixNano: now
+        timeUnixNano: "1789677760000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /_metakv/remoteCluster/
+              - key: status
+                value:
+                  intValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: goxdcr-metakv
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "3"
+            - key: user
+              value:
+                stringValue: "@goxdcr"
+        observedTimeUnixNano: now
+        timeUnixNano: "1789677760000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /_metakv/remoteCluster/
+              - key: status
+                value:
+                  intValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: goxdcr-metakv
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "3"
+            - key: user
+              value:
+                stringValue: "@goxdcr"
         observedTimeUnixNano: now
         timeUnixNano: "1789677760000000000"
       scope: {}
