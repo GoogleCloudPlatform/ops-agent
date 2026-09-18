@@ -687,9 +687,6 @@
             - key: message
               value:
                 stringValue: "6"
-            - key: user
-              value:
-                stringValue: -
         observedTimeUnixNano: now
         timeUnixNano: "1789677760000000000"
       - attributes:

@@ -285,7 +285,6 @@
       userAgent: curl/8.14.1
     jsonPayload:
       message: "6"
-      user: -
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access

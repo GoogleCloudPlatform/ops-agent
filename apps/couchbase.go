@@ -346,6 +346,9 @@ func (p LoggingProcessorMacroCouchbaseHTTPAccess) Expand(ctx context.Context) []
 	mf.Fields["jsonPayload.host"] = &confgenerator.ModifyField{
 		OmitIf: `jsonPayload.host = "-"`,
 	}
+	mf.Fields["jsonPayload.user"] = &confgenerator.ModifyField{
+		OmitIf: `jsonPayload.user = "-"`,
+	}
 
 	return []confgenerator.InternalLoggingProcessor{
 		// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
