@@ -3597,6 +3597,9 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 			err := backoff.Retry(func() error {
 				out, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
 				if err != nil {
+					if gce.IsWindows(vm.ImageSpec) {
+						_ = agents.StartOpsAgentPluginServer(ctx, logger, vm, agents.OpsAgentPluginServerPort)
+					}
 					return err
 				}
 				cmdOut = out

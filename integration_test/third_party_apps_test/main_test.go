@@ -1086,6 +1086,7 @@ func TestThirdPartyApps(t *testing.T) {
 					}
 				}
 
+				options.Metadata = agents.MetadataWithDLVMDefaults(tc.imageSpec, options.Metadata)
 				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
