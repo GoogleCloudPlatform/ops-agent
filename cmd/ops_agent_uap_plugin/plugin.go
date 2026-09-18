@@ -28,9 +28,9 @@ import (
 
 	"buf.build/go/protoyaml"
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/apps"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/logs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
