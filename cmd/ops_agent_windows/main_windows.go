@@ -15,14 +15,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
@@ -65,20 +63,7 @@ func main() {
 			}
 			infoLog.Printf("uninstalled services")
 		} else if *healthChecks {
-			ctx := context.Background()
-			base, err := osext.ExecutableFolder()
-			if err != nil {
-				log.Fatalf("failed to determine executable folder: %v", err)
-			}
-			configPath := filepath.Join(base, "../config/config.yaml")
-			otlpExporterEnabled := false
-			uc, err := confgenerator.MergeConfFiles(ctx, configPath)
-			if err == nil {
-				otlpExporterEnabled = uc.Global.GetOtlpExporter()
-			} else {
-				log.Printf("failed to load config: %v", err)
-			}
-			healthCheckResults := getHealthCheckResults(otlpExporterEnabled)
+			healthCheckResults := getHealthCheckResults()
 			healthchecks.LogHealthCheckResults(healthCheckResults, infoLog)
 			infoLog.Println("Health checks finished")
 		} else {
@@ -89,12 +74,17 @@ func main() {
 	}
 }
 
-var services []struct {
+type serviceDescription struct {
 	name        string
 	displayName string
 	exepath     string
 	args        []string
 }
+
+var (
+	mainServiceDescription serviceDescription
+	otelServiceDescription serviceDescription
+)
 
 func init() {
 	if err := initServices(); err != nil {
@@ -117,10 +107,7 @@ func initServices() error {
 	if err := os.MkdirAll(configOutDir, 0644); err != nil {
 		return err
 	}
-	fluentbitStoragePath := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, `run\buffers`)
-	if err := os.MkdirAll(fluentbitStoragePath, 0644); err != nil {
-		return err
-	}
+
 	otelStoragePath := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run", "file_storage")
 	if err := os.MkdirAll(otelStoragePath, 0644); err != nil {
 		return err
@@ -131,42 +118,21 @@ func initServices() error {
 	}
 
 	// TODO: Write meaningful descriptions for these services
-	services = []struct {
-		name        string
-		displayName string
-		exepath     string
-		args        []string
-	}{
-		{
-			serviceName,
-			serviceDisplayName,
-			self,
-			[]string{
-				"-in", filepath.Join(base, "../config/config.yaml"),
-				"-out", configOutDir,
-			},
+	mainServiceDescription = serviceDescription{
+		name:        serviceName,
+		displayName: serviceDisplayName,
+		exepath:     self,
+		args: []string{
+			"-in", filepath.Join(base, "../config/config.yaml"),
+			"-out", configOutDir,
 		},
-		{
-			fmt.Sprintf("%s-opentelemetry-collector", serviceName),
-			fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
-			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
-			[]string{
-				"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
-			},
-		},
-		{
-			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
-			fmt.Sprintf("%s-fluent-bit", serviceName),
-			fmt.Sprintf("%s - Logging Agent", serviceDisplayName),
-			filepath.Join(base, fmt.Sprintf("%s-wrapper.exe", serviceName)),
-			[]string{
-				"-log_path", filepath.Join(logDirectory, "logging-module.log"),
-				"-config_path", filepath.Join(base, "../config/config.yaml"),
-				filepath.Join(base, "fluent-bit.exe"),
-				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
-				"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
-				"--storage_path", fluentbitStoragePath,
-			},
+	}
+	otelServiceDescription = serviceDescription{
+		name:        fmt.Sprintf("%s-opentelemetry-collector", serviceName),
+		displayName: fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
+		exepath:     filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
+		args: []string{
+			"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
 		},
 	}
 	return nil

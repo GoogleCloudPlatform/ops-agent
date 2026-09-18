@@ -14,15 +14,20 @@
 
 [Unit]
 Description=Google Cloud Ops Agent
-Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service network-online.target
+Wants=network-online.target
 After=network-online.target
 
 [Service]
-Type=oneshot
-# Validate the config.
-ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
-ExecStart=/bin/true
-RemainAfterExit=yes
+Type=simple
+RuntimeDirectory=google-cloud-ops-agent
+StateDirectory=google-cloud-ops-agent
+LogsDirectory=google-cloud-ops-agent
+# Validate config, run health checks, and generate configurations.
+ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml -logs /var/log/google-cloud-ops-agent -state /var/lib/google-cloud-ops-agent -out /run/google-cloud-ops-agent
+ExecStart=@PREFIX@/subagents/opentelemetry-collector/otelopscol --config=/run/google-cloud-ops-agent/otel.yaml
+Restart=always
+# For debugging:
+RuntimeDirectoryPreserve=yes
 
 [Install]
 WantedBy=multi-user.target

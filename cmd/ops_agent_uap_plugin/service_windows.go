@@ -26,7 +26,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"sync"
 	"unsafe"
 
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
@@ -48,8 +47,6 @@ const (
 	OpsAgentUAPPluginEventID  uint32 = 8
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
-	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
-	FluentbitBinary                  = "fluent-bit.exe"
 	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
 )
 
@@ -111,7 +108,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Subagents config validation and generation.
-	uc, err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir)
+	_, err = generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir)
 	if err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
 			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config, and generate sub-agents config: %s", err),
@@ -122,7 +119,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	// Trigger Healthchecks.
 	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-	runHealthChecks(healthCheckFileLogger, uc.Global.GetOtlpExporter())
+	runHealthChecks(healthCheckFileLogger)
 
 	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
 	_, err = createWindowsJobHandle()
@@ -220,18 +217,12 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 		return nil, err
 	}
 
-	for _, subagent := range []string{
-		"otel",
-		"fluentbit",
-	} {
-		if err := uc.GenerateFilesFromConfig(
-			ctx,
-			subagent,
-			filepath.Join(pluginStateDir, LogsDirectory),
-			filepath.Join(pluginStateDir, RuntimeDirectory),
-			filepath.Join(pluginStateDir, GeneratedConfigsOutDir, subagent)); err != nil {
-			return nil, err
-		}
+	if err := uc.GenerateFilesFromConfig(
+		ctx,
+		filepath.Join(pluginStateDir, LogsDirectory),
+		filepath.Join(pluginStateDir, RuntimeDirectory),
+		filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
+		return nil, err
 	}
 	return uc, nil
 }
@@ -281,30 +272,12 @@ func createWindowsJobHandle() (windows.Handle, error) {
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
 func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 
-	var wg sync.WaitGroup
-
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
-
-	// Starting Fluentbit
-	runFluentBitCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, AgentWrapperBinary),
-		"-config_path", OpsAgentConfigLocationWindows,
-		"-log_path", path.Join(pluginStateDirectory, LogsDirectory, "logging-module.log"),
-		path.Join(pluginInstallDirectory, FluentbitBinary),
-		"-c", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "fluentbit/fluent_bit_main.conf"),
-		"-R", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "fluentbit/fluent_bit_parser.conf"),
-		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
-	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancelAndSetError, runFluentBitCmd, runCommand, &wg)
-
-	wg.Wait()
+	runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand)
 }
 
 func runCommand(cmd *exec.Cmd) (string, error) {

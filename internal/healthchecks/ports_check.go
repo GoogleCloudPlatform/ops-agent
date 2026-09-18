@@ -16,13 +16,11 @@ package healthchecks
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
@@ -57,30 +55,11 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 }
 
 func (c PortsCheck) RunCheck(logger logs.StructuredLogger) error {
-	fbErr := runFluentBitCheck(logger)
-	otelErr := runOtelCollectorCheck(logger)
-	return errors.Join(fbErr, otelErr)
-}
-
-func runFluentBitCheck(logger logs.StructuredLogger) error {
-	fbActive, err := isSubagentActive("google-cloud-ops-agent-fluent-bit")
-	if err != nil {
-		return err
-	}
-	if fbActive {
-		return nil
-	}
-
-	// Fluent-bit listens on tcp4. Check for fluent-bit self metrics port.
-	err = runPortCheck(logger, int(portutil.GetPortFromEnv(fluentbit.ExperimentalMetricsPortEnv, fluentbit.MetricsPort)), tcpHost, "tcp4", FbMetricsPortErr)
-	if err != nil {
-		return err
-	}
-	return nil
+	return runOtelCollectorCheck(logger)
 }
 
 func runOtelCollectorCheck(logger logs.StructuredLogger) error {
-	ocActive, err := isSubagentActive("google-cloud-ops-agent-opentelemetry-collector")
+	ocActive, err := isSubagentActive("google-cloud-ops-agent")
 	if err != nil {
 		return err
 	}

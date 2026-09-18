@@ -28,7 +28,6 @@ import (
 )
 
 var (
-	service      = flag.String("service", "", "service to generate config for")
 	outDir       = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
 	input        = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 	logsDir      = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
@@ -36,12 +35,12 @@ var (
 	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
-func runHealthChecks(otlpExporterEnabled bool) {
+func runHealthChecks() {
 	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
 
 	defaultLogger := logs.NewSimpleLogger()
 
-	healthCheckResults := healthchecks.HealthCheckRegistryFactory(otlpExporterEnabled).RunAllHealthChecks(logger)
+	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
 	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
 }
 
@@ -65,20 +64,18 @@ func run() error {
 	log.Printf("Built-in config:\n%s", confgenerator.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
-	switch *service {
-	case "":
-		runHealthChecks(uc.Global.GetOtlpExporter())
-		log.Println("Startup checks finished")
-		if *healthChecks {
-			// If healthchecks is set, stop here
-			return nil
-		}
-	case "otel":
-		// The generated otlp metric json files are used only by the otel service.
-		err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *outDir)
-		if err != nil {
-			return err
-		}
+	runHealthChecks()
+	log.Println("Startup checks finished")
+	if *healthChecks {
+		// If healthchecks is set, stop here
+		return nil
 	}
-	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
+
+	// The generated otlp metric json files are used only by the otel service.
+	err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *outDir)
+	if err != nil {
+		return err
+	}
+
+	return uc.GenerateFilesFromConfig(ctx, *logsDir, *stateDir, *outDir)
 }

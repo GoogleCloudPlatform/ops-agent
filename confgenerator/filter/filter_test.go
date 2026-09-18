@@ -19,7 +19,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -71,18 +70,7 @@ func TestShouldParse(t *testing.T) {
 			if filter == nil {
 				t.Fatal("got nil filter")
 			}
-			t.Run("fluent-bit", func(t *testing.T) {
-				components, expr := AllFluentConfig("logname", map[string]*Filter{"filter": filter})
-				t.Logf("components = %+v", components)
-				t.Logf("expression =\n%s", expr)
-				if components != nil {
-					files, err := fluentbit.ModularConfig{Components: components}.Generate()
-					if err != nil {
-						t.Error(err)
-					}
-					t.Logf("generated config:\n%v", files)
-				}
-			})
+
 			t.Run("ottl", func(t *testing.T) {
 				value, err := filter.OTTLExpression()
 				if err != nil {

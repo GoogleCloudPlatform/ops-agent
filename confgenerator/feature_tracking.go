@@ -79,7 +79,6 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
-	allFeatures = append(allFeatures, getOtlpExporterFeatureConfig(mergedUc)...)
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -506,30 +505,6 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	}
 
 	return feature
-}
-
-func getOtlpExporterFeatureConfig(uc *UnifiedConfig) []Feature {
-	featureEnabled := "false"
-	if uc.Global.GetOtlpExporter() {
-		featureEnabled = "true"
-	}
-
-	return []Feature{
-		{
-			Module: "metrics",
-			Kind:   "exporters",
-			Type:   "otlp",
-			Key:    []string{"otlp_exporter"},
-			Value:  featureEnabled,
-		},
-		{
-			Module: "logging",
-			Kind:   "exporters",
-			Type:   "otlp",
-			Key:    []string{"otlp_exporter"},
-			Value:  featureEnabled,
-		},
-	}
 }
 
 func getOverriddenDefaultPipelines(uc *UnifiedConfig) []Feature {

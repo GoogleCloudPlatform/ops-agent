@@ -21,10 +21,9 @@
 
 
 ARG CMAKE_VERSION=3.25.2
-ARG OPENJDK_MAJOR_VERSION=17
-ARG OPENJDK_FULL_VERSION=17.0.8
-ARG OPENJDK_VERSION_SUFFIX=7
 ARG GO_VERSION=1.26.4
+ARG USE_PREBUILT=false
+ARG TARGETARCH
 
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager
@@ -47,28 +46,99 @@ FROM cmake-${TARGETARCH}-recent AS cmake-install-recent
 RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 
-# Manually prepare OpenJDK for the current architecture.
-FROM alpine:latest AS openjdk-amd64
-ARG OPENJDK_MAJOR_VERSION
-ARG OPENJDK_FULL_VERSION
-ARG OPENJDK_VERSION_SUFFIX
 
-ENV hash=aa5fc7d388fe544e5d85902e68399d5299e931f9b280d358a3cbee218d6017b0
-ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_x64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
-    /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
+# ======================================
+# Shared Go Binaries Build - Architecture Specific Bases
+# ======================================
 
-FROM alpine:latest AS openjdk-arm64
-ARG OPENJDK_MAJOR_VERSION
-ARG OPENJDK_FULL_VERSION
-ARG OPENJDK_VERSION_SUFFIX
+# AMD64 Base (SLES 12)
+FROM opensuse/archive:42.3 AS go-builder-base-amd64
+RUN set -x; \
+    # The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
+    zypper --no-gpg-check refresh 'OSS Update' && \
+    (echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
+    zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc8 gcc8-c++ zlib-devel expect systemd-devel unzip zip make curl && \
+    # Remove expired root certificate.
+    mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
+    update-ca-certificates && \
+    zypper -n update && \
+    # Set newer GCC as default with priority 1
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
+        --slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
+    update-alternatives --set gcc /usr/bin/gcc-8
 
-ENV hash=c43688163cfdcb1a6e6fe202cc06a51891df746b954c55dbd01430e7d7326d00
-ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_aarch64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
-    /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
+# ARM64 Base (SLES 15)
+FROM opensuse/leap:15.1 AS go-builder-base-arm64
+RUN set -x; \
+    zypper -n refresh && \
+    zypper -n update && \
+    zypper -n install git systemd autoconf automake libtool libcurl-devel libopenssl-devel gcc gcc-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip make curl
 
-FROM openjdk-${TARGETARCH} AS openjdk-install
-ARG OPENJDK_MAJOR_VERSION
-RUN set -xe; (echo "$hash  /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz" | sha256sum -c)
+# Selector
+ARG TARGETARCH
+FROM go-builder-base-${TARGETARCH} AS go-builder-base
+
+# Common Compile Stage
+FROM go-builder-base AS go-false
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG TARGETARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    mkdir -p /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk && \
-    tar -xf /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz -C /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk --strip-components=1
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+WORKDIR /work
+
+# 1. Download dependencies for the main repository
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 2. Download dependencies for the OTEL submodule
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+# Copy full source code
+COPY . /work
+
+# 3. Build otelopscol (CGO enabled)
+RUN \
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./builds/otel.sh /work/cache/
+
+# 4. Build ops-agent-engine (CGO disabled)
+RUN . VERSION && \
+    BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version" && \
+    BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=sles12" && \
+    BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}" && \
+    LD_FLAGS="-s -w ${BUILD_X1} ${BUILD_X2}" && \
+    CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
+      -ldflags "${LD_FLAGS}" \
+      github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
+
+# 5. Build ops_agent plugin helper (CGO disabled)
+RUN ./builds/ops_agent_plugin.sh /work/plugin-cache/
+
+
+# Stage to export prebuilt binaries to host
+FROM scratch AS go-compile-export
+COPY --from=go-false /work/google_cloud_ops_agent_engine /google_cloud_ops_agent_engine
+COPY --from=go-false /work/cache /cache
+COPY --from=go-false /work/plugin-cache /plugin-cache
+
+
+# Stage to import prebuilt binaries from host
+FROM scratch AS go-true
+COPY ./built-binaries/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
+COPY ./built-binaries/cache /work/cache
+COPY ./built-binaries/plugin-cache /work/plugin-cache
+
+
+# Final builder selector
+FROM go-${USE_PREBUILT} AS go-build
+
+

@@ -102,11 +102,11 @@ func CreateHealthChecksLogger(logDir string) logs.StructuredLogger {
 
 type HealthCheckRegistry []HealthCheck
 
-func HealthCheckRegistryFactory(otlpExporterEnabled bool) HealthCheckRegistry {
+func HealthCheckRegistryFactory() HealthCheckRegistry {
 	return HealthCheckRegistry{
 		PortsCheck{},
 		NetworkCheck{},
-		APICheck{otlpExporterEnabled: otlpExporterEnabled},
+		APICheck{},
 	}
 }
 

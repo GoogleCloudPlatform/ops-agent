@@ -54,6 +54,8 @@ logging:
           static_value: spanValue
         trace:
           move_from: jsonPayload.trace
+        operation.id:
+          move_from: jsonPayload.op_id
   service:
     experimental_otel_logging: true
     pipelines:

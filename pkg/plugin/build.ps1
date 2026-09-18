@@ -52,14 +52,10 @@ New-Item -ItemType Directory -Path $Subfolder -Force | Out-Null
 $TarFileName = "google-cloud-ops-agent-plugin_$PkgVersion-windows-$Arch.tar.gz" # Define tar file name
 
 $FilesToInclude = @(
-    "msvcp140.dll",
-    "vccorlib140.dll",
-    "vcruntime140.dll",
-    "fluent-bit.exe",
-    "fluent-bit.dll",
-    "opentelemetry-java-contrib-jmx-metrics.jar",
+
+
     "google-cloud-metrics-agent_windows_${GoArch}.exe",
-    "google-cloud-ops-agent-wrapper.exe"
+
     "ops_agent.exe"
     "THIRD_PARTY_LICENSES"
     "OPS_AGENT_VERSION"

@@ -1,14 +1,44 @@
-- entries:
-  - jsonPayload:
-      field1: nope, include me!
-      field2: second
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  partialSuccess: true
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: gcp.use_legacy_mapping
+        value:
+          stringValue: "true"
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: field1
+              value:
+                stringValue: nope, include me!
+            - key: field2
+              value:
+                stringValue: second
+        observedTimeUnixNano: now
+      scope: {}

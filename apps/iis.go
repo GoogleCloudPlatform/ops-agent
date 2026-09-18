@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -39,7 +38,7 @@ func (r MetricsReceiverIis) Type() string {
 
 func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.ReceiverVersion == "2" {
-		return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
+		return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "iis",
 				Config: map[string]interface{}{
@@ -73,11 +72,11 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				),
 				otel.MetricStartTime(),
 			}},
-		}, ctx)}, nil
+		}}, nil
 	}
 
 	// Return version 1 if version is anything other than 2
-	return []otel.ReceiverPipeline{confgenerator.ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -102,9 +101,6 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 					},
 				},
 			},
-		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
@@ -144,8 +140,10 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveInstrumentationLibraryLabelsAttributes(),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}}, nil
 }
 
 func init() {
@@ -161,39 +159,6 @@ func (LoggingProcessorMacroIisAccess) Type() string {
 
 // IISConcatFields handles field concatenation for IIS logs
 type IISConcatFields struct{}
-
-// Components implements the Fluent-bit concatenation using Lua
-func (IISConcatFields) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	iisMergeRecordFieldsLuaFunction := `iis_merge_fields`
-	iisMergeRecordFieldsLuaScriptContents := `
-	function iis_merge_fields(tag, timestamp, record)
-
-	  if (record["cs_uri_query"] == "-") then
-	    record["cs_uri_query"] = nil
-	  end
-	  if (record["http_request_referer"] == "-") then
-	    record["http_request_referer"] = nil
-	  end
-	  if (record["user"] == "-") then
-	    record["user"] = nil
-	  end
-
-	  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
-	  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
-		record["http_request_requestUrl"] = record["cs_uri_stem"]
-	  else
-		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
-	  end
-
-	  record["cs_uri_query"] = nil
-	  record["cs_uri_stem"] = nil
-	  record["s_port"] = nil
-	  return 2, timestamp, record
-	end
-	`
-
-	return fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)
-}
 
 // Processors implements the OTEL concatenation using ModifyFields + CustomConvertFunc
 func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error) {
@@ -259,7 +224,7 @@ func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error)
 	return modifyFields.Processors(ctx)
 }
 
-func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalOTelProcessor {
 	parseRegex := confgenerator.LoggingProcessorParseRegex{
 		// Microsoft updated the default format in Feb 2026.
 		// The new format now has fields sc_bytes and cs_bytes added right before time_taken
@@ -316,7 +281,7 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		Fields: fields,
 	}
 
-	return []confgenerator.InternalLoggingProcessor{
+	return []confgenerator.InternalOTelProcessor{
 		parseRegex,
 		concatFields,
 		excludeLogs,

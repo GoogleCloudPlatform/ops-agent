@@ -31,7 +31,7 @@ func instrumentationSourceValue(processorType string) *confgenerator.ModifyField
 }
 
 // genericAccessLogParser is an internal logging processor that parses access logs.
-func genericAccessLogParser(ctx context.Context, processorType string) []confgenerator.InternalLoggingProcessor {
+func genericAccessLogParser(ctx context.Context, processorType string) []confgenerator.InternalOTelProcessor {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://httpd.apache.org/docs/current/logs.html#accesslog
@@ -85,7 +85,7 @@ func genericAccessLogParser(ctx context.Context, processorType string) []confgen
 		}
 	}
 
-	return []confgenerator.InternalLoggingProcessor{
+	return []confgenerator.InternalOTelProcessor{
 		c,
 		mf,
 	}
