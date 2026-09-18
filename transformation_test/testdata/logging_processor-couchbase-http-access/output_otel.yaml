@@ -255,4 +255,105 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2026-09-17T20:42:40Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: POST
+      requestUrl: /_event
+      responseSize: "2"
+      status: 200
+    jsonPayload:
+      message: "2"
+      user: "@ns_server"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2026-09-17T20:42:40Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestUrl: /
+      responseSize: "216"
+      status: 301
+      userAgent: curl/8.14.1
+    jsonPayload:
+      message: "6"
+      user: -
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2026-09-17T20:42:40Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: RPCCONNECT
+      requestUrl: /saslauthd-saslauthd-port
+      status: 200
+      userAgent: saslauthd-port-service
+    jsonPayload:
+      message: "6"
+      user: "@"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2026-09-17T20:42:40Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestUrl: /_metakv/remoteCluster/
+      status: 200
+      userAgent: goxdcr-metakv
+    jsonPayload:
+      message: "3"
+      user: "@goxdcr"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2026-09-17T20:42:40Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestUrl: /_metakv/remoteCluster/
+      status: 200
+      userAgent: goxdcr-metakv
+    jsonPayload:
+      message: "3"
+      user: "@goxdcr"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2026-09-17T20:42:40Z
   partialSuccess: true

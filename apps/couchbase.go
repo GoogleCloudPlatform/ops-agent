@@ -338,8 +338,11 @@ func (p LoggingProcessorMacroCouchbaseHTTPAccess) Expand(ctx context.Context) []
 		if field == "referer" || field == "userAgent" {
 			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
 		}
+		if field == "responseSize" {
+			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "chunked" OR %s = "-"`, src, src)
+		}
 	}
-	
+
 	mf.Fields["jsonPayload.host"] = &confgenerator.ModifyField{
 		OmitIf: `jsonPayload.host = "-"`,
 	}
@@ -355,8 +358,7 @@ func (p LoggingProcessorMacroCouchbaseHTTPAccess) Expand(ctx context.Context) []
 						TimeKey:    "timestamp",
 						TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
 						Types: map[string]string{
-							"size": "integer",
-							"code": "integer",
+							"http_request_status": "integer",
 						},
 					},
 				},
@@ -366,8 +368,7 @@ func (p LoggingProcessorMacroCouchbaseHTTPAccess) Expand(ctx context.Context) []
 						TimeKey:    "timestamp",
 						TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
 						Types: map[string]string{
-							"size": "integer",
-							"code": "integer",
+							"http_request_status": "integer",
 						},
 					},
 				},
