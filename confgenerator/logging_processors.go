@@ -487,11 +487,11 @@ func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]
 	// The current "recombine" operator multiline support only supports setting a "start_state" ("is_first_entry").
 	// TODO: b/459877163 - Update implementation when opentelemetry supports "state-machine" multiline parsing.
 	if len(p.Rules) != 2 || p.Rules[0].StateName != "start_state" || p.Rules[1].StateName != "cont" {
-		return nil, errors.New("unimplemented")
+		return nil, errors.New("unimplemented: unsupported multiline rule definition")
 	}
 
 	if !isNegativeLookahead(p.Rules[0].Regex, p.Rules[1].Regex) {
-		return nil, errors.New("unimplemented")
+		return nil, errors.New("unimplemented: unsupported multiline rule definition")
 	}
 
 	isFirstEntryExpr := fmt.Sprintf("body.message matches %q", p.Rules[0].Regex)
