@@ -198,6 +198,12 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 }
 
 func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	for _, path := range append(r.IncludePaths, r.ExcludePaths...) {
+		if strings.Contains(path, "${HOSTNAME}") {
+			return nil, fmt.Errorf("unimplemented: ${HOSTNAME} is unsupported in OTel filelog")
+		}
+	}
+
 	operators := []map[string]any{}
 	var extensions []string
 	receiver_config := map[string]any{
