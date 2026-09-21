@@ -872,6 +872,11 @@ func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
 	// is 5 seconds, so we should probably give it at least that long.
 	time.Sleep(10 * time.Second)
+	if !gce.IsWindows(vm.ImageSpec) {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl is-active --quiet google-cloud-ops-agent"); err != nil {
+			return fmt.Errorf("RestartOpsAgent() service is not active after restart: %v", err)
+		}
+	}
 	return nil
 }
 

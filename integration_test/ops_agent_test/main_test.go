@@ -210,10 +210,18 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-// retrieveOtelConfig retrieves the file content of the generated Otel config
-// file from the remote VM
+// retrieveOtelConfig retrieves the resolved Otel config from the remote VM
+// using otelopscol print-config with the opsagentconf provider.
 func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (content string, err error) {
-	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
+	cmd := fmt.Sprintf("sudo /opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol print-config --feature-gates=otelcol.printInitialConfig --config=opsagentconf:%s", agents.OpsAgentConfigPath(vm.ImageSpec))
+	if gce.IsWindows(vm.ImageSpec) {
+		cmd = fmt.Sprintf(`& 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\google-cloud-metrics-agent_windows_amd64.exe' print-config --feature-gates=otelcol.printInitialConfig '--config=opsagentconf:%s'`, agents.OpsAgentConfigPath(vm.ImageSpec))
+	}
+	out, err := gce.RunRemotely(ctx, logger, vm, cmd)
+	if err != nil {
+		return "", err
+	}
+	return out.Stdout, nil
 }
 
 
@@ -3745,12 +3753,6 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	}{
 		{local: "../cmd/run_resource_detector/run_resource_detector.go",
 			remote: "run_resource_detector.go"},
-		{local: "../../confgenerator/resourcedetector/detector.go",
-			remote: "confgenerator/resourcedetector/detector.go"},
-		{local: "../../confgenerator/resourcedetector/gce_detector.go",
-			remote: "confgenerator/resourcedetector/gce_detector.go"},
-		{local: "../../confgenerator/resourcedetector/gce_metadata_provider.go",
-			remote: "confgenerator/resourcedetector/gce_metadata_provider.go"},
 		{local: "../../go.mod",
 			remote: "go.mod"},
 		{local: "../../go.sum",
@@ -3759,9 +3761,8 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 
 	// Create the folder structure on the VM
 	workDir := path.Join(workDirForImage(vm.ImageSpec), "run_resource_detector")
-	packageDir := path.Join(workDir, "confgenerator", "resourcedetector")
-	if err := makeDirectory(ctx, logger, vm, packageDir); err != nil {
-		return nil, fmt.Errorf("failed to create folder %s in VM: %v", packageDir, err)
+	if err := makeDirectory(ctx, logger, vm, workDir); err != nil {
+		return nil, fmt.Errorf("failed to create folder %s in VM: %v", workDir, err)
 	}
 
 	// Upload the files
