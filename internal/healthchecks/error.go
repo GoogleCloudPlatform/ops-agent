@@ -155,39 +155,6 @@ var (
 		ResourceLink: "https://docs.cloud.google.com/iam/docs/roles-permissions/telemetry#telemetry.tracesWriter",
 		IsFatal:      true,
 	}
-
-	LogApiUnauthenticatedErr = HealthCheckError{
-		Code:         "LogApiUnauthenticatedErr",
-		Class:        Api,
-		Message:      "The current VM couldn't authenticate to the Logging API.",
-		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
-		IsFatal:      true,
-	}
-	MonApiUnauthenticatedErr = HealthCheckError{
-		Code:         "MonApiUnauthenticatedErr",
-		Class:        Api,
-		Message:      "The current VM couldn't authenticate to the Monitoring API.",
-		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
-		IsFatal:      true,
-	}
-	LogPipelineErr = HealthCheckError{
-		Code:         "LogPipelineErr",
-		Class:        Runtime,
-		Message:      "Ops Agent logging pipeline failed",
-		Action:       "Refer to provided documentation link.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info",
-		IsFatal:      true,
-	}
-	LogParseErr = HealthCheckError{
-		Code:         "LogParseErr",
-		Class:        Runtime,
-		Message:      "Ops Agent failed to parse logs",
-		Action:       "Refer to provided documentation link.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info",
-		IsFatal:      false,
-	}
 	HcFailureErr = HealthCheckError{
 		Code:         "HcFailureErr",
 		Class:        Generic,

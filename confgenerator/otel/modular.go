@@ -272,16 +272,6 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	return string(out), nil
 }
 
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
-}
-
 // sortedKeys returns sorted keys from a Set if the Set has a type that can be ordered.
 func SortedKeys[K constraints.Ordered, V any](m map[K]V) []K {
 	keys := []K{}
