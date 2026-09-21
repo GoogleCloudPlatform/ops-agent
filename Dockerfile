@@ -92,12 +92,12 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 
 WORKDIR /work
 
-# 1. Download dependencies for the main repository
+# 1. Copy go.mod files for both main and submodule
 COPY go.mod go.sum ./
-RUN go mod download
-
-# 2. Download dependencies for the OTEL submodule
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+
+# 2. Download dependencies
+RUN go mod download
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 # Copy full source code
@@ -110,30 +110,18 @@ RUN \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
     ./builds/otel.sh /work/cache/
 
-# 4. Build ops-agent-engine (CGO disabled)
-RUN . VERSION && \
-    BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version" && \
-    BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=sles12" && \
-    BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}" && \
-    LD_FLAGS="-s -w ${BUILD_X1} ${BUILD_X2}" && \
-    CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
-      -ldflags "${LD_FLAGS}" \
-      github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
-
-# 5. Build ops_agent plugin helper (CGO disabled)
+# 4. Build ops_agent plugin helper (CGO disabled)
 RUN ./builds/ops_agent_plugin.sh /work/plugin-cache/
 
 
 # Stage to export prebuilt binaries to host
 FROM scratch AS go-compile-export
-COPY --from=go-false /work/google_cloud_ops_agent_engine /google_cloud_ops_agent_engine
 COPY --from=go-false /work/cache /cache
 COPY --from=go-false /work/plugin-cache /plugin-cache
 
 
 # Stage to import prebuilt binaries from host
 FROM scratch AS go-true
-COPY ./built-binaries/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY ./built-binaries/cache /work/cache
 COPY ./built-binaries/plugin-cache /work/plugin-cache
 
@@ -175,10 +163,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=centos8-build-systemd /work/cache /work/cache
 
@@ -227,10 +214,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
 
@@ -283,10 +269,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=rockylinux10-build-systemd /work/cache /work/cache
 
@@ -332,10 +317,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=bookworm-build-systemd /work/cache /work/cache
 
@@ -381,10 +365,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=trixie-build-systemd /work/cache /work/cache
 
@@ -437,10 +420,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=sles12-build-systemd /work/cache /work/cache
 
@@ -487,10 +469,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=sles15-build-systemd /work/cache /work/cache
 
@@ -537,10 +518,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=sles16-build-systemd /work/cache /work/cache
 
@@ -586,10 +566,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=jammy-build-systemd /work/cache /work/cache
 
@@ -635,10 +614,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=noble-build-systemd /work/cache /work/cache
 
@@ -684,10 +662,9 @@ WORKDIR /work
 COPY . /work
 
 # Copy the pre-compiled Go binaries from the shared build stage
-COPY --from=go-build /work/google_cloud_ops_agent_engine /work/google_cloud_ops_agent_engine
 COPY --from=go-build /work/cache /work/cache
 
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY ./submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 
 COPY --from=resolute-build-systemd /work/cache /work/cache
 

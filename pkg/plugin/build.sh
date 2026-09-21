@@ -25,12 +25,10 @@ ls .
 PLUGIN_DIR=$WS/ops-agent-plugin/
 mkdir -p ${PLUGIN_DIR}/subagents/opentelemetry-collector
 
-mkdir -p ${PLUGIN_DIR}/libexec
 mkdir -p ${PLUGIN_DIR}/THIRD_PARTY_LICENSES
 
 touch ${PLUGIN_DIR}/THIRD_PARTY_LICENSES/license.txt
 
-cp /work/google_cloud_ops_agent_engine ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_engine
 cp $WS/opt/google-cloud-ops-agent/ops_agent ${PLUGIN_DIR}/ops_agent
 
 

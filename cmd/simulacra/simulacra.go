@@ -30,8 +30,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/apps"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/binxio/gcloudconfig"
 	"github.com/google/uuid"

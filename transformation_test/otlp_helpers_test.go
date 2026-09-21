@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator/otel"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"

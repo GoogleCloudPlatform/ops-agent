@@ -36,20 +36,10 @@ if [ -z "$DESTDIR" ]; then
   DESTDIR=$(mktemp -d)
 fi
 
-function build_opsagentengine() {
-  if [[ ! -f /work/google_cloud_ops_agent_engine ]]; then
-  CGO_ENABLED=0 go build -buildvcs=false -o "/work/google_cloud_ops_agent_engine" \
-    -ldflags "$LD_FLAGS" \
-    github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
-  fi
-  mkdir -p "$DESTDIR$prefix/libexec"
-  cp /work/google_cloud_ops_agent_engine "$DESTDIR$prefix/libexec/google_cloud_ops_agent_engine"
-}
-
-(build_opsagentengine)
+mkdir -p "$DESTDIR"
 
 # Copy the cached compilations from docker to the destination
-cp -r /work/cache/* $DESTDIR
+cp -r /work/cache/* "$DESTDIR"
 
 # N.B. Don't include $DESTDIR itself in the tarball, since mktemp -d will create it mode 0700.
 (cd "$DESTDIR" && tar -czf /tmp/google-cloud-ops-agent.tgz *)

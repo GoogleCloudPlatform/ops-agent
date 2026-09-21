@@ -21,8 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
 )
@@ -34,13 +32,9 @@ const serviceDisplayName = "Google Cloud Ops Agent"
 var (
 	installServices   = flag.Bool("install", false, "whether to install the services")
 	uninstallServices = flag.Bool("uninstall", false, "whether to uninstall the services")
-	healthChecks      = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
 func main() {
-
-	infoLog := logs.NewSimpleLogger()
-
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)
@@ -56,20 +50,16 @@ func main() {
 			if err := install(); err != nil {
 				log.Fatal(err)
 			}
-			infoLog.Printf("installed services")
+			log.Printf("installed services")
 		} else if *uninstallServices {
 			if err := uninstall(); err != nil {
 				log.Fatal(err)
 			}
-			infoLog.Printf("uninstalled services")
-		} else if *healthChecks {
-			healthCheckResults := getHealthCheckResults()
-			healthchecks.LogHealthCheckResults(healthCheckResults, infoLog)
-			infoLog.Println("Health checks finished")
+			log.Printf("uninstalled services")
 		} else {
 			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.
 			fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")
-			fmt.Println("Use either --healthchecks, --install, --uninstall to take action.")
+			fmt.Println("Use either --install or --uninstall to take action.")
 		}
 	}
 }
@@ -132,7 +122,7 @@ func initServices() error {
 		displayName: fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
 		exepath:     filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 		args: []string{
-			"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
+			"--config=opsagentconf:" + filepath.Join(base, "../config/config.yaml"),
 		},
 	}
 	return nil
