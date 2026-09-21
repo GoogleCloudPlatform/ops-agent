@@ -28,8 +28,6 @@ import (
 	"path/filepath"
 	"unsafe"
 
-	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/apps"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -100,16 +98,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationWindows); err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
 			Message:       fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err),
-			ShouldRestart: false,
-		})
-		return &pb.StartResponse{}, nil
-	}
-
-	// Ops Agent config validation.
-	_, err = validateOpsAgentConfig(ctx, OpsAgentConfigLocationWindows)
-	if err != nil {
-		ps.cancelAndSetPluginError(&OpsAgentPluginError{
-			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config: %s", err),
 			ShouldRestart: false,
 		})
 		return &pb.StartResponse{}, nil
@@ -195,10 +183,6 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 		return alreadyInstalledAgentServiceNames, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgentServiceNames)
 	}
 	return alreadyInstalledAgentServiceNames, nil
-}
-
-func validateOpsAgentConfig(ctx context.Context, userConfigPath string) (*confgenerator.UnifiedConfig, error) {
-	return confgenerator.MergeConfFiles(ctx, userConfigPath)
 }
 
 func createWindowsJobHandle() (windows.Handle, error) {

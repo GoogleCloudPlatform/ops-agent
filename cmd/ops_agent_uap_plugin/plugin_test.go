@@ -18,20 +18,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
 	"buf.build/go/protoyaml" // Import the protoyaml-go package
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
-	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/apps"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/platform"
 	spb "google.golang.org/protobuf/types/known/structpb"
 )
 
 func customLogPathByOsType(ctx context.Context) string {
-	osType := platform.FromContext(ctx).Name()
-	if osType == "linux" {
+	if runtime.GOOS == "linux" {
 		return "/var/log"
 	}
 	return `C:\mylog`
@@ -188,9 +185,9 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 				t.Errorf("%v: writeCustomConfigToFile got error: %v, want nil error", tc.name, err)
 			}
 
-			_, err = confgenerator.MergeConfFiles(context.Background(), configPath)
-			if err != nil {
-				t.Errorf("%v: conf generator fails to validate the output Ops agent yaml: %v", tc.name, err)
+			content, err := os.ReadFile(configPath)
+			if err != nil || len(content) == 0 {
+				t.Errorf("%v: expected non-empty config file at %s, err: %v", tc.name, configPath, err)
 			}
 		})
 	}

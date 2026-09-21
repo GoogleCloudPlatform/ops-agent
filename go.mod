@@ -30,7 +30,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.28.0 // indirect
 	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 // indirect
 	golang.org/x/sys v0.47.0
 	golang.org/x/text v0.41.0 // indirect
@@ -46,7 +45,7 @@ require (
 	buf.build/go/protoyaml v0.3.1
 	cloud.google.com/go/secretmanager v1.20.0
 	github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228
-	github.com/GoogleCloudPlatform/opentelemetry-operations-collector v0.0.0-00010101000000-000000000000
+	github.com/GoogleCloudPlatform/opentelemetry-operations-collector v0.160.1-0.20260918190056-5c02af51e85c
 	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260911133443-254b6a0039b0
 	go.opentelemetry.io/collector/pdata v1.67.0
 	golang.org/x/sync v0.22.0
@@ -149,7 +148,6 @@ require (
 	github.com/gophercloud/gophercloud/v2 v2.13.0 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/hashicorp/consul/api v1.33.7 // indirect
 	github.com/hashicorp/cronexpr v1.1.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -214,7 +212,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
@@ -239,5 +236,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.3 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-replace github.com/GoogleCloudPlatform/opentelemetry-operations-collector => ./submodules/opentelemetry-operations-collector

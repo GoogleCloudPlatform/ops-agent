@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -81,53 +80,6 @@ func Test_findPreExistentAgents(t *testing.T) {
 
 			if gotExist != tc.wantExist {
 				t.Errorf("%v: findPreExistentAgents() failed to verify conflicting agent installations: gotExist: %v, wantExist %v, err: %v", tc.name, gotExist, tc.wantExist, err)
-			}
-		})
-	}
-}
-
-func Test_validateOpsAgentConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	validPath := filepath.Join(tmpDir, "valid.yaml")
-	if err := os.WriteFile(validPath, []byte("logging:\n  receivers:\n    test_receiver:\n      type: files\n      include_paths:\n        - /var/log/test.log\n"), 0644); err != nil {
-		t.Fatalf("failed to write valid.yaml: %v", err)
-	}
-
-	invalidPath := filepath.Join(tmpDir, "invalid.yaml")
-	if err := os.WriteFile(invalidPath, []byte("logging:\n  receivers:\n    test_receiver:\n      type: unknown_type\n"), 0644); err != nil {
-		t.Fatalf("failed to write invalid.yaml: %v", err)
-	}
-
-	cases := []struct {
-		name        string
-		path        string
-		wantSuccess bool
-	}{
-		{
-			name:        "non-existent config file is valid",
-			path:        filepath.Join(tmpDir, "non_existent.yaml"),
-			wantSuccess: true,
-		},
-		{
-			name:        "valid config file is valid",
-			path:        validPath,
-			wantSuccess: true,
-		},
-		{
-			name:        "invalid config file is invalid",
-			path:        invalidPath,
-			wantSuccess: false,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
-			_, err := validateOpsAgentConfig(ctx, tc.path)
-			gotSuccess := (err == nil)
-			if gotSuccess != tc.wantSuccess {
-				t.Errorf("%s: validateOpsAgentConfig() got success = %v, want %v, error: %v", tc.name, gotSuccess, tc.wantSuccess, err)
 			}
 		})
 	}

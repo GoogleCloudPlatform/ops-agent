@@ -31,7 +31,6 @@ import (
 	"syscall"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
 )
 
 const (
@@ -92,13 +91,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	// Receive config from the Start request and write it to the Ops Agent config file.
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationLinux); err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err), ShouldRestart: false})
-		return &pb.StartResponse{}, nil
-	}
-
-	// Ops Agent config validation
-	_, err = validateOpsAgentConfig(pContext, OpsAgentConfigLocationLinux)
-	if err != nil {
-		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to validate the custom Ops Agent config: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
 
@@ -167,10 +159,6 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
 	}
 	return string(out), err
-}
-
-func validateOpsAgentConfig(ctx context.Context, opsAgentConfigLocation string) (*confgenerator.UnifiedConfig, error) {
-	return confgenerator.MergeConfFiles(ctx, opsAgentConfigLocation)
 }
 
 func findPreExistentAgents(ctx context.Context, runCommand RunCommandFunc, agentSystemdServiceNames []string) (bool, error) {

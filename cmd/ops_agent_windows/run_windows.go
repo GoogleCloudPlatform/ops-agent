@@ -21,11 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
-	_ "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/apps"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/confgenerator"
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/healthchecks"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -38,20 +34,10 @@ const (
 	StdoutEventID uint32 = 2
 )
 
-func containsString(all []string, s string) bool {
-	for _, t := range all {
-		if t == s {
-			return true
-		}
-	}
-	return false
-}
-
 type service struct {
 	log          debug.Log
 	userConf     string
 	outDirectory string
-	uc           *confgenerator.UnifiedConfig
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -67,13 +53,6 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
-
-	if err := s.validateConfig(ctx); err != nil {
-		s.log.Error(EngineEventID, fmt.Sprintf("failed to validate config: %v", err))
-		// 2 is "file not found"
-		return false, 2
-	}
-	s.log.Info(EngineEventID, "validated configuration")
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
@@ -107,59 +86,6 @@ func (s *service) parseFlags(args []string) error {
 	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
 	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
 	return fs.Parse(args)
-}
-
-func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig) error {
-	mgr, err := mgr.Connect()
-	if err != nil {
-		return fmt.Errorf("failed to connect to service manager: %s", err)
-	}
-	defer mgr.Disconnect()
-	services, err := mgr.ListServices()
-	if err != nil {
-		return fmt.Errorf("failed to list services: %s", err)
-	}
-
-	var errors string
-	if unified.HasLogging() && containsString(services, "StackdriverLogging") {
-		errors += "We detected an existing Windows service for the StackdriverLogging agent, " +
-			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty logging section. " +
-			"Please either remove the logging section from the Ops Agent configuration, " +
-			"or disable the StackdriverLogging agent, and then retry enabling the Ops Agent. "
-	}
-	if unified.HasMetrics() && containsString(services, "StackdriverMonitoring") {
-		errors += "We detected an existing Windows service for the StackdriverMonitoring agent, " +
-			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty metrics section. " +
-			"Please either remove the metrics section from the Ops Agent configuration, " +
-			"or disable the StackdriverMonitoring agent, and then retry enabling the Ops Agent. "
-	}
-	if errors != "" {
-		return fmt.Errorf("conflicts with existing agents: %s", errors)
-	}
-	return nil
-}
-
-func getHealthCheckResults() []healthchecks.HealthCheckResult {
-	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-	logger := healthchecks.CreateHealthChecksLogger(logsDir)
-
-	return gceHealthChecks.RunAllHealthChecks(logger)
-}
-
-func (s *service) validateConfig(ctx context.Context) error {
-	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf)
-	if err != nil {
-		return err
-	}
-	s.uc = uc
-
-	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"]))
-	s.log.Info(EngineEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
-	if err := s.checkForStandaloneAgents(uc); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (s *service) startSubagents() error {
