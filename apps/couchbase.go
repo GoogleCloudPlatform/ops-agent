@@ -343,11 +343,10 @@ func (p LoggingProcessorMacroCouchbaseHTTPAccess) Expand(ctx context.Context) []
 		}
 	}
 
-	mf.Fields["jsonPayload.host"] = &confgenerator.ModifyField{
-		OmitIf: `jsonPayload.host = "-"`,
-	}
-	mf.Fields["jsonPayload.user"] = &confgenerator.ModifyField{
-		OmitIf: `jsonPayload.user = "-"`,
+	for _, field := range []string{"host", "user"} {
+		mf.Fields[fmt.Sprintf("jsonPayload.%s", field)] = &confgenerator.ModifyField{
+			OmitIf: fmt.Sprintf(`jsonPayload.%s = "-"`, field),
+		}
 	}
 
 	return []confgenerator.InternalLoggingProcessor{
