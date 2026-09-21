@@ -36,8 +36,10 @@ if [ -z "$DESTDIR" ]; then
   DESTDIR=$(mktemp -d)
 fi
 
+mkdir -p "$DESTDIR"
+
 # Copy the cached compilations from docker to the destination
-cp -r /work/cache/* $DESTDIR
+cp -r /work/cache/* "$DESTDIR"
 
 # N.B. Don't include $DESTDIR itself in the tarball, since mktemp -d will create it mode 0700.
 (cd "$DESTDIR" && tar -czf /tmp/google-cloud-ops-agent.tgz *)
