@@ -51,10 +51,13 @@ ENV GO_BIN_PATH="C:\Go\bin"
 # Build OT collector
 ###############################################################################
 
+COPY VERSION /work/VERSION
 COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
 
 WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
+ARG WINDOWS_VERSION
+ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
 RUN Get-Content ../../../VERSION | Where-Object length | ForEach-Object { Invoke-Expression "\`$env:\`$_" }; `
     & ./build.ps1 -outDir /work/out/bin -version $env:PKG_VERSION -buildDistro $env:BUILD_DISTRO
 
