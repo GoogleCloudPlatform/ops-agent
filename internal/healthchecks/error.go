@@ -45,14 +45,6 @@ type MultiWrappedError interface {
 }
 
 var (
-	FbMetricsPortErr = HealthCheckError{
-		Code:         "FbMetricsPortErr",
-		Class:        Port,
-		Message:      "Port 20202 needed for Ops Agent self metrics is unavailable.",
-		Action:       "Verify that port 20202 is open.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
-		IsFatal:      true,
-	}
 	OtelMetricsPortErr = HealthCheckError{
 		Code:         "OtelMetricsPortErr",
 		Class:        Port,
@@ -205,22 +197,3 @@ var (
 		IsFatal:      false,
 	}
 )
-
-type SelfLogTranslationEntry struct {
-	RegexMatch string
-	Message    string
-	Code       string
-}
-
-var FluentBitSelfLogTranslationList = []SelfLogTranslationEntry{
-	{
-		RegexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		Message:    singleErrorResultMessage(LogPipelineErr, "Runtime Check"),
-		Code:       LogPipelineErr.Code,
-	},
-	{
-		RegexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		Message:    singleErrorResultMessage(LogParseErr, "Runtime Check"),
-		Code:       LogParseErr.Code,
-	},
-}

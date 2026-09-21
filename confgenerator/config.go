@@ -869,21 +869,14 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	return validReceivers, nil
 }
 
-type pipelineBackend int
-
-const (
-	BackendOTel pipelineBackend = iota
-)
-
 type PipelineInstance struct {
 	PID, RID     string
 	PipelineType string
-	Receiver     Component
+	Receiver     OTelReceiver
 	Processors   []struct {
 		ID string
-		Component
+		OTelProcessor
 	}
-	Backend pipelineBackend
 }
 
 func (pi *PipelineInstance) Types() (string, string) {
@@ -905,7 +898,7 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]PipelineInstan
 				}
 				var processors []struct {
 					ID string
-					Component
+					OTelProcessor
 				}
 				canMerge := true
 				for _, prID := range p.ProcessorIDs {
@@ -925,7 +918,7 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]PipelineInstan
 					canMerge = false
 					processors = append(processors, struct {
 						ID string
-						Component
+						OTelProcessor
 					}{prID, processor})
 				}
 				out = append(out, PipelineInstance{
@@ -986,7 +979,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 			}
 			var processors []struct {
 				ID string
-				Component
+				OTelProcessor
 			}
 			for _, prID := range p.ProcessorIDs {
 				// TODO: Support InternalLoggingProcessorMerger once we have anything that can be merged.
@@ -999,12 +992,11 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				}
 				processors = append(processors, struct {
 					ID string
-					Component
+					OTelProcessor
 				}{prID, processor})
 			}
 			instance := PipelineInstance{
 				PipelineType: "logs",
-				Backend:      BackendOTel,
 				PID:          pID,
 				RID:          rID,
 				Receiver:     receiver,
@@ -1032,10 +1024,9 @@ func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]PipelineInstance, err
 	return append(append(metricsPipelines, tracesPipelines...), loggingPipelines...), nil
 }
 
-// LoggingReceivers returns a map of potential logging receivers.
-// Each Component may or may not be usable in fluent-bit or otel.
-func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Component, error) {
-	out := map[string]Component{}
+// LoggingReceivers returns a map of logging receivers.
+func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
+	out := map[string]OTelReceiver{}
 	if uc.Logging != nil {
 		for k, v := range uc.Logging.Receivers {
 			out[k] = v
@@ -1050,20 +1041,6 @@ func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Compo
 		}
 	}
 	return out, nil
-}
-
-func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
-	receivers, err := uc.LoggingReceivers(ctx)
-	if err != nil {
-		return nil, err
-	}
-	validReceivers := map[string]OTelReceiver{}
-	for k, v := range receivers {
-		if v, ok := v.(OTelReceiver); ok {
-			validReceivers[k] = v
-		}
-	}
-	return validReceivers, nil
 }
 
 func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {

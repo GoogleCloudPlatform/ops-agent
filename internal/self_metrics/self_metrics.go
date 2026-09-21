@@ -17,22 +17,11 @@ package self_metrics
 import (
 	"context"
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
-	"time"
 
-	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/contrib/detectors/gcp"
-	"go.opentelemetry.io/otel/attribute"
-	metricapi "go.opentelemetry.io/otel/metric"
-	metricsdk "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/resource"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -43,10 +32,6 @@ const (
 
 func getFullAgentMetricName(metricName string) string {
 	return fmt.Sprintf("%s/%s", agentMetricNamespace, metricName)
-}
-
-func agentMetricsPrefixFormatter(d metricdata.Metrics) string {
-	return getFullAgentMetricName(d.Name)
 }
 
 type EnabledReceivers struct {
@@ -73,186 +58,6 @@ func CountEnabledReceivers(ctx context.Context, uc *confgenerator.UnifiedConfig)
 	}
 
 	return eR, nil
-}
-
-func InstrumentEnabledReceiversMetric(ctx context.Context, uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
-	eR, err := CountEnabledReceivers(ctx, uc)
-	if err != nil {
-		return err
-	}
-
-	_, err = meter.Int64ObservableGauge(
-		enabledReceiversMetricName,
-		metricapi.WithInt64Callback(
-			func(ctx context.Context, observer metricapi.Int64Observer) error {
-				for rType, count := range eR.MetricsReceiverCountsByType {
-					labels := []attribute.KeyValue{
-						attribute.String("telemetry_type", "metrics"),
-						attribute.String("receiver_type", rType),
-					}
-					observer.Observe(int64(count), metricapi.WithAttributes(labels...))
-				}
-
-				for rType, count := range eR.LogsReceiverCountsByType {
-					labels := []attribute.KeyValue{
-						attribute.String("telemetry_type", "logs"),
-						attribute.String("receiver_type", rType),
-					}
-					observer.Observe(int64(count), metricapi.WithAttributes(labels...))
-				}
-				return nil
-			}),
-	)
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func InstrumentFeatureTrackingMetric(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
-	features, err := confgenerator.ExtractFeatures(ctx, userUc, mergedUc)
-	if err != nil {
-		return err
-	}
-	_, err = meter.Int64ObservableGauge(
-		featureTrackingMetricName,
-		metricapi.WithInt64Callback(
-			func(ctx context.Context, observer metricapi.Int64Observer) error {
-				for _, f := range features {
-					labels := []attribute.KeyValue{
-						attribute.String("module", f.Module),
-						attribute.String("feature", fmt.Sprintf("%s:%s", f.Kind, f.Type)),
-						attribute.String("key", strings.Join(f.Key, ".")),
-						attribute.String("value", f.Value),
-					}
-					observer.Observe(int64(1), metricapi.WithAttributes(labels...))
-				}
-				return nil
-			}),
-	)
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resource.Resource) *metricsdk.MeterProvider {
-	provider := metricsdk.NewMeterProvider(
-		metricsdk.WithReader(
-			metricsdk.NewPeriodicReader(
-				exporter,
-				metricsdk.WithInterval(2*time.Hour),
-			),
-		),
-		metricsdk.WithView(
-			metricsdk.NewView(
-				metricsdk.Instrument{
-					Name: featureTrackingMetricName,
-					Kind: metricsdk.InstrumentKindObservableGauge,
-				},
-				metricsdk.Stream{
-					Name:        featureTrackingMetricName,
-					Aggregation: metricsdk.AggregationDefault{},
-				},
-			)),
-		metricsdk.WithResource(res),
-	)
-	return provider
-}
-
-func CreateEnabledReceiversMeterProvider(exporter metricsdk.Exporter, res *resource.Resource) *metricsdk.MeterProvider {
-	provider := metricsdk.NewMeterProvider(
-		metricsdk.WithReader(
-			metricsdk.NewPeriodicReader(
-				exporter,
-			),
-		),
-		metricsdk.WithView(
-			metricsdk.NewView(
-				metricsdk.Instrument{
-					Name: enabledReceiversMetricName,
-					Kind: metricsdk.InstrumentKindObservableGauge,
-				},
-				metricsdk.Stream{
-					Name:        enabledReceiversMetricName,
-					Aggregation: metricsdk.AggregationDefault{},
-				},
-			)),
-		metricsdk.WithResource(res),
-	)
-	return provider
-}
-
-func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) (err error) {
-
-	// Resource for GCP and SDK detectors
-	res, err := resource.New(ctx,
-		resource.WithDetectors(gcp.NewDetector()),
-		resource.WithTelemetrySDK(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create resource: %w", err)
-	}
-
-	// Create exporter pipeline
-	exporter, err := mexporter.New(
-		mexporter.WithMetricDescriptorTypeFormatter(agentMetricsPrefixFormatter),
-		mexporter.WithDisableCreateMetricDescriptors(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create exporter: %w", err)
-	}
-
-	featureTrackingProvider := CreateFeatureTrackingMeterProvider(exporter, res)
-	err = InstrumentFeatureTrackingMetric(ctx, userUc, mergedUc, featureTrackingProvider.Meter("ops_agent/feature_tracking"))
-	if err != nil {
-		return fmt.Errorf("failed to instrument feature tracking: %w", err)
-	}
-
-	enabledReceiversProvider := CreateEnabledReceiversMeterProvider(exporter, res)
-	err = InstrumentEnabledReceiversMetric(ctx, mergedUc, enabledReceiversProvider.Meter("ops_agent/self_metrics"))
-	if err != nil {
-		return fmt.Errorf("failed to instrument enabled receivers: %w", err)
-	}
-
-	defer func() {
-		if serr := featureTrackingProvider.Shutdown(ctx); serr != nil {
-			myStatus, ok := status.FromError(serr)
-			if !ok && myStatus.Code() == codes.Unknown {
-				log.Print(serr)
-			} else if err == nil {
-				err = fmt.Errorf("failed to shutdown meter provider: %w", serr)
-			}
-		}
-		if serr := enabledReceiversProvider.Shutdown(ctx); serr != nil {
-			myStatus, ok := status.FromError(serr)
-			if !ok && myStatus.Code() == codes.Unknown {
-				log.Print(serr)
-			} else if err == nil {
-				err = fmt.Errorf("failed to shutdown meter provider: %w", serr)
-			}
-		}
-	}()
-
-	timer := time.NewTimer(10 * time.Second)
-
-	for {
-		select {
-		case <-timer.C:
-			err := featureTrackingProvider.ForceFlush(ctx)
-			if err != nil {
-				log.Print(err)
-			}
-			err = enabledReceiversProvider.ForceFlush(ctx)
-			if err != nil {
-				log.Print(err)
-			}
-		case <-ctx.Done():
-			return nil
-		}
-	}
 }
 
 func metricToJson(metrics pmetric.Metrics) ([]byte, error) {

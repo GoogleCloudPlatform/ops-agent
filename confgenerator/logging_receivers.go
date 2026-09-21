@@ -17,8 +17,6 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"path"
-	"strings"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -26,14 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-// DBPath returns the database path for the given log tag
-func DBPath(tag string) string {
-	// TODO: More sanitization?
-	dir := strings.ReplaceAll(strings.ReplaceAll(tag, ".", "_"), "/", "_")
-	return path.Join("${buffers_dir}", dir)
-}
-
-// A LoggingReceiverFiles represents the user configuration for a file receiver (fluentbit's tail plugin).
+// A LoggingReceiverFiles represents the user configuration for a file receiver.
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
 	// TODO: Use LoggingReceiverFilesMixin after figuring out the validation story.
@@ -54,10 +45,6 @@ func (r LoggingReceiverFiles) mixin() LoggingReceiverFilesMixin {
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
 		RecordLogFilePath:       r.RecordLogFilePath,
 	}
-}
-
-func (r LoggingReceiverFiles) Expand(_ context.Context) (InternalOTelReceiver, []InternalOTelProcessor) {
-	return r.mixin(), nil
 }
 
 func (r LoggingReceiverFiles) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
