@@ -1,1 +1,2 @@
+- type: parse_json
 - type: active_directory_ds

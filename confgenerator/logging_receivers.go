@@ -786,7 +786,10 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data.data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					return v.SetIf(ottl.ToValues(v), v.IsPresent())
+					return ottl.NewStatements(
+						v.SetIf(ottl.ToValues(v), v.IsPresent()),
+						v.SetIf(ottl.ParseJSON(ottl.StringLiteral("[]")), ottl.Not(v.IsPresent())),
+					)
 				},
 			},
 			"jsonPayload.TimeGenerated": {
@@ -857,6 +860,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 						cacheEventData.SetIf(ottl.ToValues(eventData), eventData.IsPresent()),
 						cacheEventData.AppendValuesIf(eventBinary, ottl.And(cacheEventData.IsPresent(), eventBinary.IsPresent())),
 						v.SetIf(cacheEventData, cacheEventData.IsPresent()),
+						v.SetIf(ottl.ParseJSON(ottl.StringLiteral("[]")), ottl.Not(v.IsPresent())),
 					)
 				},
 			},
@@ -923,6 +927,7 @@ func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, err
 						cacheEventData.SetIf(ottl.ToValues(eventData), eventData.IsPresent()),
 						cacheEventData.AppendValuesIf(eventBinary, ottl.And(cacheEventData.IsPresent(), eventBinary.IsPresent())),
 						v.SetIf(cacheEventData, cacheEventData.IsPresent()),
+						v.SetIf(ottl.ParseJSON(ottl.StringLiteral("[]")), ottl.Not(v.IsPresent())),
 					)
 				},
 			},
@@ -964,7 +969,7 @@ func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit
 }
 
 func formatSystemTime(v ottl.LValue) ottl.Statements {
-	return v.Set(ottl.Concat([]ottl.Value{ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T"), ottl.StringLiteral(" +0000")}, ""))
+	return v.Set(ottl.Concat([]ottl.Value{ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s"), ottl.StringLiteral("+0000")}, " "))
 }
 
 func init() {

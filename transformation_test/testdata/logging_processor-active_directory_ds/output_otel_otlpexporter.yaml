@@ -37,59 +37,47 @@
         body:
           kvlistValue:
             values:
-            - key: message
+            - key: Channel
               value:
-                stringValue: "2023-01-15T10:30:45.123456Z INFO Directory Service: Successful authentication for user DOMAIN\\user1 from workstation WS001"
-        observedTimeUnixNano: now
-      - attributes:
-        - key: compute.googleapis.com/resource_name
-          value:
-            stringValue: hostname
-        - key: gcp.log_name
-          value:
-            stringValue: my-log-name
-        - key: logging.googleapis.com/instrumentation_source
-          value:
-            stringValue: agent.googleapis.com/active_directory_ds
-        body:
-          kvlistValue:
-            values:
-            - key: message
+                stringValue: Directory Service
+            - key: ComputerName
               value:
-                stringValue: "2023-01-15T10:31:12.654321Z WARNING Active Directory Web Services: LDAP search operation took longer than expected (2.5 seconds)"
-        observedTimeUnixNano: now
-      - attributes:
-        - key: compute.googleapis.com/resource_name
-          value:
-            stringValue: hostname
-        - key: gcp.log_name
-          value:
-            stringValue: my-log-name
-        - key: logging.googleapis.com/instrumentation_source
-          value:
-            stringValue: agent.googleapis.com/active_directory_ds
-        body:
-          kvlistValue:
-            values:
-            - key: message
+                stringValue: test-computer
+            - key: Data
               value:
-                stringValue: "2023-01-15T10:32:05.789012Z ERROR Directory Service: Failed authentication attempt for user DOMAIN\\user2 from IP 192.168.1.100"
-        observedTimeUnixNano: now
-      - attributes:
-        - key: compute.googleapis.com/resource_name
-          value:
-            stringValue: hostname
-        - key: gcp.log_name
-          value:
-            stringValue: my-log-name
-        - key: logging.googleapis.com/instrumentation_source
-          value:
-            stringValue: agent.googleapis.com/active_directory_ds
-        body:
-          kvlistValue:
-            values:
-            - key: message
+                stringValue: ""
+            - key: EventCategory
               value:
-                stringValue: "2023-01-15T10:33:18.345678Z INFO Active Directory Web Services: Certificate renewal completed successfully for domain controller DC01 "
+                doubleValue: 0
+            - key: EventID
+              value:
+                doubleValue: 2065
+            - key: EventType
+              value:
+                stringValue: Information
+            - key: Message
+              value:
+                stringValue: "Directory Service: Successful authentication"
+            - key: Qualifiers
+              value:
+                doubleValue: 12345
+            - key: RecordNumber
+              value:
+                doubleValue: 22334
+            - key: Sid
+              value:
+                stringValue: ""
+            - key: SourceName
+              value:
+                stringValue: NTDS General
+            - key: StringInserts
+              value:
+                arrayValue: {}
+            - key: TimeGenerated
+              value:
+                stringValue: 2026-09-24 13:45:59 +0000
+            - key: TimeWritten
+              value:
+                stringValue: 2026-09-24 13:45:59 +0000
         observedTimeUnixNano: now
       scope: {}
