@@ -54,7 +54,7 @@
         			SeDelegateSessionUserImpersonatePrivilege
       Task: 56789
       ThreadId: 6080
-      TimeCreated: 2026-01-16 18:45:59 +0000
+      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
       UserId: ""
       Version: 0
     labels:
@@ -121,7 +121,7 @@
         			SeDelegateSessionUserImpersonatePrivilege
       Task: 56789
       ThreadId: 6080
-      TimeCreated: 2026-01-16 18:45:59 +0000
+      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
       UserId: ""
       Version: 0
     labels:
@@ -154,7 +154,7 @@
       - 7300700070007300760063002F0031000000
       Task: 0
       ThreadId: 5678
-      TimeCreated: 2025-12-14 05:26:29 +0000
+      TimeCreated: 2025-12-14 05:26:29.0709018 +0000
       UserId: ""
       Version: 0
     labels:
@@ -187,7 +187,37 @@
       - 7300700070007300760063002F0034000000
       Task: 0
       ThreadId: 9876
-      TimeCreated: 2025-12-14 05:25:55 +0000
+      TimeCreated: 2025-12-14 05:25:55.5387001 +0000
+      UserId: ""
+      Version: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      ActivityID: ""
+      Channel: Directory Service
+      Computer: test-computer
+      EventID: 2065
+      EventRecordID: 22334
+      Keywords: "0x8080000000000000"
+      Level: 4
+      Message: Quota enforcement is now in effect.
+      Opcode: 0
+      ProcessID: 789
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: NTDS General
+      Qualifiers: 12345
+      RelatedActivityID: ""
+      StringInserts: []
+      Task: 0
+      ThreadId: 9876
+      TimeCreated: 2025-12-14 05:25:55.5387001 +0000
       UserId: ""
       Version: 0
     labels:

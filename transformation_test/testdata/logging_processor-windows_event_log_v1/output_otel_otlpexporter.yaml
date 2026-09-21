@@ -110,10 +110,10 @@
                       			SeDelegateSessionUserImpersonatePrivilege
             - key: TimeGenerated
               value:
-                stringValue: 2026-01-16 18:45:59 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 +0000
             - key: TimeWritten
               value:
-                stringValue: 2026-01-16 18:45:59 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 +0000
         observedTimeUnixNano: now
       - attributes:
         - key: compute.googleapis.com/resource_name
@@ -201,10 +201,10 @@
                       			SeDelegateSessionUserImpersonatePrivilege
             - key: TimeGenerated
               value:
-                stringValue: 2026-01-16 18:45:59 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 +0000
             - key: TimeWritten
               value:
-                stringValue: 2026-01-16 18:45:59 +0000
+                stringValue: 2026-01-16 18:45:59.5782153 +0000
         observedTimeUnixNano: now
       - attributes:
         - key: compute.googleapis.com/resource_name
@@ -257,10 +257,10 @@
                   - stringValue: stopped
             - key: TimeGenerated
               value:
-                stringValue: 2025-12-14 05:26:29 +0000
+                stringValue: 2025-12-14 05:26:29.0709018 +0000
             - key: TimeWritten
               value:
-                stringValue: 2025-12-14 05:26:29 +0000
+                stringValue: 2025-12-14 05:26:29.0709018 +0000
         observedTimeUnixNano: now
       - attributes:
         - key: compute.googleapis.com/resource_name
@@ -313,9 +313,62 @@
                   - stringValue: running
             - key: TimeGenerated
               value:
-                stringValue: 2025-12-14 05:25:55 +0000
+                stringValue: 2025-12-14 05:25:55.5387001 +0000
             - key: TimeWritten
               value:
-                stringValue: 2025-12-14 05:25:55 +0000
+                stringValue: 2025-12-14 05:25:55.5387001 +0000
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: Channel
+              value:
+                stringValue: Directory Service
+            - key: ComputerName
+              value:
+                stringValue: test-computer
+            - key: Data
+              value:
+                stringValue: ""
+            - key: EventCategory
+              value:
+                intValue: "0"
+            - key: EventID
+              value:
+                doubleValue: 2065
+            - key: EventType
+              value:
+                stringValue: Information
+            - key: Message
+              value:
+                stringValue: Quota enforcement is now in effect.
+            - key: Qualifiers
+              value:
+                doubleValue: 12345
+            - key: RecordNumber
+              value:
+                doubleValue: 22334
+            - key: Sid
+              value:
+                stringValue: ""
+            - key: SourceName
+              value:
+                stringValue: NTDS General
+            - key: StringInserts
+              value:
+                arrayValue: {}
+            - key: TimeGenerated
+              value:
+                stringValue: 2025-12-14 05:25:55.5387001 +0000
+            - key: TimeWritten
+              value:
+                stringValue: 2025-12-14 05:25:55.5387001 +0000
         observedTimeUnixNano: now
       scope: {}
