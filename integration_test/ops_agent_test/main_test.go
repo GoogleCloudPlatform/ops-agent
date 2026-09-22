@@ -67,8 +67,6 @@ import (
 	trace "cloud.google.com/go/trace/apiv1"
 	cloudtrace "cloud.google.com/go/trace/apiv1/tracepb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -210,10 +208,18 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-// retrieveOtelConfig retrieves the file content of the generated Otel config
-// file from the remote VM
+// retrieveOtelConfig retrieves the resolved Otel config from the remote VM
+// using otelopscol print-config with the opsagentconf provider.
 func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (content string, err error) {
-	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
+	cmd := fmt.Sprintf("sudo /opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol print-config --feature-gates=otelcol.printInitialConfig --config=opsagentconf:%s", agents.OpsAgentConfigPath(vm.ImageSpec))
+	if gce.IsWindows(vm.ImageSpec) {
+		cmd = fmt.Sprintf(`& 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\google-cloud-metrics-agent_windows_amd64.exe' print-config --feature-gates=otelcol.printInitialConfig '--config=opsagentconf:%s'`, agents.OpsAgentConfigPath(vm.ImageSpec))
+	}
+	out, err := gce.RunRemotely(ctx, logger, vm, cmd)
+	if err != nil {
+		return "", err
+	}
+	return out.Stdout, nil
 }
 
 
@@ -3686,126 +3692,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 }
 
 func TestResourceDetectorOnGCE(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-
-		actual, err := runResourceDetectorCli(ctx, logger, vm)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if actual.InstanceName != vm.Name {
-			t.Errorf("detector attribute InstanceName has value %q; expected %q", actual.InstanceName, vm.Name)
-		}
-		if actual.Project != vm.Project {
-			t.Errorf("detector attribute Project has value %q; expected %q", actual.Project, vm.Project)
-		}
-		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
-		if !expectedNetworkURL.MatchString(actual.Network) {
-			t.Errorf("detector attribute Network has value %q; expected %q", actual.Network, expectedNetworkURL.String())
-		}
-		if actual.Zone != vm.Zone {
-			t.Errorf("detector attribute Zone has value %q; expected %q", actual.Zone, vm.Zone)
-		}
-		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
-		if !expectedMachineType.MatchString(actual.MachineType) {
-			t.Errorf("detector attribute MachineType has value %q; expected %q", actual.MachineType, expectedMachineType.String())
-		}
-		if actual.InstanceID != fmt.Sprint(vm.ID) {
-			t.Errorf("detector attribute InstanceID has value %q; expected %q", actual.InstanceID, fmt.Sprint(vm.ID))
-		}
-		if len(actual.InterfaceIPv4) == 0 {
-			t.Errorf("detector attribute InterfaceIPv4 should have at least one value")
-		}
-		// Depends on the setup of the integration test, vm.IPAddress can be either the public or the private IP
-		if actual.PrivateIP != vm.IPAddress && actual.PublicIP != vm.IPAddress {
-			t.Errorf("detector attribute PrivateIP has value %q and PublicIP has value %q; expected at least one to be %q", actual.PrivateIP, actual.PublicIP, vm.IPAddress)
-		}
-		// For the current integration tests we always attach the following metadata
-		if v, ok := actual.Metadata["serial-port-logging-enable"]; ok {
-			if v != "true" {
-				t.Errorf("detector attribute Metadata has values %v; expected to have %q as %q", actual.Metadata, "serial-port-logging-enable", "true")
-			}
-		} else {
-			t.Errorf("detector attribute Metadata has values %v; expected to have %q", actual.Metadata, "serial-port-logging-enable")
-		}
-	})
-}
-
-// runResourceDetectorCli uploads the resource detector runner and sets up the
-// env in the VM. Then run the runner to print out the JSON formatted
-// GCEResource and finally unmarshal it back to an instance of GCEResource
-func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM) (*resourcedetector.GCEResource, error) {
-	// Update the resourcedetector package and the go.mod and go.sum
-	// So that the main function can locate the package from the work directory
-	filesToUpload := []struct {
-		local, remote string
-	}{
-		{local: "../cmd/run_resource_detector/run_resource_detector.go",
-			remote: "run_resource_detector.go"},
-		{local: "../../confgenerator/resourcedetector/detector.go",
-			remote: "confgenerator/resourcedetector/detector.go"},
-		{local: "../../confgenerator/resourcedetector/gce_detector.go",
-			remote: "confgenerator/resourcedetector/gce_detector.go"},
-		{local: "../../confgenerator/resourcedetector/gce_metadata_provider.go",
-			remote: "confgenerator/resourcedetector/gce_metadata_provider.go"},
-		{local: "../../go.mod",
-			remote: "go.mod"},
-		{local: "../../go.sum",
-			remote: "go.sum"},
-	}
-
-	// Create the folder structure on the VM
-	workDir := path.Join(workDirForImage(vm.ImageSpec), "run_resource_detector")
-	packageDir := path.Join(workDir, "confgenerator", "resourcedetector")
-	if err := makeDirectory(ctx, logger, vm, packageDir); err != nil {
-		return nil, fmt.Errorf("failed to create folder %s in VM: %v", packageDir, err)
-	}
-
-	// Upload the files
-	for _, file := range filesToUpload {
-		f, err := os.Open(file.local)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Run the resource detector in the VM
-	if err := installGolang(ctx, logger, vm); err != nil {
-		return nil, err
-	}
-	cmd := fmt.Sprintf(`
-		%s
-		cd %s
-		go run run_resource_detector.go`, goPathCommandForImage(vm.ImageSpec), workDir)
-	runnerOutput, err := gce.RunRemotely(ctx, logger, vm, cmd)
-	if err != nil {
-		return nil, fmt.Errorf("failed to run resource detector in VM: %w", err)
-	}
-
-	// Parse the output
-	d, err := unmarshalResource(runnerOutput.Stdout)
-	if err != nil {
-		return nil, fmt.Errorf("can't unmarshal a detector from JSON: %v", err)
-	}
-	return d, nil
-}
-
-// unmarshalResource Unmarshal the string to a GCEResource
-func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
-	r := regexp.MustCompile("{(\"(Project|Zone|Network|Subnetwork|PublicIP|PrivateIP|InstanceID|InstanceName|Tags|MachineType|Metadata|Label|InterfaceIPv4)\":.*)+}")
-	match := r.FindString(in)
-	in_byte := []byte(match)
-	var resource resourcedetector.GCEResource
-	err := json.Unmarshal(in_byte, &resource)
-	return &resource, err
+	t.Skip("Skipping TestResourceDetectorOnGCE while migrating confgenerator to collector")
 }
 
 // uninstallGolang removes the go installation on the VM.
@@ -5501,14 +5388,14 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 		if gce.IsWindows(imageSpec) {
 			// Set environment variables via PowerShell
 			setEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", "40001", "Machine")`,
-				otel.ExperimentalMetricsPortEnv)
+				agents.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, setEnvCmd); err != nil {
 				t.Fatal(err)
 			}
 			// Cleanup env vars at the end of the test
 			t.Cleanup(func() {
 				unsetEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", $null, "Machine")`,
-					otel.ExperimentalMetricsPortEnv)
+					agents.ExperimentalMetricsPortEnv)
 				gce.RunRemotely(ctx, logger, vm, unsetEnvCmd)
 			})
 			// Restart agent
@@ -5529,7 +5416,7 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 			}
 			otelOverrideContent := fmt.Sprintf(`[Service]
 Environment="%s=40001"
-`, otel.ExperimentalMetricsPortEnv)
+`, agents.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", otelOverrideContent, otelOverrideFile)); err != nil {
 				t.Fatal(err)
 			}

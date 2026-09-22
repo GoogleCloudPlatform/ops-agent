@@ -39,12 +39,13 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 
 	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
 	"go.uber.org/multierr"
 )
+
+const ExperimentalMetricsPortEnv = "EXPERIMENTAL_METRICS_PORT"
 
 // TrailingQueryWindow represents how far into the past to look when querying
 // for uptime metrics.
@@ -189,7 +190,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	metricsCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, otel.ExperimentalMetricsPortEnv)
+	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, ExperimentalMetricsPortEnv)
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, otelPortCmd)
 
 	isUAPPlugin := gce.IsOpsAgentUAPPlugin()
@@ -872,6 +873,11 @@ func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
 	// is 5 seconds, so we should probably give it at least that long.
 	time.Sleep(10 * time.Second)
+	if !gce.IsWindows(vm.ImageSpec) {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl is-active --quiet google-cloud-ops-agent"); err != nil {
+			return fmt.Errorf("RestartOpsAgent() service is not active after restart: %v", err)
+		}
+	}
 	return nil
 }
 

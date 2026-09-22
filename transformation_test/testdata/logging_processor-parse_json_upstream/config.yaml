@@ -1,4 +1,0 @@
-- type: parse_json
-  field: message
-  time_key: time
-  time_format: "%Y-%m-%dT%H:%M:%S%z"
