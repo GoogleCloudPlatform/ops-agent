@@ -105,14 +105,6 @@ func CumulativeToDeltaWithInitialValue(initial_value string, metrics ...string) 
 	}
 }
 
-// DeltaToCumulative returns a Component that converts each delta metric to cumulative.
-func DeltaToCumulative() Component {
-	return Component{
-		Type:   "deltatocumulative",
-		Config: map[string]interface{}{},
-	}
-}
-
 // DeltaToRate returns a Component that converts each delta metric to a gauge rate.
 func DeltaToRate(metrics ...string) Component {
 	return Component{
@@ -139,14 +131,6 @@ func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]i
 		`^(.*)$`,
 		path.Join(prefix, `${1}`),
 		operations...,
-	)
-}
-
-// ChangePrefix returns a config snippet that updates a prefix on all metrics.
-func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
-	return RegexpRename(
-		fmt.Sprintf(`^%s(.*)$`, oldPrefix),
-		fmt.Sprintf("%s%s", newPrefix, `${1}`),
 	)
 }
 
@@ -353,61 +337,6 @@ func ConvertGaugeToSum(metricName string) TransformQuery {
 	return TransformQuery{
 		Context:   Metric,
 		Statement: fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where name == "%s"`, metricName),
-	}
-}
-
-// ConvertFloatToInt returns an expression where a float-valued metric can be converted to an int
-func ConvertFloatToInt(metricName string) TransformQuery {
-	return TransformQuery{
-		Context:   Datapoint,
-		Statement: fmt.Sprintf(`set(value_int, Int(value_double)) where metric.name == "%s"`, metricName),
-	}
-}
-
-// SetDescription returns a metrics transform expression where the metrics description will be set to what is provided
-func SetDescription(metricName, metricDescription string) TransformQuery {
-	return TransformQuery{
-		Context:   Datapoint,
-		Statement: fmt.Sprintf(`set(metric.description, "%s") where metric.name == "%s"`, metricDescription, metricName),
-	}
-}
-
-// SetUnit returns a metrics transform expression where the metric unit is set to provided value
-func SetUnit(metricName, unit string) TransformQuery {
-	return TransformQuery{
-		Context:   Datapoint,
-		Statement: fmt.Sprintf(`set(metric.unit, "%s") where metric.name == "%s"`, unit, metricName),
-	}
-}
-
-// SetName returns a metrics transform expression where the metric name is set to provided value
-func SetName(oldName, newName string) TransformQuery {
-	return TransformQuery{
-		Context:   Datapoint,
-		Statement: fmt.Sprintf(`set(metric.name, "%s") where metric.name == "%s"`, newName, oldName),
-	}
-}
-
-func SetAttribute(metricName, attributeKey, attributeValue string) TransformQuery {
-	return TransformQuery{
-		Context:   Datapoint,
-		Statement: fmt.Sprintf(`set(attributes["%s"], "%s") where metric.name == "%s"`, attributeKey, attributeValue, metricName),
-	}
-}
-
-// SummarySumValToSum creates a new Sum metric out of a summary metric's sum value. The new metric has a name of "<Old Name>_sum".
-func SummarySumValToSum(metricName, aggregation string, isMonotonic bool) TransformQuery {
-	return TransformQuery{
-		Context:   Datapoint,
-		Statement: fmt.Sprintf(`convert_summary_sum_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName),
-	}
-}
-
-// SummaryCountValToSum creates a new Sum metric out of a summary metric's count value. The new metric has a name of "<Old Name>_count".
-func SummaryCountValToSum(metricName, aggregation string, isMonotonic bool) TransformQuery {
-	return TransformQuery{
-		Context:   Datapoint,
-		Statement: fmt.Sprintf(`convert_summary_count_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName),
 	}
 }
 

@@ -600,9 +600,6 @@ type Metrics struct {
 
 type OTelReceiver interface {
 	Component
-	InternalOTelReceiver
-}
-type InternalOTelReceiver interface {
 	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
 }
 
@@ -634,47 +631,6 @@ func (m MetricsReceiverShared) CollectionIntervalString() string {
 	return "60s"
 }
 
-type MetricsReceiverSharedTLS struct {
-	Insecure           *bool  `yaml:"insecure" validate:"omitempty"`
-	InsecureSkipVerify *bool  `yaml:"insecure_skip_verify" validate:"omitempty"`
-	CertFile           string `yaml:"cert_file" validate:"required_with=KeyFile"`
-	KeyFile            string `yaml:"key_file" validate:"required_with=CertFile"`
-	CAFile             string `yaml:"ca_file" validate:"omitempty"`
-}
-
-func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]interface{} {
-	if m.Insecure == nil {
-		m.Insecure = &defaultInsecure
-	}
-
-	tls := map[string]interface{}{
-		"insecure": *m.Insecure,
-	}
-
-	if m.InsecureSkipVerify != nil {
-		tls["insecure_skip_verify"] = *m.InsecureSkipVerify
-	}
-	if m.CertFile != "" {
-		tls["cert_file"] = m.CertFile
-	}
-	if m.CAFile != "" {
-		tls["ca_file"] = m.CAFile
-	}
-	if m.KeyFile != "" {
-		tls["key_file"] = m.KeyFile
-	}
-
-	return tls
-}
-
-type MetricsReceiverSharedCluster struct {
-	CollectClusterMetrics *bool `yaml:"collect_cluster_metrics" validate:"omitempty"`
-}
-
-func (m MetricsReceiverSharedCluster) ShouldCollectClusterMetrics() bool {
-	return m.CollectClusterMetrics == nil || *m.CollectClusterMetrics
-}
-
 var MetricsReceiverTypes = &componentTypeRegistry[MetricsReceiver, metricsReceiverMap]{
 	Subagent: "metrics", Kind: "receiver",
 }
@@ -700,9 +656,6 @@ func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 
 type OTelProcessor interface {
 	Component
-	InternalOTelProcessor
-}
-type InternalOTelProcessor interface {
 	Processors(context.Context) ([]otel.Component, error)
 }
 
@@ -869,21 +822,14 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	return validReceivers, nil
 }
 
-type pipelineBackend int
-
-const (
-	BackendOTel pipelineBackend = iota
-)
-
 type PipelineInstance struct {
 	PID, RID     string
 	PipelineType string
-	Receiver     Component
+	Receiver     OTelReceiver
 	Processors   []struct {
 		ID string
-		Component
+		OTelProcessor
 	}
-	Backend pipelineBackend
 }
 
 func (pi *PipelineInstance) Types() (string, string) {
@@ -905,7 +851,7 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]PipelineInstan
 				}
 				var processors []struct {
 					ID string
-					Component
+					OTelProcessor
 				}
 				canMerge := true
 				for _, prID := range p.ProcessorIDs {
@@ -925,7 +871,7 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]PipelineInstan
 					canMerge = false
 					processors = append(processors, struct {
 						ID string
-						Component
+						OTelProcessor
 					}{prID, processor})
 				}
 				out = append(out, PipelineInstance{
@@ -986,7 +932,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 			}
 			var processors []struct {
 				ID string
-				Component
+				OTelProcessor
 			}
 			for _, prID := range p.ProcessorIDs {
 				// TODO: Support InternalLoggingProcessorMerger once we have anything that can be merged.
@@ -999,12 +945,11 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				}
 				processors = append(processors, struct {
 					ID string
-					Component
+					OTelProcessor
 				}{prID, processor})
 			}
 			instance := PipelineInstance{
 				PipelineType: "logs",
-				Backend:      BackendOTel,
 				PID:          pID,
 				RID:          rID,
 				Receiver:     receiver,
@@ -1032,10 +977,9 @@ func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]PipelineInstance, err
 	return append(append(metricsPipelines, tracesPipelines...), loggingPipelines...), nil
 }
 
-// LoggingReceivers returns a map of potential logging receivers.
-// Each Component may or may not be usable in fluent-bit or otel.
-func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Component, error) {
-	out := map[string]Component{}
+// LoggingReceivers returns a map of logging receivers.
+func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
+	out := map[string]OTelReceiver{}
 	if uc.Logging != nil {
 		for k, v := range uc.Logging.Receivers {
 			out[k] = v
@@ -1050,20 +994,6 @@ func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Compo
 		}
 	}
 	return out, nil
-}
-
-func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
-	receivers, err := uc.LoggingReceivers(ctx)
-	if err != nil {
-		return nil, err
-	}
-	validReceivers := map[string]OTelReceiver{}
-	for k, v := range receivers {
-		if v, ok := v.(OTelReceiver); ok {
-			validReceivers[k] = v
-		}
-	}
-	return validReceivers, nil
 }
 
 func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
@@ -1110,9 +1040,6 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 			return err
 		}
 		if _, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
-			return err
-		}
-		if err := validateSSLConfig(receivers, ctx); err != nil {
 			return err
 		}
 
@@ -1285,42 +1212,4 @@ func stringContainedInSliceCaseInsensitive(str string, slice []string) bool {
 		}
 	}
 	return false
-}
-
-func validateSSLConfig(receivers metricsReceiverMap, ctx context.Context) error {
-	for receiverId, receiver := range receivers {
-		receiverPipelines, err := receiver.Pipelines(ctx)
-		if err != nil {
-			continue
-		}
-		for _, pipeline := range receiverPipelines {
-			if tlsCfg, ok := pipeline.Receiver.Config.(map[string]interface{})["tls"]; ok {
-				cfg := tlsCfg.(map[string]interface{})
-				// If insecure, no other fields are allowed
-				if cfg["insecure"] == true {
-					invalidFields := []string{}
-
-					for _, field := range []string{"insecure_skip_verify", "cert_file", "ca_file", "key_file"} {
-						if val, ok := cfg[field]; ok && val != "" {
-							invalidFields = append(invalidFields, fmt.Sprintf("\"%s\"", field))
-						}
-					}
-
-					if len(invalidFields) > 0 {
-						return fmt.Errorf("%s are not allowed when \"insecure\" is true, which indicates TLS is disabled for receiver \"%s\"", strings.Join(invalidFields, ", "), receiverId)
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// parameterErrorPrefix returns the common parameter error prefix.
-// id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver or processor, e.g. "hostmetrics".
-// parameter is name of the parameter.
-func parameterErrorPrefix(subagent string, kind string, id string, componentType string, parameter string) string {
-	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, kind, id)
 }

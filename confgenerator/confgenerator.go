@@ -183,12 +183,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
-	receiver, ok := p.Receiver.(OTelReceiver)
-	if !ok {
-		return nil, nil, fmt.Errorf("%q is not an otel receiver", p.RID)
-	}
-	// TODO: Add a way for receivers or processors to decide whether they're compatible with a particular config.
-	receiverPipelines, err := receiver.Pipelines(ctx)
+	receiverPipelines, err := p.Receiver.Pipelines(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("receiver %q has invalid configuration: %w", p.RID, err)
 	}
@@ -233,15 +228,11 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 		}
 
 		for _, processorItem := range p.Processors {
-			processor, ok := processorItem.Component.(OTelProcessor)
-			if !ok {
-				return nil, nil, fmt.Errorf("processor %q not supported in pipeline %q", processorItem.ID, p.PID)
-			}
-			if processors, err := processor.Processors(ctx); err != nil {
+			processors, err := processorItem.Processors(ctx)
+			if err != nil {
 				return nil, nil, fmt.Errorf("processor %q has invalid configuration: %w", processorItem.ID, err)
-			} else {
-				pipeline.Processors = append(pipeline.Processors, processors...)
 			}
+			pipeline.Processors = append(pipeline.Processors, processors...)
 		}
 		outP[prefix] = pipeline
 	}
@@ -257,9 +248,6 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 		return nil, nil, err
 	}
 	for _, pipeline := range pipelines {
-		if pipeline.Backend != BackendOTel {
-			continue
-		}
 		pipeR, pipeP, err := pipeline.OTelComponents(ctx)
 		if err != nil {
 			return nil, nil, err
@@ -268,25 +256,6 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 		maps.Copy(outP, pipeP)
 	}
 	return outR, outP, nil
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
-}
-
-func sliceContains(s []string, v string) bool {
-	for _, e := range s {
-		if e == v {
-			return true
-		}
-	}
-	return false
 }
 
 const (

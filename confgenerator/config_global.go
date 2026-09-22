@@ -20,13 +20,6 @@ type Global struct {
 	OtlpExporter                 *bool            `yaml:"otlp_exporter,omitempty"`
 }
 
-func (g *Global) GetOtlpExporter() bool {
-	if g != nil && g.OtlpExporter != nil {
-		return *g.OtlpExporter
-	}
-	return false
-}
-
 // Get whether self log collection should be enabled. Defaults to true if unset.
 func (g *Global) GetDefaultSelfLogFileCollection() bool {
 	if g != nil && g.DefaultSelfLogFileCollection != nil {
@@ -39,31 +32,4 @@ type LogFileRotation struct {
 	Enabled     *bool `yaml:"enabled"`
 	MaxFileSize *int  `yaml:"max_file_size_megabytes" validate:"omitempty,gte=1"`
 	BackupCount *int  `yaml:"backup_count" validate:"omitempty,gte=1"`
-}
-
-// Get whether log rotation should be enabled. Defaults to true if unset.
-func (c *LogFileRotation) GetEnabled() bool {
-	if c.Enabled == nil {
-		return true
-	}
-	return *c.Enabled
-}
-
-// Get the maximum file size for logs in megabytes. If not set
-// or non-positive, defaults to 400 MB.
-func (c *LogFileRotation) GetMaxFileSize() int {
-	if c.MaxFileSize == nil || *c.MaxFileSize <= 0 {
-		return 400
-	}
-	return *c.MaxFileSize
-}
-
-// Get the maximum number of backups for logs. If not set or negative,
-// defaults to 1 backup (2 files including the file that is being logged
-// to).
-func (c *LogFileRotation) GetBackupCount() int {
-	if c.BackupCount == nil || *c.BackupCount < 0 {
-		return 1
-	}
-	return *c.BackupCount
 }

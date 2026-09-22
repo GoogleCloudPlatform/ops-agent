@@ -174,12 +174,12 @@ func (inputReceiver) Type() string {
 func (t transformationTest) pipelineInstance(path string) confgenerator.PipelineInstance {
 	var processors []struct {
 		ID string
-		confgenerator.Component
+		confgenerator.OTelProcessor
 	}
 	for i, p := range t {
 		processors = append(processors, struct {
 			ID string
-			confgenerator.Component
+			confgenerator.OTelProcessor
 		}{
 			fmt.Sprintf("processor%d", i), // only used for error messages
 			p.LoggingProcessor,
@@ -421,5 +421,5 @@ func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV2{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogRawXML{} })
-	confgenerator.ReplaceLoggingProcessorMacro[apps.LoggingProcessorMacroIisAccess]()
+	confgenerator.LoggingProcessorTypes.ReplaceType(func() confgenerator.LoggingProcessor { return &apps.LoggingProcessorIisAccess{} })
 }

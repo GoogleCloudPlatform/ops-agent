@@ -45,14 +45,6 @@ type MultiWrappedError interface {
 }
 
 var (
-	FbMetricsPortErr = HealthCheckError{
-		Code:         "FbMetricsPortErr",
-		Class:        Port,
-		Message:      "Port 20202 needed for Ops Agent self metrics is unavailable.",
-		Action:       "Verify that port 20202 is open.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
-		IsFatal:      true,
-	}
 	OtelMetricsPortErr = HealthCheckError{
 		Code:         "OtelMetricsPortErr",
 		Class:        Port,
@@ -163,39 +155,6 @@ var (
 		ResourceLink: "https://docs.cloud.google.com/iam/docs/roles-permissions/telemetry#telemetry.tracesWriter",
 		IsFatal:      true,
 	}
-
-	LogApiUnauthenticatedErr = HealthCheckError{
-		Code:         "LogApiUnauthenticatedErr",
-		Class:        Api,
-		Message:      "The current VM couldn't authenticate to the Logging API.",
-		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
-		IsFatal:      true,
-	}
-	MonApiUnauthenticatedErr = HealthCheckError{
-		Code:         "MonApiUnauthenticatedErr",
-		Class:        Api,
-		Message:      "The current VM couldn't authenticate to the Monitoring API.",
-		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
-		IsFatal:      true,
-	}
-	LogPipelineErr = HealthCheckError{
-		Code:         "LogPipelineErr",
-		Class:        Runtime,
-		Message:      "Ops Agent logging pipeline failed",
-		Action:       "Refer to provided documentation link.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info",
-		IsFatal:      true,
-	}
-	LogParseErr = HealthCheckError{
-		Code:         "LogParseErr",
-		Class:        Runtime,
-		Message:      "Ops Agent failed to parse logs",
-		Action:       "Refer to provided documentation link.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info",
-		IsFatal:      false,
-	}
 	HcFailureErr = HealthCheckError{
 		Code:         "HcFailureErr",
 		Class:        Generic,
@@ -205,22 +164,3 @@ var (
 		IsFatal:      false,
 	}
 )
-
-type SelfLogTranslationEntry struct {
-	RegexMatch string
-	Message    string
-	Code       string
-}
-
-var FluentBitSelfLogTranslationList = []SelfLogTranslationEntry{
-	{
-		RegexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		Message:    singleErrorResultMessage(LogPipelineErr, "Runtime Check"),
-		Code:       LogPipelineErr.Code,
-	},
-	{
-		RegexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		Message:    singleErrorResultMessage(LogParseErr, "Runtime Check"),
-		Code:       LogParseErr.Code,
-	},
-}

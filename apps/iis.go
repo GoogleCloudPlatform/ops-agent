@@ -150,18 +150,39 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverIis{} }, platform.Windows)
 }
 
-type LoggingProcessorMacroIisAccess struct {
+type LoggingProcessorIisAccess struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (LoggingProcessorMacroIisAccess) Type() string {
+func (LoggingProcessorIisAccess) Type() string {
 	return "iis_access"
 }
 
-// IISConcatFields handles field concatenation for IIS logs
-type IISConcatFields struct{}
+type LoggingReceiverIisAccess struct {
+	confgenerator.ConfigComponent           `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+}
 
-// Processors implements the OTEL concatenation using ModifyFields + CustomConvertFunc
-func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error) {
+func (LoggingReceiverIisAccess) Type() string {
+	return "iis_access"
+}
+
+func (r LoggingReceiverIisAccess) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	rps, err := r.LoggingReceiverFilesMixin.Pipelines(ctx)
+	if err != nil {
+		return nil, err
+	}
+	processors, err := (LoggingProcessorIisAccess{}).Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range rps {
+		rps[i].Processors["logs"] = append(rps[i].Processors["logs"], processors...)
+	}
+	return rps, nil
+}
+
+func iisConcatFieldsProcessors(ctx context.Context) ([]otel.Component, error) {
 	// Required OTTL fields
 	bodyHttpRequestServerIp := ottl.LValue{"body", "http_request_serverIp"}
 	bodySPort := ottl.LValue{"body", "s_port"}
@@ -224,7 +245,7 @@ func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error)
 	return modifyFields.Processors(ctx)
 }
 
-func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalOTelProcessor {
+func (p LoggingProcessorIisAccess) Processors(ctx context.Context) ([]otel.Component, error) {
 	parseRegex := confgenerator.LoggingProcessorParseRegex{
 		// Microsoft updated the default format in Feb 2026.
 		// The new format now has fields sc_bytes and cs_bytes added right before time_taken
@@ -245,9 +266,6 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		},
 	}
 
-	// Handle field concatenation (serverIp+port, requestUrl)
-	concatFields := IISConcatFields{}
-
 	// This is used to exclude the header lines above the logs
 	// EXAMPLE LINES:
 	// #Software: Microsoft Internet Information Services 10.0
@@ -257,9 +275,11 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		MatchAny: []string{`jsonPayload.message=~"^#(?:Fields|Date|Version|Software):"`},
 	}
 
-	// Create fields map for simple field operations and moves
+	instrumentationVal := fmt.Sprintf("agent.googleapis.com/%s", p.Type())
 	fields := map[string]*confgenerator.ModifyField{
-		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		confgenerator.InstrumentationSourceLabel: {
+			StaticValue: &instrumentationVal,
+		},
 	}
 
 	// Generate the httpRequest structure field moves
@@ -281,25 +301,33 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		Fields: fields,
 	}
 
-	return []confgenerator.InternalOTelProcessor{
-		parseRegex,
-		concatFields,
-		excludeLogs,
-		modifyFields,
+	var out []otel.Component
+	for _, step := range []func(context.Context) ([]otel.Component, error){
+		parseRegex.Processors,
+		iisConcatFieldsProcessors,
+		excludeLogs.Processors,
+		modifyFields.Processors,
+	} {
+		c, err := step(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, c...)
 	}
-}
-
-func loggingReceiverFilesMixinIisAccess() confgenerator.LoggingReceiverFilesMixin {
-	return confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: []string{
-			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
-		},
-	}
+	return out, nil
 }
 
 func init() {
-	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroIisAccess](
-		loggingReceiverFilesMixinIisAccess,
-		platform.Windows,
-	)
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &LoggingProcessorIisAccess{}
+	}, platform.Windows)
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &LoggingReceiverIisAccess{
+			LoggingReceiverFilesMixin: confgenerator.LoggingReceiverFilesMixin{
+				IncludePaths: []string{
+					`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
+				},
+			},
+		}
+	}, platform.Windows)
 }

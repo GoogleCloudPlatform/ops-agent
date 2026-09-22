@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,7 +25,6 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 	}
 	pi := transformationConfig.pipelineInstance(abs)
 	pi.RID = "my-log-name"
-	pi.Backend = confgenerator.BackendOTel
 
 	rps, pls, err := pi.OTelComponents(ctx)
 	if err != nil {

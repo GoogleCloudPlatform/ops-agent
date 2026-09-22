@@ -24,7 +24,6 @@ import (
 )
 
 const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentation_source"`
-const HttpRequestKey = "logging.googleapis.com/httpRequest"
 
 func setLogNameProcessor(ctx context.Context, logName string) LoggingProcessorModifyFields {
 	p := platform.FromContext(ctx)
