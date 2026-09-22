@@ -58,7 +58,7 @@ WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
 ARG WINDOWS_VERSION
 ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
-RUN Get-Content ../../../VERSION | Where-Object length | ForEach-Object { Invoke-Expression "\`$env:\`$_" }; `
+RUN Get-Content ../../../VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
     & ./build.ps1 -outDir /work/out/bin -version $env:PKG_VERSION -buildDistro $env:BUILD_DISTRO
 
 ###############################################################################
@@ -73,7 +73,7 @@ ARG WINDOWS_VERSION
 ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
 RUN go build -o bin/google-cloud-ops-agent.exe -ldflags "-s -w" ./cmd/ops_agent_windows; `
     Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/out/bin/; `
-    Copy-Item -Path submodules/opentelemetry-operations-collector/confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
+    Copy-Item -Path default-config.yaml -Destination /work/out/config/config.yaml;
 
 ###############################################################################
 
