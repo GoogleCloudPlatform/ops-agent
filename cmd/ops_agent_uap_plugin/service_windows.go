@@ -103,6 +103,15 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return &pb.StartResponse{}, nil
 	}
 
+	// Subagents config validation and generation.
+	if err := validateOpsAgentConfig(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{
+			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config, and generate sub-agents config: %s", err),
+			ShouldRestart: false,
+		})
+		return &pb.StartResponse{}, nil
+	}
+
 	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
 	_, err = createWindowsJobHandle()
 	if err != nil {
@@ -119,6 +128,23 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	go runSubagents(pContext, cancelAndSetPluginErr, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
+}
+
+func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
+	validateCmd := exec.CommandContext(ctx,
+		path.Join(pluginInstallDirectory, OtelBinary),
+		"validate",
+		"--config", "opsagentconf:"+OpsAgentConfigLocationWindows,
+	)
+	validateCmd.Env = append(os.Environ(),
+		"RUNTIME_DIRECTORY="+filepath.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel"),
+		"STATE_DIRECTORY="+filepath.Join(pluginStateDirectory, RuntimeDirectory),
+		"LOGS_DIRECTORY="+filepath.Join(pluginStateDirectory, LogsDirectory),
+	)
+	if output, err := runCommand(validateCmd); err != nil {
+		return fmt.Errorf("failed to validate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
+	}
+	return nil
 }
 
 // serviceManager is an interface to abstract the Windows service manager. This is used to facilitate testing.

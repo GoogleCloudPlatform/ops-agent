@@ -17,20 +17,6 @@
 # Package build scripts can use this by setting $DESTDIR before launching the
 # script.
 set -x -e
-prefix=/opt/google-cloud-ops-agent
-
-. VERSION
-if [ -z "$BUILD_DISTRO" ]; then
-  release_version="$(lsb_release -rs)" #e.g. 9.13 for debian, 8.3.2011 for rocky
-  BUILD_DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')${release_version%%.}
-fi
-BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version"
-BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=${BUILD_DISTRO}"
-BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}"
-LD_FLAGS="-s -w ${BUILD_X1} ${BUILD_X2}"
-set -x -e
-
-export PATH=/usr/local/go/bin:$PATH
 
 if [ -z "$DESTDIR" ]; then
   DESTDIR=$(mktemp -d)

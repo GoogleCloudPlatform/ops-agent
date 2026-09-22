@@ -45,7 +45,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-const ExperimentalMetricsPortEnv = "EXPERIMENTAL_METRICS_PORT"
+const ExperimentalMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_OTEL_METRICS_PORT"
 
 // TrailingQueryWindow represents how far into the past to look when querying
 // for uptime metrics.

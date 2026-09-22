@@ -89,6 +89,8 @@ func mockRunCommandSuccess(cmd *exec.Cmd) (string, error) {
 	switch {
 	case strings.HasSuffix(cmd.Path, "systemctl"):
 		return "0 unit files listed.", nil
+	case len(cmd.Args) > 1 && cmd.Args[1] == "validate":
+		return "", nil
 	default:
 		time.Sleep(2 * time.Minute) // Simulate subagent running.
 		return "", nil
@@ -136,6 +138,8 @@ func mockRunCommandFailure(cmd *exec.Cmd) (string, error) {
 	switch {
 	case strings.HasSuffix(cmd.Path, "systemctl"):
 		return "0 unit files listed.", nil
+	case len(cmd.Args) > 1 && cmd.Args[1] == "validate":
+		return "", nil
 	default:
 		return "", fmt.Errorf("error") // Simulate subagent process exiting with error.
 	}

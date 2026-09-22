@@ -211,9 +211,9 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 // retrieveOtelConfig retrieves the resolved Otel config from the remote VM
 // using otelopscol print-config with the opsagentconf provider.
 func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (content string, err error) {
-	cmd := fmt.Sprintf("sudo /opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol print-config --feature-gates=otelcol.printInitialConfig --config=opsagentconf:%s", agents.OpsAgentConfigPath(vm.ImageSpec))
+	cmd := fmt.Sprintf("sudo $(find /opt/google-cloud-ops-agent /var/lib/google-guest-agent -name otelopscol 2>/dev/null | head -n 1) print-config --config=opsagentconf:%s", agents.OpsAgentConfigPath(vm.ImageSpec))
 	if gce.IsWindows(vm.ImageSpec) {
-		cmd = fmt.Sprintf(`& 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\google-cloud-metrics-agent_windows_amd64.exe' print-config --feature-gates=otelcol.printInitialConfig '--config=opsagentconf:%s'`, agents.OpsAgentConfigPath(vm.ImageSpec))
+		cmd = fmt.Sprintf(`$bin = (Get-ChildItem -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin','C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins' -Filter 'google-cloud-metrics-agent_windows_amd64.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName; & $bin print-config '--config=opsagentconf:%s'`, agents.OpsAgentConfigPath(vm.ImageSpec))
 	}
 	out, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	if err != nil {

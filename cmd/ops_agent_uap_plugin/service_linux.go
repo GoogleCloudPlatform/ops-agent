@@ -94,9 +94,32 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return &pb.StartResponse{}, nil
 	}
 
+	// Ops Agent config validation
+	if err := validateOpsAgentConfig(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to validate the custom Ops Agent config: %s", err), ShouldRestart: false})
+		return &pb.StartResponse{}, nil
+	}
+
 	// the subagent startups
 	go runSubagents(pContext, ps.cancelAndSetPluginError, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
+}
+
+func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
+	validateCmd := exec.CommandContext(ctx,
+		path.Join(pluginInstallDirectory, OtelBinary),
+		"validate",
+		"--config", "opsagentconf:"+OpsAgentConfigLocationLinux,
+	)
+	validateCmd.Env = append(os.Environ(),
+		"RUNTIME_DIRECTORY="+path.Join(pluginStateDirectory, OtelRuntimeDirectory),
+		"STATE_DIRECTORY="+path.Join(pluginStateDirectory, OtelStateDiectory),
+		"LOGS_DIRECTORY="+path.Join(pluginStateDirectory, LogsDirectory),
+	)
+	if output, err := runCommand(validateCmd); err != nil {
+		return fmt.Errorf("failed to validate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
+	}
+	return nil
 }
 
 // runSubagents starts up otel and fluent bit subagents in separate goroutines.

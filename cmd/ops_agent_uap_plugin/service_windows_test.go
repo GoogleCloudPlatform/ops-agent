@@ -121,6 +121,9 @@ func TestStart_subagentsRunning(t *testing.T) {
 		{
 			name: "Happy path: Start() starts the plugin successfully when plugin is not already started, sub-agent processes are running",
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
+				if len(cmd.Args) > 1 && cmd.Args[1] == "validate" {
+					return "", nil
+				}
 				time.Sleep(2 * time.Minute) // Simulate subagent running.
 				return "", nil
 			},
@@ -155,7 +158,12 @@ func TestStart_subagentsRunning(t *testing.T) {
 
 func TestStart_subagentsExitedWithError(t *testing.T) {
 	t.Parallel()
-	ps := &OpsAgentPluginServer{runCommand: runCommandAndFailed}
+	ps := &OpsAgentPluginServer{runCommand: func(cmd *exec.Cmd) (string, error) {
+		if len(cmd.Args) > 1 && cmd.Args[1] == "validate" {
+			return "", nil
+		}
+		return runCommandAndFailed(cmd)
+	}}
 	ps.Start(context.Background(), &pb.StartRequest{})
 	time.Sleep(2 * time.Second)
 	ps.mu.Lock()
