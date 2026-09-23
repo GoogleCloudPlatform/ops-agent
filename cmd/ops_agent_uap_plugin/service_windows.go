@@ -141,7 +141,11 @@ func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, plug
 		"STATE_DIRECTORY="+filepath.Join(pluginStateDirectory, RuntimeDirectory),
 		"LOGS_DIRECTORY="+filepath.Join(pluginStateDirectory, LogsDirectory),
 	)
-	if output, err := runCommand(validateCmd); err != nil {
+	output, err := runCommand(validateCmd)
+	if output != "" {
+		log.Print(output)
+	}
+	if err != nil {
 		return fmt.Errorf("failed to validate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
 	}
 	return nil

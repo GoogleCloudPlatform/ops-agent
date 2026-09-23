@@ -219,7 +219,7 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	if gce.IsWindows(vm.ImageSpec) {
 		otelBin = `C:\Program Files\Google\Cloud Operations\Ops Agent\bin\google-cloud-metrics-agent_windows_amd64.exe`
 		if gce.IsOpsAgentUAPPlugin() {
-			otelBin = `C:\subagents\opentelemetry-collector\google-cloud-metrics-agent_windows_amd64.exe`
+			otelBin = `C:\google-cloud-metrics-agent_windows_amd64.exe`
 		}
 		cmd = fmt.Sprintf(`& '%s' print-config '--config=opsagentconf:%s'`, otelBin, agents.OpsAgentConfigPath(vm.ImageSpec))
 	}

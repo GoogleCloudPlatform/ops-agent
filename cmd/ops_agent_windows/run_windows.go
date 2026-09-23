@@ -15,12 +15,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
@@ -33,6 +37,15 @@ const (
 	EngineEventID uint32 = 1
 	StdoutEventID uint32 = 2
 )
+
+func containsString(all []string, s string) bool {
+	for _, t := range all {
+		if t == s {
+			return true
+		}
+	}
+	return false
+}
 
 type service struct {
 	log          debug.Log
@@ -53,6 +66,13 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
+
+	if err := s.validateAndCheckConfig(ctx); err != nil {
+		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
+		// 2 is "file not found"
+		return false, 2
+	}
+	s.log.Info(EngineEventID, "generated configuration files")
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
@@ -86,6 +106,77 @@ func (s *service) parseFlags(args []string) error {
 	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
 	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
 	return fs.Parse(args)
+}
+
+func (s *service) validateAndCheckConfig(ctx context.Context) error {
+	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
+	stateDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run")
+	outDir := filepath.Join(s.outDirectory, "otel")
+
+	cmd := exec.CommandContext(ctx,
+		otelServiceDescription.exepath,
+		"print-config",
+		"--config=opsagentconf:"+s.userConf,
+	)
+	cmd.Env = append(os.Environ(),
+		"RUNTIME_DIRECTORY="+outDir,
+		"STATE_DIRECTORY="+stateDir,
+		"LOGS_DIRECTORY="+logsDir,
+	)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if stderr.Len() > 0 {
+		log.Print(stderr.String())
+	}
+	if err != nil {
+		return fmt.Errorf("%s: %w", stderr.String(), err)
+	}
+	return s.checkForStandaloneAgents(stdout.String())
+}
+
+func hasUserMetricsPipeline(otelYAML string) bool {
+	for _, line := range strings.Split(otelYAML, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "metrics/") &&
+			trimmed != "metrics/otel:" &&
+			trimmed != "metrics/loggingmetrics:" &&
+			trimmed != "metrics/opsagent:" {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *service) checkForStandaloneAgents(otelYAML string) error {
+	mgr, err := mgr.Connect()
+	if err != nil {
+		return fmt.Errorf("failed to connect to service manager: %s", err)
+	}
+	defer mgr.Disconnect()
+	services, err := mgr.ListServices()
+	if err != nil {
+		return fmt.Errorf("failed to list services: %s", err)
+	}
+
+	var errs string
+	if strings.Contains(otelYAML, "logs/") && containsString(services, "StackdriverLogging") {
+		errs += "We detected an existing Windows service for the StackdriverLogging agent, " +
+			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty logging section. " +
+			"Please either remove the logging section from the Ops Agent configuration, " +
+			"or disable the StackdriverLogging agent, and then retry enabling the Ops Agent. "
+	}
+	if hasUserMetricsPipeline(otelYAML) && containsString(services, "StackdriverMonitoring") {
+		errs += "We detected an existing Windows service for the StackdriverMonitoring agent, " +
+			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty metrics section. " +
+			"Please either remove the metrics section from the Ops Agent configuration, " +
+			"or disable the StackdriverMonitoring agent, and then retry enabling the Ops Agent. "
+	}
+	if errs != "" {
+		return fmt.Errorf("conflicts with existing agents: %s", errs)
+	}
+	return nil
 }
 
 func (s *service) startSubagents() error {
