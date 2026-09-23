@@ -56,10 +56,8 @@ COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetr
 
 WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
-ARG WINDOWS_VERSION
-ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
 RUN Get-Content ../../../VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
-    & ./build.ps1 -outDir /work/out/bin -version $env:PKG_VERSION -buildDistro $env:BUILD_DISTRO
+    & ./build.ps1 -outDir /work/out/bin -version $env:PKG_VERSION
 
 ###############################################################################
 # Config generator/service installer

@@ -29,14 +29,6 @@ if [ -n "${PKG_VERSION}" ]; then
     LDFLAGS="-X github.com/GoogleCloudPlatform/opentelemetry-operations-collector/internal/version.Version=${PKG_VERSION}"
 fi
 
-distro="${BUILD_DISTRO}"
-if [ -z "${distro}" ]; then
-    distro="sles12"
-fi
-LDFLAGS="${LDFLAGS} -X github.com/GoogleCloudPlatform/opentelemetry-operations-collector/internal/version.BuildDistro=${distro}"
-
-
-
 if [ -z "${GO_BIN}" ]; then
     GO_BIN=/usr/local/go/bin/go
 fi
