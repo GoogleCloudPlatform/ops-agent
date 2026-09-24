@@ -889,12 +889,6 @@ var gpuModels = map[string]accelerator{
 		machineType:   "n1-standard-2",
 		availableZone: "us-central1-a",
 	},
-	"p100": {
-		model:         "p100",
-		fullName:      "nvidia-tesla-p100",
-		machineType:   "n1-standard-2",
-		availableZone: "us-central1-c",
-	},
 	"l4": {
 		model:         "l4",
 		fullName:      "nvidia-l4",
