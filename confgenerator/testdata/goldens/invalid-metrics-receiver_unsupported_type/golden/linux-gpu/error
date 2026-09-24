@@ -1,1 +1,0 @@
-metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [dcgm, hostmetrics, prometheus].

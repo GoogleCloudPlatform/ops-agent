@@ -111,107 +111,6 @@ func Test_findPreExistentAgents(t *testing.T) {
 	}
 }
 
-// mockHealthCheckLogger is a mock implementation of the logs.StructuredLogger interface.
-type mockHealthCheckLogger struct {
-	logFile *os.File
-}
-
-func writeStringToFile(file *os.File, content string) {
-	if _, err := file.Write([]byte(content)); err != nil {
-		panic(err)
-	}
-}
-func (m *mockHealthCheckLogger) Infof(format string, v ...interface{}) {
-	writeStringToFile(m.logFile, format)
-}
-func (m *mockHealthCheckLogger) Warnf(format string, v ...interface{}) {
-	writeStringToFile(m.logFile, format)
-}
-func (m *mockHealthCheckLogger) Errorf(format string, v ...interface{}) {
-	writeStringToFile(m.logFile, format)
-}
-func (m *mockHealthCheckLogger) Infow(msg string, keysAndValues ...interface{}) {
-	writeStringToFile(m.logFile, msg)
-}
-func (m *mockHealthCheckLogger) Warnw(msg string, keysAndValues ...interface{}) {
-	writeStringToFile(m.logFile, msg)
-}
-func (m *mockHealthCheckLogger) Errorw(msg string, keysAndValues ...interface{}) {
-	writeStringToFile(m.logFile, msg)
-}
-func (m *mockHealthCheckLogger) Println(v ...interface{}) {
-	writeStringToFile(m.logFile, "println")
-}
-
-func Test_runHealthChecks_LogFileNonEmpty(t *testing.T) {
-	t.Parallel()
-	// Create a temporary directory for plugin state
-	pluginStateDir := t.TempDir()
-	healthCheckLogFile, err := os.CreateTemp(pluginStateDir, "health-checks.log")
-	if err != nil {
-		t.Fatalf("Failed to create health-checks.log: %v", err)
-	}
-	defer os.Remove(healthCheckLogFile.Name())
-	mockHealthCheckLogger := &mockHealthCheckLogger{logFile: healthCheckLogFile}
-
-	runHealthChecks(mockHealthCheckLogger)
-
-	// Check if the log file has content
-	fileInfo, err := os.Stat(healthCheckLogFile.Name())
-	if err != nil {
-		t.Fatalf("Failed to get file info: %v", err)
-	}
-	if fileInfo.Size() == 0 {
-		t.Errorf("health-checks.log is empty, wanted non-empty")
-	}
-	healthCheckLogFile.Close()
-}
-
-func Test_generateSubAgentConfigs(t *testing.T) {
-	ctx := context.Background()
-	tests := []struct {
-		name              string
-		userConfigContent string // Content for the user config file
-		pluginStateDir    string // Directory for the plugin state
-		wantError         bool
-	}{
-		{
-			name:              "happy path: successfully generate sub-agent configs",
-			userConfigContent: "",
-			pluginStateDir:    t.TempDir(),
-		},
-		{
-			name:              "invalid user config",
-			userConfigContent: "invalid content",
-			pluginStateDir:    t.TempDir(),
-			wantError:         true,
-		},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			userConfigFile, err := os.CreateTemp(t.TempDir(), "config.yaml")
-			if err != nil {
-				t.Fatalf("Failed to create temporary user config file: %v", err)
-			}
-			defer os.Remove(userConfigFile.Name())
-
-			if _, err := userConfigFile.Write([]byte(tc.userConfigContent)); err != nil {
-				t.Fatalf("Failed to write user config content: %v", err)
-			}
-			userConfigFile.Close()
-
-			_, err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir)
-			if (err != nil) != tc.wantError {
-				t.Errorf("generateSubAgentConfigs() returned error: %v, want error: %v", err, tc.wantError)
-			}
-
-		})
-	}
-}
-
 func TestStart_subagentsRunning(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -222,6 +121,9 @@ func TestStart_subagentsRunning(t *testing.T) {
 		{
 			name: "Happy path: Start() starts the plugin successfully when plugin is not already started, sub-agent processes are running",
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
+				if len(cmd.Args) > 1 && cmd.Args[1] == "validate" {
+					return "", nil
+				}
 				time.Sleep(2 * time.Minute) // Simulate subagent running.
 				return "", nil
 			},
@@ -256,7 +158,12 @@ func TestStart_subagentsRunning(t *testing.T) {
 
 func TestStart_subagentsExitedWithError(t *testing.T) {
 	t.Parallel()
-	ps := &OpsAgentPluginServer{runCommand: runCommandAndFailed}
+	ps := &OpsAgentPluginServer{runCommand: func(cmd *exec.Cmd) (string, error) {
+		if len(cmd.Args) > 1 && cmd.Args[1] == "validate" {
+			return "", nil
+		}
+		return runCommandAndFailed(cmd)
+	}}
 	ps.Start(context.Background(), &pb.StartRequest{})
 	time.Sleep(2 * time.Second)
 	ps.mu.Lock()

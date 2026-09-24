@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -86,96 +85,11 @@ func Test_findPreExistentAgents(t *testing.T) {
 	}
 }
 
-func Test_validateOpsAgentConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	validPath := filepath.Join(tmpDir, "valid.yaml")
-	if err := os.WriteFile(validPath, []byte("logging:\n  receivers:\n    test_receiver:\n      type: files\n      include_paths:\n        - /var/log/test.log\n"), 0644); err != nil {
-		t.Fatalf("failed to write valid.yaml: %v", err)
-	}
-
-	invalidPath := filepath.Join(tmpDir, "invalid.yaml")
-	if err := os.WriteFile(invalidPath, []byte("logging:\n  receivers:\n    test_receiver:\n      type: unknown_type\n"), 0644); err != nil {
-		t.Fatalf("failed to write invalid.yaml: %v", err)
-	}
-
-	cases := []struct {
-		name        string
-		path        string
-		wantSuccess bool
-	}{
-		{
-			name:        "non-existent config file is valid",
-			path:        filepath.Join(tmpDir, "non_existent.yaml"),
-			wantSuccess: true,
-		},
-		{
-			name:        "valid config file is valid",
-			path:        validPath,
-			wantSuccess: true,
-		},
-		{
-			name:        "invalid config file is invalid",
-			path:        invalidPath,
-			wantSuccess: false,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
-			_, err := validateOpsAgentConfig(ctx, tc.path)
-			gotSuccess := (err == nil)
-			if gotSuccess != tc.wantSuccess {
-				t.Errorf("%s: validateOpsAgentConfig() got success = %v, want %v, error: %v", tc.name, gotSuccess, tc.wantSuccess, err)
-			}
-		})
-	}
-}
-
-func Test_generateSubagentConfigs(t *testing.T) {
-	cases := []struct {
-		name          string
-		mockCmdOutput string
-		mockCmdErr    error
-		wantSuccess   bool
-	}{
-		{
-			name:          "configs generation successful",
-			mockCmdOutput: "",
-			mockCmdErr:    nil,
-			wantSuccess:   true,
-		},
-		{
-			name:          "configs generation failed",
-			mockCmdOutput: "",
-			mockCmdErr:    fmt.Errorf("error"),
-			wantSuccess:   false,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock RunCommand function
-			mockRunCommand := func(cmd *exec.Cmd) (string, error) {
-				return tc.mockCmdOutput, tc.mockCmdErr
-			}
-
-			ctx := context.Background()
-			err := generateSubagentConfigs(ctx, mockRunCommand, "", "")
-			gotSuccess := (err == nil)
-			if gotSuccess != tc.wantSuccess {
-				t.Errorf("%s: generateSubagentConfigs() failed to generate subagents configs: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
-			}
-		})
-	}
-}
-
 func mockRunCommandSuccess(cmd *exec.Cmd) (string, error) {
 	switch {
 	case strings.HasSuffix(cmd.Path, "systemctl"):
 		return "0 unit files listed.", nil
-	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+	case len(cmd.Args) > 1 && cmd.Args[1] == "validate":
 		return "", nil
 	default:
 		time.Sleep(2 * time.Minute) // Simulate subagent running.
@@ -224,7 +138,7 @@ func mockRunCommandFailure(cmd *exec.Cmd) (string, error) {
 	switch {
 	case strings.HasSuffix(cmd.Path, "systemctl"):
 		return "0 unit files listed.", nil
-	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+	case len(cmd.Args) > 1 && cmd.Args[1] == "validate":
 		return "", nil
 	default:
 		return "", fmt.Errorf("error") // Simulate subagent process exiting with error.

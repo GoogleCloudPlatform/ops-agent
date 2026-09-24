@@ -45,9 +45,6 @@ BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 %config %{_confdir}/config.yaml
 
 %{_subagentdir}/opentelemetry-collector/*
-# We aren't using %{_libexecdir} here because that would be lib on some
-# platforms, but the build.sh script hard-codes libexec.
-%{_prefix}/libexec/google_cloud_ops_agent_engine
 
 %{_unitdir}/%{name}*
 %{_unitdir}-preset/*-%{name}*

@@ -30,7 +30,7 @@
         "out/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
         "out/bin/google-cloud-ops-agent.exe",
 
-        "confgenerator/default-config.yaml",
+        "default-config.yaml",
         "out/bin/maint.ps1"
       ]
   }]
