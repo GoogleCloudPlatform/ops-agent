@@ -1440,6 +1440,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 				"System":      "system_xml_msg",
 			},
 		}
+		beforeWrite := time.Now().Add(-time.Minute)
 		for r := range payloads {
 			for log, payload := range payloads[r] {
 				if err := writeToWindowsEventLog(ctx, logger, vm, log, payload); err != nil {
@@ -1452,58 +1453,97 @@ func TestWindowsEventLogV2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// For winlog2_space, we simply check that the logs were ingested.
-		for _, payload := range payloads["winlog2_space"] {
-			if err := gce.WaitForLog(ctx, logger, vm, "winlog2_space", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload)); err != nil {
-				t.Fatal(err)
+		cachedPayloads := map[string][]map[string]any{}
+		queryEventLogPayload := func(logName, wantPayload, extraFilter string) map[string]any {
+			t.Helper()
+			if wantPayload == "" {
+				t.Fatalf("wantPayload must not be empty for %s", logName)
 			}
+			cacheKey := logName + "|" + extraFilter
+			findInSlice := func(items []map[string]any) map[string]any {
+				for _, m := range items {
+					if msg, _ := m["Message"].(string); strings.Contains(msg, wantPayload) {
+						return m
+					}
+				}
+				return nil
+			}
+			if found := findInSlice(cachedPayloads[cacheKey]); found != nil {
+				return found
+			}
+
+			var matched map[string]any
+			retryPolicy := backoff.WithContext(
+				backoff.WithMaxRetries(backoff.NewConstantBackOff(10*time.Second), gce.LogQueryMaxAttempts),
+				ctx,
+			)
+			err := backoff.Retry(func() error {
+				// Pass no jsonPayload.* filter to Cloud Logging so it only queries
+				// synchronously-indexed primary LogEntry metadata (logName, instance_id, timestamp, severity).
+				entries, err := gce.QueryAllLogs(ctx, logger, vm, logName, time.Since(beforeWrite), extraFilter, 1)
+				if err != nil {
+					return err
+				}
+				parsed := make([]map[string]any, 0, len(entries))
+				for _, entry := range entries {
+					rawJSON, err := json.Marshal(entry.Payload)
+					if err != nil {
+						continue
+					}
+					var jsonMap map[string]any
+					if err := json.Unmarshal(rawJSON, &jsonMap); err != nil {
+						continue
+					}
+					parsed = append(parsed, jsonMap)
+				}
+				cachedPayloads[cacheKey] = parsed
+				if matched = findInSlice(parsed); matched != nil {
+					return nil
+				}
+				return fmt.Errorf("no matching log entry for %q in %s (scanned %d entries)", wantPayload, logName, len(parsed))
+			}, retryPolicy)
+			if err != nil {
+				t.Fatalf("expected log in %s for %s: %v", logName, wantPayload, err)
+			}
+			return matched
 		}
 
-		// For pipeline_v1_v2_simultaneously, we expect logs to show up *twice*: once for v1 and once for v2.
-		// They can be distinguished by the presence of v1-only and v2-only fields
-		// in jsonPayload, e.g. TimeGenerated and TimeCreated respectively.
+		// For winlog2_space, we simply check that the logs were ingested.
+		for _, payload := range payloads["winlog2_space"] {
+			queryEventLogPayload("winlog2_space", payload, "")
+		}
+
+		// For pipeline_v1_v2_simultaneously, we expect logs to show up in two separate
+		// logName streams ("windows_event_log" for v1 and "winlog2_default" for v2).
+		// Verify in Go that each entry carries its respective v1-only (TimeGenerated)
+		// or v2-only (TimeCreated) schema field.
 		for _, payload := range payloads["winlog2_default"] {
-			queryV1 := logMessageQueryForImage(vm.ImageSpec, payload) + " AND jsonPayload.TimeGenerated:*"
-			queryV2 := logMessageQueryForImage(vm.ImageSpec, payload) + " AND jsonPayload.TimeCreated:*"
-			if err := gce.WaitForLog(ctx, logger, vm, "windows_event_log", time.Hour, queryV1); err != nil {
-				t.Fatalf("expected v1 log for %s but it wasn't found: err=%v", payload, err)
+			v1Map := queryEventLogPayload("windows_event_log", payload, "")
+			if val, ok := v1Map["TimeGenerated"].(string); !ok || val == "" {
+				t.Fatalf("expected v1 log for %s to contain non-empty TimeGenerated: jsonPayload=%+v", payload, v1Map)
 			}
-			if err := gce.WaitForLog(ctx, logger, vm, "winlog2_default", time.Hour, queryV2); err != nil {
-				t.Fatalf("expected v2 log for %s but it wasn't found: err=%v", payload, err)
+			v2Map := queryEventLogPayload("winlog2_default", payload, "")
+			if val, ok := v2Map["TimeCreated"].(string); !ok || val == "" {
+				t.Fatalf("expected v2 log for %s to contain non-empty TimeCreated: jsonPayload=%+v", payload, v2Map)
 			}
 		}
 
 		// Verify that the warning message has the correct severity.
-		if err := gce.WaitForLog(ctx, logger, vm, "winlog2_default", time.Hour, logMessageQueryForImage(vm.ImageSpec, "warning_msg")+` AND severity="WARNING"`); err != nil {
-			t.Fatal(err)
-		}
+		queryEventLogPayload("winlog2_default", "warning_msg", `severity="WARNING"`)
 
 		// For winlog2_xml, verify the following:
 		// - that jsonPayload only has the fields we expect (Message, StringInserts, raw_xml).
 		// - that jsonPayload.raw_xml contains a valid XML document.
 		// - that a few sample fields are present in that XML document.
 		for _, payload := range payloads["winlog2_xml"] {
-			log, err := gce.QueryLog(ctx, logger, vm, "winlog2_xml", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload), gce.LogQueryMaxAttempts)
-			if err != nil {
-				t.Fatal(err)
-			}
-			// We don't know (and don't care about) the runtime type graph of log.Payload, so normalize it into a simple map.
-			rawJson, err := json.Marshal(log.Payload)
-			if err != nil {
-				t.Fatal(err)
-			}
-			jsonMap := map[string]any{}
-			err = json.Unmarshal(rawJson, &jsonMap)
-			if err != nil {
-				t.Fatal(err)
-			}
+			jsonMap := queryEventLogPayload("winlog2_xml", payload, "")
 			if len(jsonMap) != 3 ||
 				!hasKeyWithValueType[string](jsonMap, "Message") ||
 				!hasKeyWithValueType[[]any](jsonMap, "StringInserts") ||
 				!hasKeyWithValueType[string](jsonMap, "raw_xml") {
 				t.Fatalf("expected exactly 3 fields in jsonPayload (Message, StringInserts, raw_xml): jsonPayload=%+v", jsonMap)
 			}
-			rawXml := jsonMap["raw_xml"].(string)
+			rawXML := jsonMap["raw_xml"].(string)
 			xmlStruct := struct {
 				System struct {
 					TimeCreated struct {
@@ -1514,12 +1554,11 @@ func TestWindowsEventLogV2(t *testing.T) {
 					Data string
 				}
 			}{}
-			err = xml.Unmarshal([]byte(rawXml), &xmlStruct)
-			if err != nil {
-				t.Fatalf("expected raw_xml to contain a valid XML document: raw_xml=%s, err=%v", rawXml, err)
+			if err := xml.Unmarshal([]byte(rawXML), &xmlStruct); err != nil {
+				t.Fatalf("expected raw_xml to contain a valid XML document: raw_xml=%s: %v", rawXML, err)
 			}
 			if xmlStruct.EventData.Data == "" || xmlStruct.System.TimeCreated.SystemTime == "" {
-				t.Fatalf("expected raw_xml to contain a few sample fields, but it didn't: raw_xml=%s", rawXml)
+				t.Fatalf("expected raw_xml to contain a few sample fields, but it didn't: raw_xml=%s", rawXML)
 			}
 		}
 
