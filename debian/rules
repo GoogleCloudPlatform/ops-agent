@@ -13,7 +13,7 @@ override_dh_auto_test:
 override_dh_strip_nondeterminism:
 	dh_strip_nondeterminism -X.jar
 override_dh_auto_install:
-	BUILD_DISTRO=$(DEB_DISTRIBUTION) DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
+	DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
 
 override_dh_installsystemd:
 	dh_installsystemd google-cloud-ops-agent.service
