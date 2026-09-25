@@ -43,14 +43,23 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     representative: true
+    labels:
+      - name: database
+        value_regex: .*
   - type: agent.googleapis.com/mssql/transaction_rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: agent.googleapis.com/mssql/write_transaction_rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
 configuration_options:
   metrics:
     - type: mssql

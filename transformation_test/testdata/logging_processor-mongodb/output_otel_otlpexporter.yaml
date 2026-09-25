@@ -2956,7 +2956,7 @@
         timeUnixNano: "1753110328612000000"
       scope: {}
 - collector_errors:
-  - caller: ottl@v0.159.0/parser.go:423
+  - caller: ottl@v0.161.0/parser.go:453
     error: "json: float unexpected end of JSON input"
     level: warn
     msg: failed to execute statement
@@ -2967,5 +2967,5 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.159.0
+      service.version: v0.161.0
     statement: set(log.cache["__parsed_json"], ParseJSON(log.body["message"])) where (log.body != nil and log.body["message"] != nil)
