@@ -1,0 +1,1 @@
+receiver "mysql_error" has invalid configuration: unimplemented: ${HOSTNAME} is unsupported in OTel filelog

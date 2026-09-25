@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -68,6 +69,16 @@ func (p LoggingProcessorMacroActiveDirectoryDS) Expand(ctx context.Context) []co
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+				"jsonPayload.TimeGenerated": {
+					CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+						return v.Set(ottl.Concat([]ottl.Value{ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%d %T.%s %z"), "%Y-%m-%d %T"), ottl.StringLiteral("+0000")}, " "))
+					},
+				},
+				"jsonPayload.TimeWritten": {
+					CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+						return v.Set(ottl.Concat([]ottl.Value{ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%d %T.%s %z"), "%Y-%m-%d %T"), ottl.StringLiteral("+0000")}, " "))
+					},
+				},
 			},
 		},
 	}

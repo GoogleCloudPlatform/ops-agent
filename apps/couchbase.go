@@ -335,28 +335,35 @@ func (p LoggingProcessorMacroCouchbaseHTTPAccess) Expand(ctx context.Context) []
 		mf.Fields[dest] = &confgenerator.ModifyField{
 			MoveFrom: src,
 		}
-		if field == "referer" {
-			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
+		if field == "referer" || field == "userAgent" {
+			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-" OR %s = ""`, src, src)
+		}
+		if field == "responseSize" {
+			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "chunked" OR %s = "-"`, src, src)
+		}
+	}
+
+	for _, field := range []string{"host", "user"} {
+		mf.Fields[fmt.Sprintf("jsonPayload.%s", field)] = &confgenerator.ModifyField{
+			OmitIf: fmt.Sprintf(`jsonPayload.%s = "-"`, field),
 		}
 	}
 
 	return []confgenerator.InternalLoggingProcessor{
 		// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
 		// referer fields and there are additional fields after the user agent here but not in the other apps.
-		confgenerator.LoggingProcessorParseRegex{
-			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+) (?<http_request_requestUrl>\S+) (?<http_request_protocol>\S+)" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*\S+) (?<http_request_referer>[^ ]*) "(?<http_request_userAgent>[^\"]*)" (?<message>.*)$`,
-			ParserShared: confgenerator.ParserShared{
-				TimeKey:    "timestamp",
-				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
-				Types: map[string]string{
-					"size": "integer",
-					"code": "integer",
+		confgenerator.LoggingProcessorParseRegexComplex{
+			Parsers: []confgenerator.RegexParser{
+				{
+					Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+) (?<http_request_requestUrl>\S+) (?<http_request_protocol>\S+)" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*\S+) (?<http_request_referer>[^ ]*) (?:"(?<http_request_userAgent>[^\"]*)"|-) (?<message>.*)$`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "timestamp",
+						TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
+						Types: map[string]string{
+							"http_request_status": "integer",
+						},
+					},
 				},
-			},
-		},
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: map[string]*confgenerator.ModifyField{
-				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
 		},
 		mf,

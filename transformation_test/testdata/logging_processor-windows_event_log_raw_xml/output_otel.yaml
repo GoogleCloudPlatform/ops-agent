@@ -193,4 +193,17 @@
         zone: test-zone
       type: gce_instance
     timestamp: now
+  - jsonPayload:
+      Message: Quota enforcement is now in effect.
+      StringInserts: []
+      raw_xml: <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System><Provider Name='Service Control Manager' Guid='{11111111-2222-3333-4444-555555555555}' EventSourceName='Service Control Manager'/><EventID Qualifiers='12345'>2065</EventID><Version>0</Version><Level>4</Level><Task>0</Task><Opcode>0</Opcode><Keywords>0x8080000000000000</Keywords><TimeCreated SystemTime='2025-12-14T05:25:55.5387001Z'/><EventRecordID>22334</EventRecordID><Correlation/><Execution ProcessID='789' ThreadID='9876'/><Channel>Directory Service</Channel><Computer>test-computer</Computer><Security/></System><EventData></EventData><RenderingInfo Culture='en-US'><Message>Quota enforcement is now in effect.</Message><Level>Information</Level><Task></Task><Opcode></Opcode><Channel></Channel><Provider>NTDS General</Provider><Keywords><Keyword>Classic</Keyword></Keywords></RenderingInfo></Event>
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
   partialSuccess: true
