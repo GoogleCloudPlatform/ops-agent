@@ -15,19 +15,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -53,7 +51,6 @@ type service struct {
 	log          debug.Log
 	userConf     string
 	outDirectory string
-	uc           *confgenerator.UnifiedConfig
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -70,13 +67,12 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 0x00000057
 	}
 
-	if err := s.generateConfigs(ctx); err != nil {
+	if err := s.validateAndCheckConfig(ctx); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
 	}
 	s.log.Info(EngineEventID, "generated configuration files")
-	s.runHealthChecks()
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
@@ -112,7 +108,48 @@ func (s *service) parseFlags(args []string) error {
 	return fs.Parse(args)
 }
 
-func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig) error {
+func (s *service) validateAndCheckConfig(ctx context.Context) error {
+	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
+	stateDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run")
+	outDir := filepath.Join(s.outDirectory, "otel")
+
+	cmd := exec.CommandContext(ctx,
+		otelServiceDescription.exepath,
+		"print-config",
+		"--config=opsagentconf:"+s.userConf,
+	)
+	cmd.Env = append(os.Environ(),
+		"RUNTIME_DIRECTORY="+outDir,
+		"STATE_DIRECTORY="+stateDir,
+		"LOGS_DIRECTORY="+logsDir,
+	)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if stderr.Len() > 0 {
+		log.Print(stderr.String())
+	}
+	if err != nil {
+		return fmt.Errorf("%s: %w", stderr.String(), err)
+	}
+	return s.checkForStandaloneAgents(stdout.String())
+}
+
+func hasUserMetricsPipeline(otelYAML string) bool {
+	for _, line := range strings.Split(otelYAML, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "metrics/") &&
+			trimmed != "metrics/otel:" &&
+			trimmed != "metrics/loggingmetrics:" &&
+			trimmed != "metrics/opsagent:" {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *service) checkForStandaloneAgents(otelYAML string) error {
 	mgr, err := mgr.Connect()
 	if err != nil {
 		return fmt.Errorf("failed to connect to service manager: %s", err)
@@ -123,70 +160,21 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 		return fmt.Errorf("failed to list services: %s", err)
 	}
 
-	var errors string
-	if unified.HasLogging() && containsString(services, "StackdriverLogging") {
-		errors += "We detected an existing Windows service for the StackdriverLogging agent, " +
+	var errs string
+	if strings.Contains(otelYAML, "logs/") && containsString(services, "StackdriverLogging") {
+		errs += "We detected an existing Windows service for the StackdriverLogging agent, " +
 			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty logging section. " +
 			"Please either remove the logging section from the Ops Agent configuration, " +
 			"or disable the StackdriverLogging agent, and then retry enabling the Ops Agent. "
 	}
-	if unified.HasMetrics() && containsString(services, "StackdriverMonitoring") {
-		errors += "We detected an existing Windows service for the StackdriverMonitoring agent, " +
+	if hasUserMetricsPipeline(otelYAML) && containsString(services, "StackdriverMonitoring") {
+		errs += "We detected an existing Windows service for the StackdriverMonitoring agent, " +
 			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty metrics section. " +
 			"Please either remove the metrics section from the Ops Agent configuration, " +
 			"or disable the StackdriverMonitoring agent, and then retry enabling the Ops Agent. "
 	}
-	if errors != "" {
-		return fmt.Errorf("conflicts with existing agents: %s", errors)
-	}
-	return nil
-}
-
-func getHealthCheckResults(otlpExporterEnabled bool) []healthchecks.HealthCheckResult {
-	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory(otlpExporterEnabled)
-	logger := healthchecks.CreateHealthChecksLogger(logsDir)
-
-	return gceHealthChecks.RunAllHealthChecks(logger)
-}
-
-func (srv *service) runHealthChecks() {
-	healthCheckResults := getHealthCheckResults(srv.uc.Global.GetOtlpExporter())
-	logger := logs.WindowsServiceLogger{EventID: EngineEventID, Logger: srv.log}
-	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
-	srv.log.Info(EngineEventID, "Startup checks finished")
-}
-
-func (s *service) generateConfigs(ctx context.Context) error {
-	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf)
-	if err != nil {
-		return err
-	}
-	s.uc = uc
-
-	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"]))
-	s.log.Info(EngineEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
-	if err := s.checkForStandaloneAgents(uc); err != nil {
-		return err
-	}
-	// TODO: Add flag for passing in log/run path?
-	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	stateDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run")
-	for _, subagent := range []string{
-		"otel",
-		"fluentbit",
-	} {
-		outDir := filepath.Join(s.outDirectory, subagent)
-		if subagent == "otel" {
-			// The generated otlp metric json files are used only by the otel service.
-			if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, s.userConf, outDir); err != nil {
-				return err
-			}
-		}
-		if err := uc.GenerateFilesFromConfig(ctx, subagent, logsDir, stateDir, outDir); err != nil {
-			return err
-		}
+	if errs != "" {
+		return fmt.Errorf("conflicts with existing agents: %s", errs)
 	}
 	return nil
 }
@@ -197,18 +185,16 @@ func (s *service) startSubagents() error {
 		return err
 	}
 	defer manager.Disconnect()
-	for _, svc := range services[1:] {
-		handle, err := manager.OpenService(svc.name)
-		if err != nil {
-			// service not found?
-			return err
-		}
-		defer handle.Close()
-		if err := handle.Start(); err != nil {
-			// TODO: Should we be ignoring failures for partial startup?
-			if !errors.Is(err, windows.ERROR_SERVICE_ALREADY_RUNNING) {
-				s.log.Error(EngineEventID, fmt.Sprintf("failed to start %q: %v", svc.name, err))
-			}
+	handle, err := manager.OpenService(otelServiceDescription.name)
+	if err != nil {
+		// service not found?
+		return err
+	}
+	defer handle.Close()
+	if err := handle.Start(); err != nil {
+		// TODO: Should we be ignoring failures for partial startup?
+		if !errors.Is(err, windows.ERROR_SERVICE_ALREADY_RUNNING) {
+			s.log.Error(EngineEventID, fmt.Sprintf("failed to start %q: %v", otelServiceDescription.name, err))
 		}
 	}
 	return nil

@@ -1,4 +1,0 @@
-- type: modify_fields
-  fields:
-    jsonPayload.hello:
-      static_value: world

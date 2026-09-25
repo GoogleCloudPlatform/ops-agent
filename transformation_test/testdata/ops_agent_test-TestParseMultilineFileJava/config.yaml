@@ -1,4 +1,0 @@
-- type: parse_multiline
-  match_any:
-  - type: language_exceptions
-    language: java

@@ -21,10 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
-	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -88,96 +85,11 @@ func Test_findPreExistentAgents(t *testing.T) {
 	}
 }
 
-func Test_validateOpsAgentConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	validPath := filepath.Join(tmpDir, "valid.yaml")
-	if err := os.WriteFile(validPath, []byte("logging:\n  receivers:\n    test_receiver:\n      type: files\n      include_paths:\n        - /var/log/test.log\n"), 0644); err != nil {
-		t.Fatalf("failed to write valid.yaml: %v", err)
-	}
-
-	invalidPath := filepath.Join(tmpDir, "invalid.yaml")
-	if err := os.WriteFile(invalidPath, []byte("logging:\n  receivers:\n    test_receiver:\n      type: unknown_type\n"), 0644); err != nil {
-		t.Fatalf("failed to write invalid.yaml: %v", err)
-	}
-
-	cases := []struct {
-		name        string
-		path        string
-		wantSuccess bool
-	}{
-		{
-			name:        "non-existent config file is valid",
-			path:        filepath.Join(tmpDir, "non_existent.yaml"),
-			wantSuccess: true,
-		},
-		{
-			name:        "valid config file is valid",
-			path:        validPath,
-			wantSuccess: true,
-		},
-		{
-			name:        "invalid config file is invalid",
-			path:        invalidPath,
-			wantSuccess: false,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
-			_, err := validateOpsAgentConfig(ctx, tc.path)
-			gotSuccess := (err == nil)
-			if gotSuccess != tc.wantSuccess {
-				t.Errorf("%s: validateOpsAgentConfig() got success = %v, want %v, error: %v", tc.name, gotSuccess, tc.wantSuccess, err)
-			}
-		})
-	}
-}
-
-func Test_generateSubagentConfigs(t *testing.T) {
-	cases := []struct {
-		name          string
-		mockCmdOutput string
-		mockCmdErr    error
-		wantSuccess   bool
-	}{
-		{
-			name:          "configs generation successful",
-			mockCmdOutput: "",
-			mockCmdErr:    nil,
-			wantSuccess:   true,
-		},
-		{
-			name:          "configs generation failed",
-			mockCmdOutput: "",
-			mockCmdErr:    fmt.Errorf("error"),
-			wantSuccess:   false,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock RunCommand function
-			mockRunCommand := func(cmd *exec.Cmd) (string, error) {
-				return tc.mockCmdOutput, tc.mockCmdErr
-			}
-
-			ctx := context.Background()
-			err := generateSubagentConfigs(ctx, mockRunCommand, "", "")
-			gotSuccess := (err == nil)
-			if gotSuccess != tc.wantSuccess {
-				t.Errorf("%s: generateSubagentConfigs() failed to generate subagents configs: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
-			}
-		})
-	}
-}
-
 func mockRunCommandSuccess(cmd *exec.Cmd) (string, error) {
 	switch {
 	case strings.HasSuffix(cmd.Path, "systemctl"):
 		return "0 unit files listed.", nil
-	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+	case len(cmd.Args) > 1 && cmd.Args[1] == "validate":
 		return "", nil
 	default:
 		time.Sleep(2 * time.Minute) // Simulate subagent running.
@@ -226,7 +138,7 @@ func mockRunCommandFailure(cmd *exec.Cmd) (string, error) {
 	switch {
 	case strings.HasSuffix(cmd.Path, "systemctl"):
 		return "0 unit files listed.", nil
-	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+	case len(cmd.Args) > 1 && cmd.Args[1] == "validate":
 		return "", nil
 	default:
 		return "", fmt.Errorf("error") // Simulate subagent process exiting with error.
@@ -270,13 +182,10 @@ func Test_runSubAgentCommand_CancelContextAndSetPluginErrorWhenCmdExitsWithError
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	pluginServer := &OpsAgentPluginServer{}
 	pluginServer.cancel = cancel
 
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand)
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
@@ -295,10 +204,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T)
 
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand)
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
@@ -314,24 +220,24 @@ func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.
 
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_KILL_BY_SIGNALS=1"}
-	var wg sync.WaitGroup
-	wg.Add(1)
 
-	mockRunCommandFunc := func(cmd *exec.Cmd) (string, error) {
-		if err := cmd.Start(); err != nil {
-			t.Errorf("the command %s did not start successfully", cmd.Args)
+	// Terminate the command asynchronously using signals once it starts
+	go func() {
+		for {
+			if cmd.Process != nil {
+				cmd.Process.Signal(os.Interrupt)
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
 		}
-		cmd.Process.Signal(syscall.SIGABRT)
-		err := cmd.Wait()
-		return "", err
-	}
+	}()
 
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommandFunc, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand)
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")
 	}
 	if pluginServer.pluginError == nil {
-		t.Errorf("runSubAgentCommand() did not set pluginError but should")
+		t.Fatalf("runSubAgentCommand() did not set pluginError but should")
 	}
 	if !pluginServer.pluginError.ShouldRestart {
 		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
@@ -345,12 +251,17 @@ func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
 
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
-	var wg sync.WaitGroup
-	wg.Add(1)
+	mockRunCommand := func(cmd *exec.Cmd) (string, error) {
+		time.Sleep(10 * time.Second)
+		return runCommand(cmd)
+	}
 
-	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
-	time.Sleep(3 * time.Second)
-	cancel()
+	go func() {
+		time.Sleep(2 * time.Second)
+		cancel()
+	}()
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommand)
 
 	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")
@@ -368,8 +279,8 @@ func Test_runSubagents_TerminatesWhenSpawnedGoRoutinesReturn(t *testing.T) {
 	mockCmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	mockCmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 
-	mockRunSubAgentCmd := func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, _ *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
-		runSubAgentCommand(ctx, cancel, mockCmd, runCommand, wg)
+	mockRunSubAgentCmd := func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, _ *exec.Cmd, runCommand RunCommandFunc) {
+		runSubAgentCommand(ctx, cancel, mockCmd, runCommand)
 	}
 	runSubagents(ctx, pluginServer.cancelAndSetPluginError, "", "", mockRunSubAgentCmd, runCommand)
 }

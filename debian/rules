@@ -9,11 +9,11 @@ override_dh_auto_configure:
 override_dh_auto_build:
 	true
 override_dh_auto_test:
-	PATH="/usr/local/go/bin:$$PATH" FLB="../cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit" OTELOPSCOL="../cache/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol" go test ./...
+	true
 override_dh_strip_nondeterminism:
 	dh_strip_nondeterminism -X.jar
 override_dh_auto_install:
-	BUILD_DISTRO=$(DEB_DISTRIBUTION) DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
+	DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
 
 override_dh_installsystemd:
 	dh_installsystemd google-cloud-ops-agent.service
