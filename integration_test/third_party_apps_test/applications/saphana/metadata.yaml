@@ -63,6 +63,8 @@ supported_app_version: ["2.0"]
 expected_metrics:
   - kind: GAUGE
     labels:
+      - name: host
+        value_regex: .*
       - name: rating
         value_regex: .*
     monitored_resources: [gce_instance]
@@ -73,6 +75,9 @@ expected_metrics:
     type: workload.googleapis.com/saphana.backup.latest
     optional: true
     value_type: INT64
+    labels:
+      - name: host
+        value_regex: .*
   - kind: GAUGE
     labels:
       - name: host
@@ -175,6 +180,8 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: host
+        value_regex: .*
       - name: product
         value_regex: .*
       - name: system
@@ -184,6 +191,8 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: host
+        value_regex: .*
       - name: product
         value_regex: .*
       - name: system
@@ -193,6 +202,8 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: host
+        value_regex: .*
       - name: product
         value_regex: .*
       - name: system
@@ -227,6 +238,8 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: host
+        value_regex: .*
       - name: mode
         value_regex: .*
       - name: port
@@ -241,6 +254,8 @@ expected_metrics:
     value_type: DOUBLE
   - kind: GAUGE
     labels:
+      - name: host
+        value_regex: .*
       - name: mode
         value_regex: .*
       - name: port
@@ -255,6 +270,8 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: host
+        value_regex: .*
       - name: mode
         value_regex: .*
       - name: port
