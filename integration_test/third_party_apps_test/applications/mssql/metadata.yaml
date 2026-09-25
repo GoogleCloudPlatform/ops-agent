@@ -43,54 +43,88 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     representative: true
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.lock.wait_time.avg
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.lock.wait.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.batch.request.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.batch.sql_compilation.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.batch.sql_recompilation.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.page.buffer_cache.hit_ratio
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.page.life_expectancy
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: database
+        value_regex: .*
       - name: performance_counter_object_name
         value_regex: .*
   - type: workload.googleapis.com/sqlserver.page.split.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.page.lazy_write.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.page.checkpoint.flush.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.page.operation.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: database
+        value_regex: .*
       - name: type
         value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.growth.count

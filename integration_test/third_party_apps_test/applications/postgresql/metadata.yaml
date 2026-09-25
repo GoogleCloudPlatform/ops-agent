@@ -41,6 +41,10 @@ supported_app_version: ["10.18+"]
 expected_metrics:
   - kind: GAUGE
     labels:
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: database
         value_regex: .*
     monitored_resources: [gce_instance]
@@ -51,8 +55,21 @@ expected_metrics:
     monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.bgwriter.buffers.allocated
     value_type: INT64
+    labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
   - kind: CUMULATIVE
     labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: source
         value_regex: backend|backend_fsync|checkpoints|bgwriter
     monitored_resources: [gce_instance]
@@ -60,6 +77,12 @@ expected_metrics:
     value_type: INT64
   - kind: CUMULATIVE
     labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: type
         value_regex: requested|scheduled
     monitored_resources: [gce_instance]
@@ -67,6 +90,12 @@ expected_metrics:
     value_type: INT64
   - kind: CUMULATIVE
     labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: type
         value_regex: sync|write
     monitored_resources: [gce_instance]
@@ -76,8 +105,17 @@ expected_metrics:
     monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.bgwriter.maxwritten
     value_type: INT64
+    labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
   - kind: CUMULATIVE
     labels:
+      - name: index
+        value_regex: .*
       - name: database
         value_regex: .*
       - name: table
@@ -89,6 +127,10 @@ expected_metrics:
     value_type: INT64
   - kind: CUMULATIVE
     labels:
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: database
         value_regex: .*
     monitored_resources: [gce_instance]
@@ -98,12 +140,30 @@ expected_metrics:
     monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.connection.max
     value_type: INT64
+    labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
   - kind: GAUGE
     monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.database.count
     value_type: INT64
+    labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
   - kind: GAUGE
     labels:
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: database
         value_regex: .*
     monitored_resources: [gce_instance]
@@ -133,6 +193,8 @@ expected_metrics:
     value_type: INT64
   - kind: CUMULATIVE
     labels:
+      - name: index
+        value_regex: .*
       - name: database
         value_regex: .*
       - name: table
@@ -144,6 +206,12 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: replication_client
         value_regex: .*
     monitored_resources: [gce_instance]
@@ -151,6 +219,10 @@ expected_metrics:
     value_type: INT64
   - kind: CUMULATIVE
     labels:
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: database
         value_regex: .*
     monitored_resources: [gce_instance]
@@ -158,6 +230,8 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: index
+        value_regex: .*
       - name: database
         value_regex: .*
       - name: state
@@ -169,6 +243,10 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: database
         value_regex: .*
     monitored_resources: [gce_instance]
@@ -176,6 +254,8 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
+      - name: index
+        value_regex: .*
       - name: database
         value_regex: .*
       - name: table
@@ -185,6 +265,8 @@ expected_metrics:
     value_type: INT64
   - kind: CUMULATIVE
     labels:
+      - name: index
+        value_regex: .*
       - name: database
         value_regex: .*
       - name: table
@@ -196,8 +278,21 @@ expected_metrics:
     monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.wal.age
     value_type: INT64
+    labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
   - kind: GAUGE
     labels:
+      - name: database
+        value_regex: .*
+      - name: index
+        value_regex: .*
+      - name: table
+        value_regex: .*
       - name: operation
         value_regex: flush|replay|write
       - name: replication_client

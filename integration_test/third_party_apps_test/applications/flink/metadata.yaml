@@ -39,6 +39,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -50,6 +56,12 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -61,6 +73,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -73,6 +91,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -84,6 +108,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -95,6 +125,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -106,6 +142,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -117,6 +159,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -128,6 +176,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -139,6 +193,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -150,6 +210,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -161,6 +227,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -172,6 +244,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -183,6 +261,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -194,6 +278,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -205,6 +295,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -216,6 +312,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -227,6 +329,12 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -238,6 +346,12 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -251,6 +365,12 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -264,6 +384,12 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: job_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: resource_type
@@ -275,6 +401,14 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: resource_type
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: job_name
@@ -284,6 +418,14 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: resource_type
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: job_name
@@ -293,6 +435,14 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: resource_type
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: job_name
@@ -302,6 +452,14 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: resource_type
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: job_name
@@ -313,6 +471,14 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: resource_type
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: job_name
@@ -322,6 +488,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: resource_type
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: taskmanager_id
@@ -339,6 +507,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: resource_type
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: taskmanager_id
@@ -358,6 +528,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: resource_type
+        value_regex: .*
       - name: host_name
         value_regex: .*
       - name: job_name
