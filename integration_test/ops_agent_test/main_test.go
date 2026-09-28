@@ -814,7 +814,8 @@ func TestSyslogTCP(t *testing.T) {
 		// detecting a failure if the exclusion message were to actually be included.
 
 		// Write test message for exclusion using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc5424 -- abc test pattern xyz"); err != nil {
+		// Retry in case the collector takes longer than 10s after restart to bind TCP port 5140.
+		if err := runRemotelyWithRetry(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc5424 -- abc test pattern xyz", 6, 5*time.Second); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 		// Write test message for inclusion.
