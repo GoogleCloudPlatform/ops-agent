@@ -38,8 +38,7 @@ const (
 	OtelBinary                  = "subagents/opentelemetry-collector/otelopscol"
 
 	LogsDirectory               = "log/google-cloud-ops-agent"
-	OtelStateDiectory           = "state/opentelemetry-collector"
-	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
+	OtelStateDirectory          = "state/opentelemetry-collector"
 	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin"
 )
 
@@ -105,49 +104,38 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	return &pb.StartResponse{}, nil
 }
 
-func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
-	validateCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, OtelBinary),
-		"validate",
-		"--config", "opsagentconf:"+OpsAgentConfigLocationLinux,
-	)
-	validateCmd.Env = append(os.Environ(),
-		"RUNTIME_DIRECTORY="+path.Join(pluginStateDirectory, OtelRuntimeDirectory),
-		"STATE_DIRECTORY="+path.Join(pluginStateDirectory, OtelStateDiectory),
+func newOtelCommand(ctx context.Context, pluginInstallDirectory, pluginStateDirectory string, args ...string) *exec.Cmd {
+	cmdArgs := append(args, "--config", "opsagentconf:"+OpsAgentConfigLocationLinux)
+	cmd := exec.CommandContext(ctx, path.Join(pluginInstallDirectory, OtelBinary), cmdArgs...)
+	cmd.Env = append(os.Environ(),
+		"STATE_DIRECTORY="+path.Join(pluginStateDirectory, OtelStateDirectory),
 		"LOGS_DIRECTORY="+path.Join(pluginStateDirectory, LogsDirectory),
 	)
+	return cmd
+}
+
+func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
+	validateCmd := newOtelCommand(ctx, pluginInstallDirectory, pluginStateDirectory, "validate")
 	if output, err := runCommand(validateCmd); err != nil {
 		return fmt.Errorf("failed to validate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
 	}
 	return nil
 }
 
-// runSubagents starts up otel and fluent bit subagents in separate goroutines.
-// All child goroutines create a new context derived from the same parent context.
-// This ensures that crashes in one goroutine don't affect other goroutines.
-// However, when one goroutine exits with errors, it won't be restarted, and all other goroutines are also terminated.
-// This is done by canceling the parent context.
+// runSubagents starts the OpenTelemetry Collector subagent.
+// When the subagent exits with an error, it won't be restarted, and the parent context is canceled.
 // This makes sure that GetStatus() returns a non-healthy status, signaling UAP to Start() the plugin again.
 //
-// ctx: the parent context that all child goroutines share.
+// ctx: the parent context for the subagent.
 //
-// cancelAndSetError: should be called by subagents from within go routines. It cancels the parent context, and collects the runtime errors from subagents and record them. The recorded errors are surfaced to users via GetStatus().
+// cancelAndSetError: cancels the parent context and records runtime errors from the subagent to be surfaced via GetStatus().
 func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 	// Register signal handler and implements its callback.
 	sigHandler(ctx, func(s os.Signal) {
 		cancelAndSetError(&OpsAgentPluginError{Message: fmt.Sprintf("Received signal: %s, stopping the Ops Agent", s.String()), ShouldRestart: true})
 	})
 
-	// Starting Otel
-	runOtelCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, OtelBinary),
-		"--config", "opsagentconf:"+OpsAgentConfigLocationLinux,
-	)
-	runOtelCmd.Env = append(os.Environ(),
-		"RUNTIME_DIRECTORY="+path.Join(pluginStateDirectory, OtelRuntimeDirectory),
-		"STATE_DIRECTORY="+path.Join(pluginStateDirectory, OtelStateDiectory),
-		"LOGS_DIRECTORY="+path.Join(pluginStateDirectory, LogsDirectory),
-	)
+	runOtelCmd := newOtelCommand(ctx, pluginInstallDirectory, pluginStateDirectory)
 	runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand)
 }
 

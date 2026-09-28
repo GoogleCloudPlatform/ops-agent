@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/goccy/go-yaml"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -111,7 +112,6 @@ func (s *service) parseFlags(args []string) error {
 func (s *service) validateAndCheckConfig(ctx context.Context) error {
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	stateDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run")
-	outDir := filepath.Join(s.outDirectory, "otel")
 
 	cmd := exec.CommandContext(ctx,
 		otelServiceDescription.exepath,
@@ -119,7 +119,6 @@ func (s *service) validateAndCheckConfig(ctx context.Context) error {
 		"--config=opsagentconf:"+s.userConf,
 	)
 	cmd.Env = append(os.Environ(),
-		"RUNTIME_DIRECTORY="+outDir,
 		"STATE_DIRECTORY="+stateDir,
 		"LOGS_DIRECTORY="+logsDir,
 	)
@@ -136,20 +135,33 @@ func (s *service) validateAndCheckConfig(ctx context.Context) error {
 	return s.checkForStandaloneAgents(stdout.String())
 }
 
-func hasUserMetricsPipeline(otelYAML string) bool {
-	for _, line := range strings.Split(otelYAML, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "metrics/") &&
-			trimmed != "metrics/otel:" &&
-			trimmed != "metrics/loggingmetrics:" &&
-			trimmed != "metrics/opsagent:" {
-			return true
+type otelConfigPipelines struct {
+	Service struct {
+		Pipelines map[string]any `yaml:"pipelines"`
+	} `yaml:"service"`
+}
+
+func parseOtelPipelines(otelYAML string) (hasLogs, hasUserMetrics bool, err error) {
+	var cfg otelConfigPipelines
+	if err := yaml.Unmarshal([]byte(otelYAML), &cfg); err != nil {
+		return false, false, fmt.Errorf("failed to parse generated OTel config: %w", err)
+	}
+	for name := range cfg.Service.Pipelines {
+		if strings.HasPrefix(name, "logs/") {
+			hasLogs = true
+		}
+		if strings.HasPrefix(name, "metrics/") && name != "metrics/otel" && name != "metrics/loggingmetrics" {
+			hasUserMetrics = true
 		}
 	}
-	return false
+	return hasLogs, hasUserMetrics, nil
 }
 
 func (s *service) checkForStandaloneAgents(otelYAML string) error {
+	hasLogs, hasUserMetrics, err := parseOtelPipelines(otelYAML)
+	if err != nil {
+		return err
+	}
 	mgr, err := mgr.Connect()
 	if err != nil {
 		return fmt.Errorf("failed to connect to service manager: %s", err)
@@ -161,13 +173,13 @@ func (s *service) checkForStandaloneAgents(otelYAML string) error {
 	}
 
 	var errs string
-	if strings.Contains(otelYAML, "logs/") && containsString(services, "StackdriverLogging") {
+	if hasLogs && containsString(services, "StackdriverLogging") {
 		errs += "We detected an existing Windows service for the StackdriverLogging agent, " +
 			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty logging section. " +
 			"Please either remove the logging section from the Ops Agent configuration, " +
 			"or disable the StackdriverLogging agent, and then retry enabling the Ops Agent. "
 	}
-	if hasUserMetricsPipeline(otelYAML) && containsString(services, "StackdriverMonitoring") {
+	if hasUserMetrics && containsString(services, "StackdriverMonitoring") {
 		errs += "We detected an existing Windows service for the StackdriverMonitoring agent, " +
 			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty metrics section. " +
 			"Please either remove the metrics section from the Ops Agent configuration, " +
