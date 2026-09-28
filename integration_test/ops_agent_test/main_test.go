@@ -4527,7 +4527,7 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
-func waitForExpectedHealthCheckResults(ctx context.Context, logger *log.Logger, vm *gce.VM, maxWait time.Duration, checks map[string]string) error {
+func waitForExpectedHealthCheckMessages(ctx context.Context, logger *log.Logger, vm *gce.VM, maxWait time.Duration, expectedMessages []string) error {
 	ctx, cancel := context.WithTimeout(ctx, maxWait)
 	defer cancel()
 
@@ -4537,25 +4537,33 @@ func waitForExpectedHealthCheckResults(ctx context.Context, logger *log.Logger, 
 		if err != nil {
 			return err
 		}
-		for name, expected := range checks {
-			if !strings.Contains(output, healthCheckResultMessage(name, expected, "")) {
-				return fmt.Errorf("expected %s check to %s in service output:\n%s", name, expected, output)
+		for _, expectedMsg := range expectedMessages {
+			if !strings.Contains(output, expectedMsg) {
+				return fmt.Errorf("expected %q in service output:\n%s", expectedMsg, output)
 			}
 		}
 		return nil
 	}, backoffPolicy)
 }
 
+func waitForExpectedHealthCheckResults(ctx context.Context, logger *log.Logger, vm *gce.VM, maxWait time.Duration, checks map[string]string) error {
+	var expectedMessages []string
+	for name, expected := range checks {
+		expectedMessages = append(expectedMessages, healthCheckResultMessage(name, expected, ""))
+	}
+	return waitForExpectedHealthCheckMessages(ctx, logger, vm, maxWait, expectedMessages)
+}
+
 func getRecentServiceOutputForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
-			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent service entered the running state*' -Newest 1).TimeGenerated",
-			"$QueryStart = $ServiceStart - (New-TimeSpan -Seconds 30)",
-			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$QueryStart } | select -ExpandProperty Message",
+			"$Events = @(Get-WinEvent -MaxEvents 50 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | select -ExpandProperty Message)",
+			"$Idx = [array]::FindIndex($Events, [Predicate[string]]{ param($m) $m -match 'Starting Ops Agent health checks' })",
+			"if ($Idx -ge 0) { $Events[0..$Idx] } else { $Events }",
 		}, ";")
 		return cmd
 	}
-	return "sudo journalctl -b 0 -u google-cloud-ops-agent --no-pager"
+	return "sudo journalctl -b 0 -u google-cloud-ops-agent --no-pager | tac | sed '/Starting Ops Agent health checks/q'"
 }
 
 func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
@@ -4690,14 +4698,13 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := getHealthCheckResultsForImage(ctx, logger, vm)
-		if err != nil {
-			t.Fatal(err)
+		if err := waitForExpectedHealthCheckResults(ctx, logger, vm, 2*time.Minute, map[string]string{
+			"Network": "PASS",
+			"Ports":   "PASS",
+			"API":     "PASS",
+		}); err != nil {
+			t.Error(err)
 		}
-
-		checkExpectedHealthCheckResult(t, cmdOut, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "PASS", "")
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
@@ -4715,17 +4722,15 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = getHealthCheckResultsForImage(ctx, logger, vm)
-		if err != nil {
-			t.Fatal(err)
+		// TODO(b/321220138): restore PacApiConnErr once there's a more reliable endpoint.
+		if err := waitForExpectedHealthCheckMessages(ctx, logger, vm, 2*time.Minute, []string{
+			healthCheckResultMessage("Network", "FAIL", "TelApiConnErr"),
+			healthCheckResultMessage("Network", "WARNING", "DLApiConnErr"),
+			healthCheckResultMessage("Ports", "PASS", ""),
+			healthCheckResultMessage("API", "FAIL", "TelApiConnErr"),
+		}); err != nil {
+			t.Error(err)
 		}
-
-		checkExpectedHealthCheckResult(t, cmdOut, "Network", "FAIL", "TelApiConnErr")
-		// TODO(b/321220138): restore this once there's a more reliable endpoint.
-		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut, "Network", "WARNING", "DLApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "TelApiConnErr")
 	})
 }
 
