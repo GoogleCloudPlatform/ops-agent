@@ -1086,6 +1086,26 @@ func MetadataWithDLVMDefaults(imageSpec string, additionalMetadata map[string]st
 	return additionalMetadata
 }
 
+// DisableDLVMUnattendedUpgrades stops, disables, and masks apt-daily and
+// unattended-upgrades timers and services on Deep Learning VM images (b/567062508, b/562959213).
+// Ansible-built DLVM images (such as common-cu129-ubuntu-2404-nvidia-580) do not
+// include /opt/c2d/scripts/98-enable-updates.sh, so they ignore the
+// install-unattended-upgrades=false GCE metadata key and leave apt-daily-upgrade.timer
+// enabled in /etc/systemd/system/timers.target.wants/.
+func DisableDLVMUnattendedUpgrades(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	if !gce.IsDLVMImage(vm.ImageSpec) {
+		return nil
+	}
+	cmd := "sudo systemctl mask --now apt-daily.timer apt-daily-upgrade.timer && " +
+		"sudo systemctl mask apt-daily.service apt-daily-upgrade.service unattended-upgrades.service && " +
+		"sudo systemctl stop unattended-upgrades.service && " +
+		"sudo systemctl stop apt-daily.service apt-daily-upgrade.service"
+	if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
+		return fmt.Errorf("failed to disable unattended upgrades on DLVM image %s: %w", vm.ImageSpec, err)
+	}
+	return nil
+}
+
 // CommonSetupWithExtraCreateArgumentsAndMetadata sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
 func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	t.Helper()
@@ -1111,6 +1131,9 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
+	if err := DisableDLVMUnattendedUpgrades(ctx, logger.ToFile("VM_initialization.txt"), vm); err != nil {
+		t.Fatalf("DisableDLVMUnattendedUpgrades() failed: %v", err)
+	}
 	return ctx, logger, vm
 }
 
@@ -1139,6 +1162,9 @@ func ManagedInstanceGroupVMSetup(t *testing.T, imageSpec string, extraCreateArgu
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, migVM.VM)
 	})
+	if err := DisableDLVMUnattendedUpgrades(ctx, logger.ToFile("VM_initialization.txt"), migVM.VM); err != nil {
+		t.Fatalf("DisableDLVMUnattendedUpgrades() failed: %v", err)
+	}
 	return ctx, logger, migVM
 }
 
