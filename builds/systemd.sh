@@ -28,14 +28,6 @@ mkdir -p "$DESTDIR$systemdsystemunitdir"
 for f in systemd/*.service; do
 install_unit "$f" "$(basename "$f")"
 done
-if [ "$(systemctl --version | grep -Po '^systemd \K\d+')" -lt 240 ]; then
-for d in systemd/*.service.d; do
-    mkdir "$DESTDIR$systemdsystemunitdir/$(basename "$d")"
-    for f in "$d"/*.conf; do
-    install_unit "$f" "$(basename "$d")/$(basename "$f")"
-    done
-done
-fi
 mkdir -p "$DESTDIR$systemdsystempresetdir"
 for f in systemd/*.preset; do
 cp "$f" "$DESTDIR$systemdsystempresetdir/$(basename "$f")"

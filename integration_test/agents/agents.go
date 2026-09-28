@@ -220,9 +220,6 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/nvidia-installer.log",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
-			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
 		}
 	}
 	return []string{
@@ -231,9 +228,6 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		"/var/log/google-cloud-ops-agent/health-checks.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
 		"/var/log/nvidia-installer.log",
-		"/run/google-cloud-ops-agent/otel.yaml",
-		"/run/google-cloud-ops-agent/feature_tracking_otlp.json",
-		"/run/google-cloud-ops-agent/enabled_receivers_otlp.json",
 	}
 }
 
@@ -256,16 +250,10 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("logging_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\logging-module.log`))
 	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\health-checks.log`))
 
-	for _, conf := range []string{
-		OpsAgentConfigPath(vm.ImageSpec),
-		stateDir + `generated_configs\otel\otel.yaml`,
-		stateDir + `generated_configs\otel\feature_tracking_otlp.json`,
-		stateDir + `generated_configs\otel\enabled_receivers_otlp.json`,
-	} {
-		pathParts := strings.Split(conf, `\`)
-		basename := pathParts[len(pathParts)-1]
-		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", conf))
-	}
+	conf := OpsAgentConfigPath(vm.ImageSpec)
+	pathParts := strings.Split(conf, `\`)
+	basename := pathParts[len(pathParts)-1]
+	gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", conf))
 }
 
 // WaitForUptimeMetrics waits for the given uptime metrics to be visible in
@@ -1275,20 +1263,6 @@ func OpsAgentConfigPath(imageSpec string) string {
 		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
 	}
 	return "/etc/google-cloud-ops-agent/config.yaml"
-}
-
-func GetOtelConfigPath(imageSpec string) string {
-	if gce.IsOpsAgentUAPPlugin() {
-		if gce.IsWindows(imageSpec) {
-			return `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\generated_configs\otel\otel.yaml`
-		}
-		return "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
-	}
-
-	if gce.IsWindows(imageSpec) {
-		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
-	}
-	return "/var/run/google-cloud-ops-agent/otel.yaml"
 }
 
 func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {

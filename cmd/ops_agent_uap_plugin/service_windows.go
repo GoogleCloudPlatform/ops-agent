@@ -37,7 +37,6 @@ import (
 )
 
 const (
-	GeneratedConfigsOutDir           = "generated_configs"
 	LogsDirectory                    = "log"
 	RuntimeDirectory                 = "run"
 	OpsAgentUAPPluginEventID  uint32 = 8
@@ -130,17 +129,18 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	return &pb.StartResponse{}, nil
 }
 
-func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
-	validateCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, OtelBinary),
-		"validate",
-		"--config", "opsagentconf:"+OpsAgentConfigLocationWindows,
-	)
-	validateCmd.Env = append(os.Environ(),
-		"RUNTIME_DIRECTORY="+filepath.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel"),
+func newOtelCommand(ctx context.Context, pluginInstallDirectory, pluginStateDirectory string, args ...string) *exec.Cmd {
+	cmdArgs := append(args, "--config", "opsagentconf:"+OpsAgentConfigLocationWindows)
+	cmd := exec.CommandContext(ctx, path.Join(pluginInstallDirectory, OtelBinary), cmdArgs...)
+	cmd.Env = append(os.Environ(),
 		"STATE_DIRECTORY="+filepath.Join(pluginStateDirectory, RuntimeDirectory),
 		"LOGS_DIRECTORY="+filepath.Join(pluginStateDirectory, LogsDirectory),
 	)
+	return cmd
+}
+
+func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
+	validateCmd := newOtelCommand(ctx, pluginInstallDirectory, pluginStateDirectory, "validate")
 	output, err := runCommand(validateCmd)
 	if output != "" {
 		log.Print(output)
@@ -247,29 +247,15 @@ func createWindowsJobHandle() (windows.Handle, error) {
 	return jobHandle, nil
 }
 
-// runSubagents starts up otel and fluent bit subagents in separate goroutines.
-// All child goroutines create a new context derived from the same parent context.
-// This ensures that crashes in one goroutine don't affect other goroutines.
-// However, when one goroutine exits with errors, it won't be restarted, and all other goroutines are also terminated.
-// This is done by canceling the parent context.
+// runSubagents starts the OpenTelemetry Collector subagent.
+// When the subagent exits with an error, it won't be restarted, and the parent context is canceled.
 // This makes sure that GetStatus() returns a non-healthy status, signaling UAP to Start() the plugin again.
 //
-// ctx: the parent context that all child goroutines share.
+// ctx: the parent context for the subagent.
 //
-// cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
-// and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
+// cancelAndSetError: cancels the parent context and records runtime errors from the subagent to be surfaced via GetStatus().
 func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
-
-	// Starting Otel
-	runOtelCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, OtelBinary),
-		"--config", "opsagentconf:"+OpsAgentConfigLocationWindows,
-	)
-	runOtelCmd.Env = append(os.Environ(),
-		"RUNTIME_DIRECTORY="+filepath.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel"),
-		"STATE_DIRECTORY="+filepath.Join(pluginStateDirectory, RuntimeDirectory),
-		"LOGS_DIRECTORY="+filepath.Join(pluginStateDirectory, LogsDirectory),
-	)
+	runOtelCmd := newOtelCommand(ctx, pluginInstallDirectory, pluginStateDirectory)
 	runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand)
 }
 
