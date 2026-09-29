@@ -696,9 +696,9 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["queue_name"], resource.attributes["rabbitmq.queue.name"])
-      - set(attributes["node_name"], resource.attributes["rabbitmq.node.name"])
-      - set(attributes["vhost_name"], resource.attributes["rabbitmq.vhost.name"])
+      - set(attributes["queue_name"], resource.attributes["rabbitmq.queue.name"]) where resource.attributes["rabbitmq.queue.name"] != nil
+      - set(attributes["node_name"], resource.attributes["rabbitmq.node.name"]) where resource.attributes["rabbitmq.node.name"] != nil
+      - set(attributes["vhost_name"], resource.attributes["rabbitmq.vhost.name"]) where resource.attributes["rabbitmq.vhost.name"] != nil
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/rabbitmq")

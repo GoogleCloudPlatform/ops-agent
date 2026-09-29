@@ -687,12 +687,12 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["host_name"], resource.attributes["host.name"])
-      - set(attributes["taskmanager_id"], resource.attributes["flink.taskmanager.id"])
-      - set(attributes["job_name"], resource.attributes["flink.job.name"])
-      - set(attributes["task_name"], resource.attributes["flink.task.name"])
-      - set(attributes["subtask_index"], resource.attributes["flink.subtask.index"])
-      - set(attributes["resource_type"], resource.attributes["flink.resource.type"])
+      - set(attributes["host_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil
+      - set(attributes["taskmanager_id"], resource.attributes["flink.taskmanager.id"]) where resource.attributes["flink.taskmanager.id"] != nil
+      - set(attributes["job_name"], resource.attributes["flink.job.name"]) where resource.attributes["flink.job.name"] != nil
+      - set(attributes["task_name"], resource.attributes["flink.task.name"]) where resource.attributes["flink.task.name"] != nil
+      - set(attributes["subtask_index"], resource.attributes["flink.subtask.index"]) where resource.attributes["flink.subtask.index"] != nil
+      - set(attributes["resource_type"], resource.attributes["flink.resource.type"]) where resource.attributes["flink.resource.type"] != nil
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/flink")

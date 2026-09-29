@@ -320,7 +320,7 @@ type TransformQuery struct {
 func FlattenResourceAttribute(resourceAttribute, metricAttribute string) TransformQuery {
 	return TransformQuery{
 		Context:   Datapoint,
-		Statement: fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute),
+		Statement: fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"]) where resource.attributes["%s"] != nil`, metricAttribute, resourceAttribute, resourceAttribute),
 	}
 }
 

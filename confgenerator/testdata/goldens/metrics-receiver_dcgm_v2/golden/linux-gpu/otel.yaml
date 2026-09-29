@@ -705,9 +705,9 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["model"], resource.attributes["gpu.model"])
-      - set(attributes["gpu_number"], resource.attributes["gpu.number"])
-      - set(attributes["uuid"], resource.attributes["gpu.uuid"])
+      - set(attributes["model"], resource.attributes["gpu.model"]) where resource.attributes["gpu.model"] != nil
+      - set(attributes["gpu_number"], resource.attributes["gpu.number"]) where resource.attributes["gpu.number"] != nil
+      - set(attributes["uuid"], resource.attributes["gpu.uuid"]) where resource.attributes["gpu.uuid"] != nil
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/dcgm")

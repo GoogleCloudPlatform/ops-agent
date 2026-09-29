@@ -721,8 +721,8 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["site"], resource.attributes["iis.site"])
-      - set(attributes["app_pool"], resource.attributes["iis.application_pool"])
+      - set(attributes["site"], resource.attributes["iis.site"]) where resource.attributes["iis.site"] != nil
+      - set(attributes["app_pool"], resource.attributes["iis.application_pool"]) where resource.attributes["iis.application_pool"] != nil
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/iis")

@@ -673,7 +673,7 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["host"], resource.attributes["saphana.host"])
+      - set(attributes["host"], resource.attributes["saphana.host"]) where resource.attributes["saphana.host"] != nil
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/saphana")

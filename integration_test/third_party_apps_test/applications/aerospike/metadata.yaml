@@ -88,8 +88,6 @@ expected_metrics:
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      - name: namespace_name
-        value_regex: .*
       - name: operation
         value_regex: close|open
       - name: type
@@ -101,8 +99,6 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     labels:
-      - name: namespace_name
-        value_regex: .*
       - name: type
         value_regex: client|fabric|heartbeat
       - name: node_name
@@ -113,8 +109,6 @@ expected_metrics:
     representative: true
   - kind: GAUGE
     labels:
-      - name: namespace_name
-        value_regex: .*
       - name: node_name
         value_regex: .*
     monitored_resources: [gce_instance]
