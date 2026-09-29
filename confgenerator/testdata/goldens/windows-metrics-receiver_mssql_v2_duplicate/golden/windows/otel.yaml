@@ -740,7 +740,7 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["database"], resource.attributes["sqlserver.database.name"])
+      - set(attributes["database"], resource.attributes["sqlserver.database.name"]) where resource.attributes["sqlserver.database.name"] != nil
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/mssql")

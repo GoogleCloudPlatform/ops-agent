@@ -700,9 +700,9 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["database"], resource.attributes["postgresql.database.name"])
-      - set(attributes["table"], resource.attributes["postgresql.table.name"])
-      - set(attributes["index"], resource.attributes["postgresql.index.name"])
+      - set(attributes["database"], resource.attributes["postgresql.database.name"]) where resource.attributes["postgresql.database.name"] != nil
+      - set(attributes["table"], resource.attributes["postgresql.table.name"]) where resource.attributes["postgresql.table.name"] != nil
+      - set(attributes["index"], resource.attributes["postgresql.index.name"]) where resource.attributes["postgresql.index.name"] != nil
       - set(value_int, Int(value_double)) where metric.name == "postgresql.wal.delay"
       - set(metric.name, "postgresql.wal.lag") where metric.name == "postgresql.wal.delay"
     - context: scope
