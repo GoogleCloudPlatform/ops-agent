@@ -239,6 +239,166 @@
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-08-18T09:25:00.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: POST
+      requestSize: 0.0
+      requestUrl: /_event
+      responseSize: 2.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload:
+      message: "2"
+      user: "@ns_server"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2026-09-17T20:42:40.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: POST
+      requestSize: 0.0
+      requestUrl: /_event
+      responseSize: 2.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload:
+      message: "1"
+      user: "@ns_server"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2026-09-17T20:42:40.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: POST
+      requestSize: 0.0
+      requestUrl: /_event
+      responseSize: 2.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload:
+      message: "2"
+      user: "@ns_server"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2026-09-17T20:42:40.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /
+      responseSize: 216.0
+      serverIp: ""
+      status: 301.0
+      userAgent: curl/8.14.1
+    jsonPayload:
+      message: "6"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2026-09-17T20:42:40.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: RPCCONNECT
+      requestSize: 0.0
+      requestUrl: /saslauthd-saslauthd-port
+      responseSize: 0.0
+      serverIp: ""
+      status: 200.0
+      userAgent: saslauthd-port-service
+    jsonPayload:
+      message: "6"
+      user: "@"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2026-09-17T20:42:40.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /_metakv/remoteCluster/
+      responseSize: 0.0
+      serverIp: ""
+      status: 200.0
+      userAgent: goxdcr-metakv
+    jsonPayload:
+      message: "3"
+      user: "@goxdcr"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2026-09-17T20:42:40.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /_metakv/remoteCluster/
+      responseSize: 0.0
+      serverIp: ""
+      status: 200.0
+      userAgent: goxdcr-metakv
+    jsonPayload:
+      message: "3"
+      user: "@goxdcr"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2026-09-17T20:42:40.000000000Z
   partialSuccess: true
   resource:
     labels: {}

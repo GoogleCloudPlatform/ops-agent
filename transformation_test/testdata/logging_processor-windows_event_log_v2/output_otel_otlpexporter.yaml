@@ -125,7 +125,7 @@
                 intValue: "6080"
             - key: TimeCreated
               value:
-                stringValue: 2026-01-16 18:45:59.5782153 Z
+                stringValue: 2026-01-16 18:45:59.5782153 +0000
             - key: UserId
               value:
                 stringValue: ""
@@ -234,7 +234,7 @@
                 intValue: "6080"
             - key: TimeCreated
               value:
-                stringValue: 2026-01-16 18:45:59.5782153 Z
+                stringValue: 2026-01-16 18:45:59.5782153 +0000
             - key: UserId
               value:
                 stringValue: ""
@@ -309,7 +309,7 @@
                 intValue: "5678"
             - key: TimeCreated
               value:
-                stringValue: 2025-12-14 05:26:29.0709018 Z
+                stringValue: 2025-12-14 05:26:29.0709018 +0000
             - key: UserId
               value:
                 stringValue: ""
@@ -384,7 +384,78 @@
                 intValue: "9876"
             - key: TimeCreated
               value:
-                stringValue: 2025-12-14 05:25:55.5387001 Z
+                stringValue: 2025-12-14 05:25:55.5387001 +0000
+            - key: UserId
+              value:
+                stringValue: ""
+            - key: Version
+              value:
+                intValue: "0"
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: ActivityID
+              value:
+                stringValue: ""
+            - key: Channel
+              value:
+                stringValue: Directory Service
+            - key: Computer
+              value:
+                stringValue: test-computer
+            - key: EventID
+              value:
+                intValue: "2065"
+            - key: EventRecordID
+              value:
+                intValue: "22334"
+            - key: Keywords
+              value:
+                stringValue: "0x8080000000000000"
+            - key: Level
+              value:
+                intValue: "4"
+            - key: Message
+              value:
+                stringValue: Quota enforcement is now in effect.
+            - key: Opcode
+              value:
+                intValue: "0"
+            - key: ProcessID
+              value:
+                intValue: "789"
+            - key: ProviderGuid
+              value:
+                stringValue: "{11111111-2222-3333-4444-555555555555}"
+            - key: ProviderName
+              value:
+                stringValue: NTDS General
+            - key: Qualifiers
+              value:
+                intValue: "12345"
+            - key: RelatedActivityID
+              value:
+                stringValue: ""
+            - key: StringInserts
+              value:
+                arrayValue: {}
+            - key: Task
+              value:
+                intValue: "0"
+            - key: ThreadId
+              value:
+                intValue: "9876"
+            - key: TimeCreated
+              value:
+                stringValue: 2025-12-14 05:25:55.5387001 +0000
             - key: UserId
               value:
                 stringValue: ""

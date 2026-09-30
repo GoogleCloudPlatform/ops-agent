@@ -198,6 +198,12 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 }
 
 func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	for _, path := range append(r.IncludePaths, r.ExcludePaths...) {
+		if strings.Contains(path, "${HOSTNAME}") {
+			return nil, fmt.Errorf("unimplemented: ${HOSTNAME} is unsupported in OTel filelog")
+		}
+	}
+
 	operators := []map[string]any{}
 	var extensions []string
 	receiver_config := map[string]any{
@@ -780,7 +786,10 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data.data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					return v.SetIf(ottl.ToValues(v), v.IsPresent())
+					return ottl.NewStatements(
+						v.SetIf(ottl.ToValues(v), v.IsPresent()),
+						v.SetIf(ottl.ParseJSON(ottl.StringLiteral("[]")), ottl.Not(v.IsPresent())),
+					)
 				},
 			},
 			"jsonPayload.TimeGenerated": {
@@ -851,6 +860,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 						cacheEventData.SetIf(ottl.ToValues(eventData), eventData.IsPresent()),
 						cacheEventData.AppendValuesIf(eventBinary, ottl.And(cacheEventData.IsPresent(), eventBinary.IsPresent())),
 						v.SetIf(cacheEventData, cacheEventData.IsPresent()),
+						v.SetIf(ottl.ParseJSON(ottl.StringLiteral("[]")), ottl.Not(v.IsPresent())),
 					)
 				},
 			},
@@ -917,6 +927,7 @@ func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, err
 						cacheEventData.SetIf(ottl.ToValues(eventData), eventData.IsPresent()),
 						cacheEventData.AppendValuesIf(eventBinary, ottl.And(cacheEventData.IsPresent(), eventBinary.IsPresent())),
 						v.SetIf(cacheEventData, cacheEventData.IsPresent()),
+						v.SetIf(ottl.ParseJSON(ottl.StringLiteral("[]")), ottl.Not(v.IsPresent())),
 					)
 				},
 			},
@@ -958,7 +969,7 @@ func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit
 }
 
 func formatSystemTime(v ottl.LValue) ottl.Statements {
-	return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s %z"))
+	return v.Set(ottl.Concat([]ottl.Value{ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%s%z"), "%Y-%m-%d %T.%s"), ottl.StringLiteral("+0000")}, " "))
 }
 
 func init() {

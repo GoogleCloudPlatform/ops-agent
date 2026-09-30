@@ -1,0 +1,18 @@
+metrics:
+  receivers:
+    redis:
+      type: redis
+  service:
+    pipelines:
+      redis:
+        receivers:
+        - redis
+logging:
+  receivers:
+    redis:
+      type: redis
+  service:
+    pipelines:
+      redis:
+        receivers:
+        - redis

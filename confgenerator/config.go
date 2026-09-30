@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -1004,10 +1003,12 @@ const (
 )
 
 type PipelineInstance struct {
-	PID, RID     string
-	PipelineType string
-	Receiver     Component
-	Processors   []struct {
+	PID, RID string
+	// ReceiverSection indicates which section the receiver was defined in ("logging", "metrics", "traces", or "combined")
+	ReceiverSection string
+	PipelineType    string
+	Receiver        Component
+	Processors      []struct {
 		ID string
 		Component
 	}
@@ -1104,22 +1105,15 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	if err != nil {
 		return nil, err
 	}
-	platformDefaultConfig := BuiltInConfStructs[platform.FromContext(ctx).Name()].Logging
 	exp_otlp := experiments.FromContext(ctx)["otlp_logging"]
 	force_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
-		defaultP, ok := platformDefaultConfig.Service.Pipelines[pID]
-		isDefaultPipeline := ok && slices.Equal(p.ReceiverIDs, defaultP.ReceiverIDs) && slices.Equal(p.ProcessorIDs, defaultP.ProcessorIDs)
 		for _, rID := range p.ReceiverIDs {
 			receiver, ok := receivers[rID]
 			if !ok {
 				return nil, fmt.Errorf("logging receiver %q not found", rID)
-			}
-			defaultReceiver, ok := platformDefaultConfig.Receivers[rID]
-			if !ok || !reflect.DeepEqual(receiver, defaultReceiver) {
-				isDefaultPipeline = false
 			}
 			var processors []struct {
 				ID string
@@ -1140,16 +1134,24 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				}{prID, processor})
 			}
 			instance := PipelineInstance{
-				PipelineType: "logs",
-				Backend:      BackendFluentBit,
-				PID:          pID,
-				RID:          rID,
-				Receiver:     receiver,
-				Processors:   processors,
+				PipelineType:    "logs",
+				Backend:         BackendFluentBit,
+				PID:             pID,
+				RID:             rID,
+				Receiver:        receiver.Receiver,
+				ReceiverSection: receiver.Section,
+				Processors:      processors,
 			}
-			if (force_otel != nil && *force_otel) || // User asked for OTel logging
-				(force_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
-				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
+			use_otel := (force_otel != nil && *force_otel) || // User asked for OTel logging
+				(receiver.Receiver.Type() == "otlp" && exp_otlp) // OTLP receiver
+			if force_otel == nil && !use_otel {
+				// If OTel isn't forced on or off, check if we can run this pipeline with OTel
+				_, _, err := instance.OTelComponents(ctx)
+				if err == nil {
+					use_otel = true
+				}
+			}
+			if use_otel {
 				instance.Backend = BackendOTel
 			}
 			out = append(out, instance)
@@ -1174,13 +1176,21 @@ func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]PipelineInstance, err
 	return append(append(metricsPipelines, tracesPipelines...), loggingPipelines...), nil
 }
 
+type ReceiverMapItem struct {
+	Receiver Component
+	Section  string
+}
+
 // LoggingReceivers returns a map of potential logging receivers.
 // Each Component may or may not be usable in fluent-bit or otel.
-func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Component, error) {
-	out := map[string]Component{}
+func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]ReceiverMapItem, error) {
+	out := map[string]ReceiverMapItem{}
 	if uc.Logging != nil {
 		for k, v := range uc.Logging.Receivers {
-			out[k] = v
+			out[k] = ReceiverMapItem{
+				Receiver: v,
+				Section:  "logging",
+			}
 		}
 	}
 	if uc.Combined != nil {
@@ -1188,7 +1198,10 @@ func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Compo
 			if _, ok := out[k]; ok {
 				return nil, fmt.Errorf("logging receiver %q has the same name as combined receiver %q", k, k)
 			}
-			out[k] = v
+			out[k] = ReceiverMapItem{
+				Receiver: v,
+				Section:  "combined",
+			}
 		}
 	}
 	return out, nil
@@ -1201,7 +1214,7 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 	}
 	validReceivers := map[string]OTelReceiver{}
 	for k, v := range receivers {
-		if v, ok := v.(OTelReceiver); ok {
+		if v, ok := v.Receiver.(OTelReceiver); ok {
 			validReceivers[k] = v
 		}
 	}
