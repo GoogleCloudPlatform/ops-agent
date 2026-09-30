@@ -660,9 +660,6 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-<<<<<<< HEAD
-  transform/logging_postgresql__custom__general_1:
-=======
   transform/health_checks_0:
     error_mode: ignore
     log_statements:
@@ -690,6 +687,12 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
@@ -837,8 +840,7 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/loggingmetrics_0:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
+  transform/logging_postgresql__custom__general_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1460,24 +1462,27 @@ processors:
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
-<<<<<<< HEAD
+  file_log/health_checks:
+    include:
+    - health-checks.log
+    operators:
+    - from: body
+      id: body
+      to: body.message
+      type: move
+    start_at: beginning
+    storage: file_storage
   file_log/logging_postgresql__custom__general:
     exclude: []
     fingerprint_size: 5kb
     include:
     - /srv/postgresql/general.log
     include_file_name: false
-=======
-  file_log/health_checks:
-    include:
-    - health-checks.log
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     operators:
     - from: body
       id: body
       to: body.message
       type: move
-<<<<<<< HEAD
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
@@ -1500,11 +1505,6 @@ receivers:
     start_at: beginning
     storage: file_storage
   file_log/logging_syslog:
-=======
-    start_at: beginning
-    storage: file_storage
-  file_log/syslog:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1577,9 +1577,6 @@ service:
   extensions:
   - file_storage
   pipelines:
-<<<<<<< HEAD
-    logs/logs_default__pipeline_logging_syslog:
-=======
     logs/healthchecks:
       exporters:
       - googlecloud/logging
@@ -1601,8 +1598,7 @@ service:
       - resourcedetection/_global_0
       receivers:
       - otlpjsonfile/logging_ping
-    logs/logs_default__pipeline_syslog:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
+    logs/logs_default__pipeline_logging_syslog:
       exporters:
       - googlecloud/logging
       processors:

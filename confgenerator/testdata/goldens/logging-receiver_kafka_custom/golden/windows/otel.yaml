@@ -739,6 +739,12 @@ processors:
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -835,16 +841,11 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
-<<<<<<< HEAD
   transform/logging_kafka__custom_1:
-=======
-  transform/logging_ping_0:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     error_mode: ignore
     log_statements:
     - context: log
       statements:
-<<<<<<< HEAD
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^\\\\[(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2},\\\\d+)\\\\]\\\\s+(?<level>[A-Z]+)(?:\\\\s+\\\\[(?<source>.*)\\\\]:?)?\\\\s+(?<message>[\\\\s\\\\S]*)(?=\\\\s+\\\\([\\\\w\\\\s\\\\.\\\\$]+\\\\)$|\\\\s+$)(?:\\\\s+\\\\((?<logger>[\\\\w\\\\s\\\\.\\\\$]+)\\\\))?\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^\\\\[(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2},\\\\d+)\\\\]\\\\s+(?<level>[A-Z]+)(?:\\\\s+\\\\[(?<source>.*)\\\\]:?)?\\\\s+(?<message>[\\\\s\\\\S]*)(?=\\\\s+\\\\([\\\\w\\\\s\\\\.\\\\$]+\\\\)$|\\\\s+$)(?:\\\\s+\\\\((?<logger>[\\\\w\\\\s\\\\.\\\\$]+)\\\\))?\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
@@ -902,16 +903,10 @@ processors:
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_kafka__custom_2:
-=======
-      - set(observed_time, Now())
-      - set(time, Now())
-  transform/logging_ping_1:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     error_mode: ignore
     log_statements:
     - context: log
       statements:
-<<<<<<< HEAD
       - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
       - set(cache["__field_1"], body["level"]) where (body != nil and body["level"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -929,31 +924,6 @@ processors:
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
   transform/logging_kafka__custom_3:
-=======
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], body["severity"]) where (body != nil and body["severity"] != nil)
-      - delete_key(body, "severity") where (body != nil and body["severity"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], "ops-agent")
-      - set(attributes["agent.googleapis.com/health/agentKind"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], "latest")
-      - set(attributes["agent.googleapis.com/health/agentVersion"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], "v1")
-      - set(attributes["agent.googleapis.com/health/schemaVersion"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
-      - set(cache["mapped_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "debug"
-      - set(cache["mapped_value"], "ERROR") where cache["value"] == "error"
-      - set(cache["mapped_value"], "INFO") where cache["value"] == "info"
-      - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
-      - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
-      - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_ping_2:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     error_mode: ignore
     log_statements:
     - context: log
@@ -980,7 +950,6 @@ processors:
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-<<<<<<< HEAD
       - set(cache["value"], "kafka_custom") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_kafka__syslog_0:
@@ -1024,6 +993,69 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "kafka_syslog") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_ping_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(observed_time, Now())
+      - set(time, Now())
+  transform/logging_ping_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], body["severity"]) where (body != nil and body["severity"] != nil)
+      - delete_key(body, "severity") where (body != nil and body["severity"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "ops-agent")
+      - set(attributes["agent.googleapis.com/health/agentKind"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "latest")
+      - set(attributes["agent.googleapis.com/health/agentVersion"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "v1")
+      - set(attributes["agent.googleapis.com/health/schemaVersion"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["mapped_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "debug"
+      - set(cache["mapped_value"], "ERROR") where cache["value"] == "error"
+      - set(cache["mapped_value"], "INFO") where cache["value"] == "info"
+      - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
+      - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
+  transform/logging_ping_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_windows__event__log_0:
     error_mode: ignore
@@ -1390,9 +1422,6 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "windows_event_log") where cache["value"] == nil
-=======
-      - set(cache["value"], "ops-agent-health") where cache["value"] == nil
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/loggingmetrics_0:
     error_mode: ignore
@@ -1516,29 +1545,30 @@ processors:
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
-<<<<<<< HEAD
+  file_log/health_checks:
+    include:
+    - health-checks.log
+    operators:
+    - from: body
+      id: body
+      to: body.message
+      type: move
+    start_at: beginning
+    storage: file_storage
   file_log/logging_kafka__custom:
     exclude: []
     fingerprint_size: 5kb
     include:
     - /var/log/my_own_kafka/my_own*.log
     include_file_name: false
-=======
-  file_log/health_checks:
-    include:
-    - health-checks.log
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     operators:
     - from: body
       id: body
       to: body.message
       type: move
-<<<<<<< HEAD
     poll_interval: 13s
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
-=======
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     start_at: beginning
     storage: file_storage
   hostmetrics/hostmetrics:
@@ -1657,9 +1687,6 @@ service:
   extensions:
   - file_storage
   pipelines:
-<<<<<<< HEAD
-    logs/logs_default__pipeline_logging_windows__event__log:
-=======
     logs/healthchecks:
       exporters:
       - googlecloud/logging
@@ -1681,8 +1708,7 @@ service:
       - resourcedetection/_global_0
       receivers:
       - otlpjsonfile/logging_ping
-    logs/logs_default__pipeline_windows__event__log:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
+    logs/logs_default__pipeline_logging_windows__event__log:
       exporters:
       - googlecloud/logging
       processors:

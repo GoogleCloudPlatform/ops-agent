@@ -884,56 +884,6 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
-  transform/hostmetrics_3:
-    metric_statements:
-    - context: scope
-      statements:
-      - set(name, "")
-      - set(version, "")
-  transform/hostmetrics_4:
-    metric_statements:
-    - context: resource
-      error_mode: silent
-      statements:
-      - delete_key(attributes, "service.name")
-      - delete_key(attributes, "service.instance.id")
-      - delete_key(attributes, "service.namespace")
-      - delete_key(attributes, "service.version")
-  transform/logging_file__logs_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["value"], "test-mig") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["value"], "test-zone") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], "file_logs") where cache["value"] == nil
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-<<<<<<< HEAD
-  transform/logging_syslog_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-=======
   transform/health_checks_0:
     error_mode: ignore
     log_statements:
@@ -961,6 +911,12 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
       - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
@@ -1048,7 +1004,22 @@ processors:
   transform/hostmetrics_3:
     metric_statements:
     - context: scope
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_4:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/logging_file__logs_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
@@ -1072,28 +1043,8 @@ processors:
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["value"], "syslog") where cache["value"] == nil
+      - set(cache["value"], "file_logs") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_syslog__custom_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-<<<<<<< HEAD
-      - set(cache["__body_string"], body) where IsString(body)
-      - set(cache["__body_map"], body) where IsMap(body)
-      - set(body, {})
-      - merge_maps(body, cache["__body_map"], "upsert") where (cache != nil and cache["__body_map"] != nil)
-      - set(body["message"], cache["__body_string"]) where (cache != nil and cache["__body_string"] != nil)
-      - set(attributes, {})
-      - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
-      - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_syslog__custom_1:
-=======
-      - delete_key(attributes, "service.name")
-      - delete_key(attributes, "service.instance.id")
-      - delete_key(attributes, "service.namespace")
-      - delete_key(attributes, "service.version")
   transform/logging_ping_0:
     error_mode: ignore
     log_statements:
@@ -1129,7 +1080,6 @@ processors:
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
   transform/logging_ping_2:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     error_mode: ignore
     log_statements:
     - context: log
@@ -1156,11 +1106,78 @@ processors:
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
-<<<<<<< HEAD
-      - set(cache["value"], "syslog_custom") where cache["value"] == nil
-=======
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "syslog") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_syslog__custom_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(cache["__body_string"], body) where IsString(body)
+      - set(cache["__body_map"], body) where IsMap(body)
+      - set(body, {})
+      - merge_maps(body, cache["__body_map"], "upsert") where (cache != nil and cache["__body_map"] != nil)
+      - set(body["message"], cache["__body_string"]) where (cache != nil and cache["__body_string"] != nil)
+      - set(attributes, {})
+      - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
+      - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
+  transform/logging_syslog__custom_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"]) where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["value"], "syslog_custom") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/loggingmetrics_0:
     error_mode: ignore
@@ -1279,6 +1296,16 @@ processors:
       - set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil
       - set(attributes["service.instance.id"], resource.attributes["service.instance.id"]) where resource.attributes["service.instance.id"] != nil
 receivers:
+  file_log/health_checks:
+    include:
+    - health-checks.log
+    operators:
+    - from: body
+      id: body
+      to: body.message
+      type: move
+    start_at: beginning
+    storage: file_storage
   file_log/logging_file__logs:
     exclude: []
     fingerprint_size: 5kb
@@ -1294,21 +1321,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-<<<<<<< HEAD
   file_log/logging_syslog:
-=======
-  file_log/health_checks:
-    include:
-    - health-checks.log
-    operators:
-    - from: body
-      id: body
-      to: body.message
-      type: move
-    start_at: beginning
-    storage: file_storage
-  file_log/syslog:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1390,9 +1403,6 @@ service:
   - file_storage
   - googleclientauth
   pipelines:
-<<<<<<< HEAD
-    logs/logs_default__pipeline_logging_syslog:
-=======
     logs/healthchecks:
       exporters:
       - otlp_grpc/otlp_logs
@@ -1422,8 +1432,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - otlpjsonfile/logging_ping
-    logs/logs_default__pipeline_syslog:
->>>>>>> 1160c91a9 (Migrate important Self Log signals to Otel Logging.)
+    logs/logs_default__pipeline_logging_syslog:
       exporters:
       - otlp_grpc/otlp_logs
       processors:
