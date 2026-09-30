@@ -25,7 +25,19 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
 
-// AgentSelfMetrics provides the agent.googleapis.com/agent/ metrics.
+var (
+	agentKind     string = "ops-agent"
+	schemaVersion string = "v1"
+)
+
+const (
+	healthLogsTag    string = "ops-agent-health"
+	agentVersionKey  string = "agent.googleapis.com/health/agentVersion"
+	agentKindKey     string = "agent.googleapis.com/health/agentKind"
+	schemaVersionKey string = "agent.googleapis.com/health/schemaVersion"
+)
+
+// AgentSelfMetrics provides the agent.googleapis.com/agent/ metric and self logs.
 // It is never referenced in the config file, and instead is forcibly added in confgenerator.go.
 // Therefore, it does not need to implement any interfaces.
 type AgentSelfMetrics struct {
