@@ -1160,6 +1160,18 @@ func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM,
 
 var expectedLargePayload = fmt.Sprintf("start%send", strings.Repeat("a", 250_000))
 
+func unmarshalEntryPayload(entry *cloudlogging.Entry) (map[string]any, error) {
+	rawJSON, err := json.Marshal(entry.Payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal log payload: %w", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rawJSON, &payload); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal log payload: %w", err)
+	}
+	return payload, nil
+}
+
 func verifyLargeLog(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, logName string, query string) {
 	t.Helper()
 	entry, err := gce.QueryLog(ctx, logger, vm, logName, time.Hour, query, gce.LogQueryMaxAttempts)
@@ -1167,14 +1179,9 @@ func verifyLargeLog(ctx context.Context, t *testing.T, logger *log.Logger, vm *g
 		t.Error(err)
 		return
 	}
-	rawJSON, err := json.Marshal(entry.Payload)
+	payload, err := unmarshalEntryPayload(entry)
 	if err != nil {
-		t.Errorf("Failed to marshal log payload: %v", err)
-		return
-	}
-	var payload map[string]any
-	if err := json.Unmarshal(rawJSON, &payload); err != nil {
-		t.Errorf("Failed to unmarshal log payload: %v", err)
+		t.Error(err)
 		return
 	}
 	if got, ok := payload["large"].(string); !ok || got != expectedLargePayload {
@@ -1209,11 +1216,14 @@ func TestTCPLog(t *testing.T) {
 		// Start a background fluent-bit that outputs to TCP.
 		// The TCP receiver in the Ops Agent already parses to JSON,
 		// so don't double-parse it in the background fluent-bit.
-		pipePath, err := startFluentBitBackgroundPipe(ctx, logger, vm, imageSpec, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log")
+		// Pass Retry_Limit=10 so the background sender fluent-bit does not
+		// drop chunks if the receiver fluent-bit takes >10s to bind port 5170.
+		pipePath, err := startFluentBitBackgroundPipe(ctx, logger, vm, imageSpec, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log -p Retry_Limit=10")
 		if err != nil {
 			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
+		beforeWrite := time.Now().Add(-time.Minute)
 		linesToWrite := []string{
 			// Verify that separate JSON messages are partitioned appropriately,
 			// regardless of where the newlines appear between messages.
@@ -1221,34 +1231,42 @@ func TestTCPLog(t *testing.T) {
 			`{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}`,
 
 			// Verify a large log that's reasonably close to the limit of 256 KB.
-			// Include a short exact-match identifier ("msg") for fast lookup to avoid
-			// Cloud Logging's 20 KB query filter limit and substring indexer lag on a 250 KB token.
 			fmt.Sprintf(`{"msg":"large_tcp_log", "large":%q}`, expectedLargePayload),
 		}
 		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, linesToWrite...); err != nil {
 			t.Fatalf("Error writing dummy TCP log lines: %v", err)
 		}
 
-		var waitGroup sync.WaitGroup
-		addQueryToWaitGroup := func(query string) {
-			waitGroup.Add(1)
-			go func() {
-				defer waitGroup.Done()
-				if err := gce.WaitForLog(ctx, logger, vm, "tcp_logs", time.Hour, query); err != nil {
-					t.Error(err)
+		retryPolicy := backoff.WithContext(
+			backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), gce.LogQueryMaxAttempts),
+			ctx,
+		)
+		found := make(map[string]map[string]any)
+		err = backoff.Retry(func() error {
+			entries, err := gce.QueryAllLogs(ctx, logger, vm, "tcp_logs", time.Since(beforeWrite), "", 1)
+			if err != nil {
+				return err
+			}
+			for _, entry := range entries {
+				if payload, err := unmarshalEntryPayload(entry); err == nil {
+					if msg, ok := payload["msg"].(string); ok {
+						found[msg] = payload
+					}
 				}
-			}()
+			}
+			for _, want := range []string{"test tcp log 1", "test tcp log 2", "test tcp log 3", "test tcp log 4", "large_tcp_log"} {
+				if _, ok := found[want]; !ok {
+					return fmt.Errorf("tcp_logs missing %q (got %d entries)", want, len(entries))
+				}
+			}
+			if got, ok := found["large_tcp_log"]["large"].(string); !ok || got != expectedLargePayload {
+				return fmt.Errorf("got jsonPayload.large of length %d (ok=%v), want %d", len(got), ok, len(expectedLargePayload))
+			}
+			return nil
+		}, retryPolicy)
+		if err != nil {
+			t.Errorf("failed waiting for tcp_logs: %v", err)
 		}
-		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 1"`)
-		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 2"`)
-		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 3"`)
-		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 4"`)
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
-			verifyLargeLog(ctx, t, logger, vm, "tcp_logs", `jsonPayload.msg="large_tcp_log"`)
-		}()
-		waitGroup.Wait()
 	})
 }
 
