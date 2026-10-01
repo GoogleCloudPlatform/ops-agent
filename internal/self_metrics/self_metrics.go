@@ -24,6 +24,7 @@ import (
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel/attribute"
@@ -255,6 +256,15 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 	}
 }
 
+func logToJson(logs plog.Logs) ([]byte, error) {
+	jsonMarshaler := &plog.JSONMarshaler{}
+	jsonResult, err := jsonMarshaler.MarshalLogs(logs)
+	if err != nil {
+		return nil, err
+	}
+	return jsonResult, nil
+}
+
 func metricToJson(metrics pmetric.Metrics) ([]byte, error) {
 	jsonMarshaler := &pmetric.JSONMarshaler{}
 	jsonResult, err := jsonMarshaler.MarshalMetrics(metrics)
@@ -332,6 +342,20 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 	return metricToJson(metrics)
 }
 
+func CollectLoggingPingToOTLPJSON() ([]byte, error) {
+	logs := plog.NewLogs()
+	resource := logs.ResourceLogs().AppendEmpty()
+	resource.Resource().Attributes().PutStr("k", "v") // Resources can't be empty
+
+	logRecord := resource.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	bodyMap := logRecord.Body().SetEmptyMap()
+	bodyMap.PutStr("code", "LogPingOpsAgent")
+	bodyMap.PutStr("severity", "DEBUG")
+
+	return logToJson(logs)
+}
+
 // config and merged config respectively
 func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
 	userUc, err := confgenerator.ReadUnifiedConfigFromFile(ctx, userConfPath)
@@ -370,6 +394,14 @@ func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir str
 	}
 	if err = confgenerator.WriteConfigFile(enabledReceiverOTLPJSON, filepath.Join(outDir, "enabled_receivers_otlp.json")); err != nil {
 		return fmt.Errorf("failed to write enabled receivers metric otlp json file: %w", err)
+	}
+
+	loggingPingOTLPJSON, err := CollectLoggingPingToOTLPJSON()
+	if err != nil {
+		return fmt.Errorf("failed to generate logging ping otlp json: %w", err)
+	}
+	if err := confgenerator.WriteConfigFile(loggingPingOTLPJSON, filepath.Join(outDir, "logging_ping_otlp.json")); err != nil {
+		return fmt.Errorf("failed to write logging ping otlp json file: %w", err)
 	}
 	return nil
 }
