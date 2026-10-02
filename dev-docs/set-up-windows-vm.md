@@ -46,8 +46,6 @@ Install Git if you would like to clone the repo and build.
 
 ## Install Docker 
 
-Docker is preinstalled on GCE container images such as `Windows Server 2019 for Containers`. 
-
 Check if Docker is installed and running:
 
 1. Run PowerShell as Administrator, and execute
@@ -60,7 +58,7 @@ Check if Docker is installed and running:
     CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
     ```
 
-For GCE images not built for containers, install Docker following steps [here](https://learn.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment?tabs=dockerce#windows-server-2).
+If Docker is not installed, install it following the steps [here](https://learn.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment?tabs=dockerce#windows-server-2).
 
 
 ## [Optional] Install VSCode
