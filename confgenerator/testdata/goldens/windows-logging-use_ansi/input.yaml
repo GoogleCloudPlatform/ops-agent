@@ -20,6 +20,8 @@ logging:
       channels:
       - System
   service:
+    # Use_ANSI is a Fluent Bit setting, so don't let this pipeline run on OTel.
+    experimental_otel_logging: false
     pipelines:
       winlog2:
         receivers:
