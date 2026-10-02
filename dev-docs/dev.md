@@ -520,11 +520,8 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     test.
 
     Note: If you are testing the binary directly on the build VM, you can skip
-    this step. There is some downside of doing so because the build VM is
-    optimized for container usage (e.g. Windows Event Logs from `Application`
-    channel do not work.  But it's
-    sufficient for a quick sanity check. If you are testing the binary on a
-    separate Windows VM, continue.
+    this step. That is sufficient for a quick sanity check. If you are testing
+    the binary on a separate Windows VM, continue.
 
     Download the artifacts from the GCS bucket you uploaded the artifacts to in
     the previous step.
