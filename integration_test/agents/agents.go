@@ -1287,7 +1287,9 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
 func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Path %s", windowsAgentGCSDownloadPath)); err != nil {
+	// -Force so that the directory already existing is not an error: InstallPackageFromGCS
+	// retries this whole function, and an earlier attempt may have created it.
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Force -Path %s", windowsAgentGCSDownloadPath)); err != nil {
 		return err
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo %s", gcsPath, windowsAgentGCSDownloadPath)); err != nil {
