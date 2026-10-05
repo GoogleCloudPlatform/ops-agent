@@ -42,11 +42,8 @@ const (
 	All = Linux | Windows
 )
 
-func (p Platform) Is2012() bool {
-	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
-	return p.WindowsBuildNumber == "9200" || p.WindowsBuildNumber == "9600"
-}
-
+// Is2016 reports whether the platform is Windows Server 2016 (build 14393).
+// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
 func (p Platform) Is2016() bool {
 	return p.WindowsBuildNumber == "14393"
 }
