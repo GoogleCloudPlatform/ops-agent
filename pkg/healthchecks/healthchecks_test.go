@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/pkg/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"

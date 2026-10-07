@@ -23,7 +23,8 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/files"
+	"github.com/GoogleCloudPlatform/ops-agent/pkg/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
@@ -72,7 +73,7 @@ func main() {
 			}
 			configPath := filepath.Join(base, "../config/config.yaml")
 			otlpExporterEnabled := false
-			uc, err := confgenerator.MergeConfFiles(ctx, configPath)
+			uc, err := files.BuildUnifiedConfigFromFile(ctx, configPath)
 			if err == nil {
 				otlpExporterEnabled = uc.Global.GetOtlpExporter()
 			} else {
