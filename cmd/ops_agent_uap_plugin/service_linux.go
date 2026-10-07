@@ -33,6 +33,7 @@ import (
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/files"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 )
 
@@ -200,7 +201,7 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 }
 
 func validateOpsAgentConfig(ctx context.Context, opsAgentConfigLocation string) (*confgenerator.UnifiedConfig, error) {
-	return confgenerator.MergeConfFiles(ctx, opsAgentConfigLocation)
+	return files.BuildUnifiedConfigFromFile(ctx, opsAgentConfigLocation)
 }
 
 func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {

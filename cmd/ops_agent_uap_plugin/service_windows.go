@@ -31,6 +31,7 @@ import (
 
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/files"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
@@ -207,7 +208,7 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 }
 
 func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string) (*confgenerator.UnifiedConfig, error) {
-	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath)
+	uc, err := files.BuildUnifiedConfigFromFile(ctx, userConfigPath)
 	if err != nil {
 		return nil, err
 	}

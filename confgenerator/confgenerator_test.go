@@ -15,6 +15,8 @@
 package confgenerator_test
 
 import (
+	"github.com/GoogleCloudPlatform/ops-agent/internal/files"
+
 	"context"
 	"errors"
 	"fmt"
@@ -259,7 +261,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 		}
 	}()
 
-	mergedUc, err := confgenerator.MergeConfFiles(
+	mergedUc, err := files.BuildUnifiedConfigFromFile(
 		ctx,
 		filepath.Join("testdata", testDir, inputFileName),
 	)
@@ -353,7 +355,7 @@ func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, pc platfor
 	}
 	ctxOtlp := experiments.ContextWithExperiments(pc.platform.TestContext(context.Background()), experimentsOtlp)
 
-	mergedUcOtlp, err := confgenerator.MergeConfFiles(
+	mergedUcOtlp, err := files.BuildUnifiedConfigFromFile(
 		ctxOtlp,
 		filepath.Join("testdata", testDir, inputFileName),
 	)

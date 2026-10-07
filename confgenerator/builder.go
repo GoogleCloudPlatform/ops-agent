@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package confgenerator provides functions to generate subagents configuration from unified agent.
 package confgenerator
 
 import (
@@ -22,67 +21,20 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-// MergeConfFiles merges the user provided config with the built-in config struct for the platform.
-func MergeConfFiles(ctx context.Context, userConfPath string) (*UnifiedConfig, error) {
-	builtInStruct := BuiltInConfStructs[platform.FromContext(ctx).Name()]
-
-	// Start with the built-in config.
-	result, err := builtInStruct.DeepCopy(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	overrides, err := ReadUnifiedConfigFromFile(ctx, userConfPath)
-	if err != nil {
-		return nil, err
-	}
-
-	// Optionally merge the user config file.
-	if overrides != nil {
-		mergeConfigs(result, overrides)
-	}
-
-	if err := result.Validate(ctx); err != nil {
-		return nil, err
-	}
-
-	// Ensure the merged config struct fields are valid.
-	v := newValidator()
-	if err := v.StructCtx(ctx, result); err != nil {
-		log.Fatalf("merged config failed to validate: %v", err)
-	}
-	return result, nil
-}
-
 func mergeConfigs(original, overrides *UnifiedConfig) {
-	// built-in configs do not contain these sections.
 	original.Combined = overrides.Combined
 	original.Traces = overrides.Traces
 	original.Global = overrides.Global
 
-	// For "default_pipeline", we go one level deeper.
-	// this covers 2 cases:
-	// 1. if "<receivers / processors / exporters>: []" is specified explicitly in user config, the entity gets cleared.
-	// 2. if "<receivers / processors / exporters>" is a non-empty list, it overrides the built-in list.
-	//    e.g. users might use the config below to turn off iis metrics on windows.
-	//    metrics:
-	//      service:
-	//        pipelines:
-	//          default_pipeline:
-	//            receivers: [hostmetrics,mssql]
 	if overrides.Logging != nil {
-		// Overrides logging.receivers.
 		for k, v := range overrides.Logging.Receivers {
 			original.Logging.Receivers[k] = v
 		}
 
-		// Overrides logging.processors.
 		original.Logging.Processors = map[string]LoggingProcessor{}
 		for k, v := range overrides.Logging.Processors {
 			original.Logging.Processors[k] = v
 		}
-		// Skip deprecated logging.exporters.
-		// Override logging.service.pipelines
 		if overrides.Logging.Service != nil {
 			if overrides.Logging.Service.LogLevel != "info" {
 				original.Logging.Service.LogLevel = overrides.Logging.Service.LogLevel
@@ -92,32 +44,24 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 				original.Logging.Service.Compress = overrides.Logging.Service.Compress
 			}
 			for name, pipeline := range overrides.Logging.Service.Pipelines {
-				// skips logging.service.pipelines.*.exporters
 				pipeline.ExporterIDs = nil
 				if name == "default_pipeline" {
-					// overrides logging.service.pipelines.default_pipeline.receivers
 					if ids := pipeline.ReceiverIDs; ids != nil {
 						original.Logging.Service.Pipelines["default_pipeline"].ReceiverIDs = ids
 					}
-
-					// overrides logging.service.pipelines.default_pipeline.processors
 					if ids := pipeline.ProcessorIDs; ids != nil {
 						original.Logging.Service.Pipelines["default_pipeline"].ProcessorIDs = ids
 					}
 				} else {
-					// Overrides logging.service.pipelines.<non_default_pipelines>
 					original.Logging.Service.Pipelines[name] = pipeline
 				}
 			}
 		}
 	}
 	if overrides.Metrics != nil {
-		// Overrides metrics.receivers.
 		for k, v := range overrides.Metrics.Receivers {
 			original.Metrics.Receivers[k] = v
 		}
-
-		// Overrides metrics.processors.
 		for k, v := range overrides.Metrics.Processors {
 			original.Metrics.Processors[k] = v
 		}
@@ -127,11 +71,69 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 				original.Metrics.Service.LogLevel = overrides.Metrics.Service.LogLevel
 			}
 			for name, pipeline := range overrides.Metrics.Service.Pipelines {
-				// skips metrics.service.pipelines.*.exporters
 				pipeline.ExporterIDs = nil
-				// Overrides metrics.service.pipelines.*
 				original.Metrics.Service.Pipelines[name] = pipeline
 			}
 		}
 	}
+}
+
+type AgentDefaults struct {
+	DisableOtlpjsonFileCollection bool
+	DisableRubyRegex              bool
+	EnableOtlpExporterByDefault   bool
+}
+
+func (uc *UnifiedConfig) ApplyDefaults(defaults AgentDefaults) {
+	if uc.Global == nil {
+		uc.Global = &Global{}
+	}
+	if uc.Global.DisableOtlpjsonFileCollection == nil {
+		b := defaults.DisableOtlpjsonFileCollection
+		uc.Global.DisableOtlpjsonFileCollection = &b
+	}
+	if uc.Global.DisableRubyRegex == nil {
+		b := defaults.DisableRubyRegex
+		uc.Global.DisableRubyRegex = &b
+	}
+	if uc.Global.OtlpExporter == nil {
+		b := defaults.EnableOtlpExporterByDefault
+		uc.Global.OtlpExporter = &b
+	}
+}
+
+func BuildUnifiedConfig(ctx context.Context, userConf []byte, defaults ...AgentDefaults) (*UnifiedConfig, error) {
+	builtInStruct := BuiltInConfStructs[platform.FromContext(ctx).Name()]
+
+	result, err := builtInStruct.DeepCopy(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var overrides *UnifiedConfig
+	if len(userConf) > 0 {
+		overrides, err = UnmarshalYamlToUnifiedConfig(ctx, userConf)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if overrides != nil {
+		mergeConfigs(result, overrides)
+	}
+
+	var defaultOpts AgentDefaults
+	if len(defaults) > 0 {
+		defaultOpts = defaults[0]
+	}
+	result.ApplyDefaults(defaultOpts)
+	if err := result.Validate(ctx); err != nil {
+		return nil, err
+	}
+
+	v := newValidator()
+	if err := v.StructCtx(ctx, result); err != nil {
+		log.Fatalf("merged config failed to validate: %v", err)
+	}
+	return result, nil
 }
