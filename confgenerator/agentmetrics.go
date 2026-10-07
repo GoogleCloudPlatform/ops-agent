@@ -121,13 +121,10 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 		Processors:           r.LoggingMetricsPipelineProcessors(ctx),
 	}
 
-	global := GlobalConfigFromContext(ctx)
-	if global == nil || !global.GetDisableOtlpjsonFileCollection() {
-		receiverPipelines["ops_agent"] = r.OpsAgentPipeline(ctx)
-		pipelines["opsagent"] = otel.Pipeline{
-			Type:                 "metrics",
-			ReceiverPipelineName: "ops_agent",
-		}
+	receiverPipelines["ops_agent"] = r.OpsAgentPipeline(ctx)
+	pipelines["opsagent"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "ops_agent",
 	}
 
 	receiverPipelines["logging_ping"] = r.LoggingPingPipeline(ctx)

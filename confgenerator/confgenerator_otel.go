@@ -254,7 +254,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		return "", err
 	}
 
-	otelConfig, err := otel.ModularConfig{
+	otelConf := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
@@ -312,7 +312,16 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 			googleClientAuthExtensionType: {Type: googleClientAuthExtensionType, Config: map[string]string{}},
 			fileStorageExtensionType:      fileStorageExtension(stateDir),
 		},
-	}.Generate(ctx)
+	}
+	if uc.Global.GetEnableOpsAgentHealthExtension() {
+		otelConf.Extensions["opsagenthealth"] = otel.Component{
+			Type:   "opsagenthealth",
+			Config: map[string]interface{}{},
+		}
+		otelConf.ServiceExtensions = append(otelConf.ServiceExtensions, "opsagenthealth")
+	}
+
+	otelConfig, err := otelConf.Generate(ctx)
 	if err != nil {
 		return "", err
 	}

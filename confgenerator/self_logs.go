@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/pkg/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )

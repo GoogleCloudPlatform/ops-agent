@@ -18,8 +18,8 @@ type Global struct {
 	DefaultSelfLogFileCollection  *bool            `yaml:"default_self_log_file_collection,omitempty"`
 	DefaultLogFileRotation        *LogFileRotation `yaml:"default_self_log_file_rotation,omitempty"`
 	OtlpExporter                  *bool            `yaml:"otlp_exporter,omitempty"`
-	DisableOtlpjsonFileCollection *bool            `yaml:"disable_otlpjson_file_collection,omitempty"`
 	DisableRubyRegex              *bool            `yaml:"disable_ruby_regex,omitempty"`
+	EnableOpsAgentHealthExtension *bool            `yaml:"enable_ops_agent_health_extension,omitempty"`
 }
 
 func (g *Global) GetOtlpExporter() bool {
@@ -29,9 +29,10 @@ func (g *Global) GetOtlpExporter() bool {
 	return false
 }
 
-func (g *Global) GetDisableOtlpjsonFileCollection() bool {
-	if g != nil && g.DisableOtlpjsonFileCollection != nil {
-		return *g.DisableOtlpjsonFileCollection
+
+func (g *Global) GetEnableOpsAgentHealthExtension() bool {
+	if g != nil && g.EnableOpsAgentHealthExtension != nil {
+		return *g.EnableOpsAgentHealthExtension
 	}
 	return false
 }

@@ -79,18 +79,14 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 }
 
 type AgentDefaults struct {
-	DisableOtlpjsonFileCollection bool
 	DisableRubyRegex              bool
 	EnableOtlpExporterByDefault   bool
+	EnableOpsAgentHealthExtension bool
 }
 
 func (uc *UnifiedConfig) ApplyDefaults(defaults AgentDefaults) {
 	if uc.Global == nil {
 		uc.Global = &Global{}
-	}
-	if uc.Global.DisableOtlpjsonFileCollection == nil {
-		b := defaults.DisableOtlpjsonFileCollection
-		uc.Global.DisableOtlpjsonFileCollection = &b
 	}
 	if uc.Global.DisableRubyRegex == nil {
 		b := defaults.DisableRubyRegex
@@ -99,6 +95,10 @@ func (uc *UnifiedConfig) ApplyDefaults(defaults AgentDefaults) {
 	if uc.Global.OtlpExporter == nil {
 		b := defaults.EnableOtlpExporterByDefault
 		uc.Global.OtlpExporter = &b
+	}
+	if uc.Global.EnableOpsAgentHealthExtension == nil {
+		b := defaults.EnableOpsAgentHealthExtension
+		uc.Global.EnableOpsAgentHealthExtension = &b
 	}
 }
 
