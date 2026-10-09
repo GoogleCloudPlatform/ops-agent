@@ -202,9 +202,18 @@ if [[ -n "${GOTESTSUM_RERUN_FAILS:-}" ]]; then
   gotestsum_args+=( "--rerun-fails=${GOTESTSUM_RERUN_FAILS}" )
 fi
 
+# Allow overriding Kokoro environment's TEST_PARALLEL for benchmarking.
+# If TEST_PARALLEL was set to the default 150 (common.gcl), bump to 250 for single-wave execution.
+# Lower custom limits (e.g. 100 for Windows in windows_x86_64.gcl) are preserved.
+if [[ -n "${TEST_PARALLEL_OVERRIDE:-}" ]]; then
+  TEST_PARALLEL="${TEST_PARALLEL_OVERRIDE}"
+elif [[ "${TEST_PARALLEL:-150}" == "150" ]]; then
+  TEST_PARALLEL="250"
+fi
+
 # Set up some command line flags for "go test".
 go_test_args=(
-  -test.parallel="${TEST_PARALLEL:-150}"
+  -test.parallel="${TEST_PARALLEL}"
   -tags=integration_test
   -timeout=3h
 )
@@ -214,6 +223,73 @@ fi
 if [[ -n "${TEST_SELECTOR:-}" ]]; then
   go_test_args+=( "-test.run=${TEST_SELECTOR}" )
 fi
+
+# Start background memory and process monitor
+MEM_LOG="${LOGS_DIR}/memory_usage.csv"
+SUMMARY_FILE="${LOGS_DIR}/memory_summary.txt"
+echo "timestamp_utc,mem_total_mb,mem_used_mb,mem_available_mb,cgroup_mem_mb,num_procs,top_proc_comm,top_proc_rss_mb" > "${MEM_LOG}"
+
+monitor_memory() {
+  local max_used_mb=0 max_cgroup_mb=0 max_procs=0 max_top_rss_mb=0 top_comm_peak="none"
+
+  while true; do
+    local total_kb avail_kb total_mb avail_mb used_mb
+    total_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
+    avail_kb=$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
+    total_mb=$(( total_kb / 1024 ))
+    avail_mb=$(( avail_kb / 1024 ))
+    used_mb=$(( total_mb - avail_mb ))
+
+    local cgroup_bytes=0
+    if [[ -f /sys/fs/cgroup/memory/memory.usage_in_bytes ]]; then
+      cgroup_bytes=$(cat /sys/fs/cgroup/memory/memory.usage_in_bytes 2>/dev/null || echo 0)
+    elif [[ -f /sys/fs/cgroup/memory.current ]]; then
+      cgroup_bytes=$(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo 0)
+    fi
+    local cgroup_mb=$(( cgroup_bytes / 1024 / 1024 ))
+
+    local procs top_proc top_rss_kb top_comm top_rss_mb
+    procs=$(ps -e --no-headers 2>/dev/null | wc -l || echo 0)
+    top_proc=$(ps -eo rss,comm --sort=-rss --no-headers 2>/dev/null | head -n 1 || echo "0 none")
+    top_rss_kb=$(echo "${top_proc}" | awk '{print $1}')
+    top_comm=$(echo "${top_proc}" | awk '{print $2}')
+    top_rss_mb=$(( top_rss_kb / 1024 ))
+
+    if (( used_mb > max_used_mb )); then max_used_mb=$used_mb; fi
+    if (( cgroup_mb > max_cgroup_mb )); then max_cgroup_mb=$cgroup_mb; fi
+    if (( procs > max_procs )); then max_procs=$procs; fi
+    if (( top_rss_mb > max_top_rss_mb )); then max_top_rss_mb=$top_rss_mb; top_comm_peak=$top_comm; fi
+
+    local ts
+    ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    echo "${ts},${total_mb},${used_mb},${avail_mb},${cgroup_mb},${procs},${top_comm},${top_rss_mb}" >> "${MEM_LOG}"
+
+    cat <<SUMMARY > "${SUMMARY_FILE}"
+Peak Host Memory Used:        ${max_used_mb} MB / ${total_mb} MB ($(( max_used_mb * 100 / (total_mb > 0 ? total_mb : 1) ))%)
+Peak Container cgroup Memory: ${max_cgroup_mb} MB
+Peak Process Count:           ${max_procs}
+Top Process by Peak RSS:      ${top_comm_peak} (${max_top_rss_mb} MB)
+SUMMARY
+
+    sleep 5
+  done
+}
+
+monitor_memory &
+MONITOR_PID=$!
+
+cleanup_monitor() {
+  kill "${MONITOR_PID}" 2>/dev/null || true
+  wait "${MONITOR_PID}" 2>/dev/null || true
+  if [[ -f "${SUMMARY_FILE}" ]]; then
+    echo "======================================================="
+    echo "📊 TEST RUNNER RESOURCE USAGE SUMMARY:"
+    cat "${SUMMARY_FILE}"
+    echo "Detailed timeline saved to: ${MEM_LOG}"
+    echo "======================================================="
+  fi
+}
+trap cleanup_monitor EXIT
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   gotestsum "${gotestsum_args[@]}" \
