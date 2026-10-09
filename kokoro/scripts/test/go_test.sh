@@ -202,9 +202,18 @@ if [[ -n "${GOTESTSUM_RERUN_FAILS:-}" ]]; then
   gotestsum_args+=( "--rerun-fails=${GOTESTSUM_RERUN_FAILS}" )
 fi
 
+# Allow overriding Kokoro environment's TEST_PARALLEL for benchmarking.
+# If TEST_PARALLEL was set to the default 150 (common.gcl), bump to 250 for single-wave execution.
+# Lower custom limits (e.g. 100 for Windows in windows_x86_64.gcl) are preserved.
+if [[ -n "${TEST_PARALLEL_OVERRIDE:-}" ]]; then
+  TEST_PARALLEL="${TEST_PARALLEL_OVERRIDE}"
+elif [[ "${TEST_PARALLEL:-150}" == "150" ]]; then
+  TEST_PARALLEL="250"
+fi
+
 # Set up some command line flags for "go test".
 go_test_args=(
-  -test.parallel="${TEST_PARALLEL:-150}"
+  -test.parallel="${TEST_PARALLEL}"
   -tags=integration_test
   -timeout=3h
 )
