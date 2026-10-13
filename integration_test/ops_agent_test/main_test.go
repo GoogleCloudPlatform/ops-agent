@@ -2569,15 +2569,21 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
 			remote: path.Join(remoteWorkDir, "data"),
 		},
 		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
-			if pts, err := gce.WaitForMetric(ctx, logger, vm, "prometheus.googleapis.com/test_metric/gauge", window, nil, true); err != nil {
+			pts, err := gce.WaitForMetric(ctx, logger, vm, "prometheus.googleapis.com/test_metric/gauge", window, nil, true)
+			if err != nil {
 				return err
-			} else {
-				labelValue, ok := pts.Metric.Labels["test_label"]
+			}
+			expectedLabels := map[string]string{
+				"destination": "group/capture",
+				"test_label":  "capture@group",
+			}
+			for label, expected := range expectedLabels {
+				actual, ok := pts.Metric.Labels[label]
 				if !ok {
-					return errors.New("test_label label not found in metric")
+					return fmt.Errorf("label %q not found in metric", label)
 				}
-				if labelValue != "group/capture" {
-					return fmt.Errorf("Expected test_label to be 'group/capture' but got %s", labelValue)
+				if actual != expected {
+					return fmt.Errorf("expected label %q to be %q but got %q", label, expected, actual)
 				}
 			}
 			return nil
@@ -2678,16 +2684,13 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
 			for _, test := range tests {
 				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 			}
-			if multiErr != nil {
-				t.Error(multiErr)
-			}
 
 			// Ensure that the gauge-casted metric isn't reported when the unknown typed one is.
 			if err := gce.AssertMetricMissing(ctx, logger, vm, "prometheus.googleapis.com/explicit_untyped_metric/gauge", true, window); err != nil {
-				t.Error(err)
+				multiErr = multierr.Append(multiErr, err)
 			}
 			if err := gce.AssertMetricMissing(ctx, logger, vm, "prometheus.googleapis.com/missing_type_hint_metric/gauge", true, window); err != nil {
-				t.Error(err)
+				multiErr = multierr.Append(multiErr, err)
 			}
 			return multiErr
 		},
@@ -2755,9 +2758,6 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			for _, test := range tests {
 				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 			}
-			if multiErr != nil {
-				t.Error(multiErr)
-			}
 			return multiErr
 		},
 	})
@@ -2801,9 +2801,6 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			var multiErr error
 			for _, test := range tests {
 				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
-			}
-			if multiErr != nil {
-				t.Error(multiErr)
 			}
 			return multiErr
 		},
@@ -2849,9 +2846,6 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			for _, test := range tests {
 				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 			}
-			if multiErr != nil {
-				t.Error(multiErr)
-			}
 			return multiErr
 		},
 	})
@@ -2893,9 +2887,6 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			var multiErr error
 			for _, test := range tests {
 				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
-			}
-			if multiErr != nil {
-				t.Error(multiErr)
 			}
 			return multiErr
 		},
@@ -3127,7 +3118,6 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		}
 
 		firstTest := testChecks[0]
-		restTests := testChecks[1:]
 		// 1. Upload the step one files and files used to setup the http service
 		err := uploadFiles(ctx, logger, vm, testdataDir, append(serviceFiles, firstTest.fileToUpload))
 		if err != nil {
@@ -3161,31 +3151,31 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 			t.Fatal(err)
 		}
 
-		// Wait long enough for the data to percolate through the backends
-		// under normal circumstances. Based on some experiments, 2 minutes
-		// is normal; wait a bit longer to be on the safe side.
-		//
-		// We perform the first test seperately since it requires an agent configuration
-		//  and setup. All subsequest tests, can just replace the served file and have its
-		// own checks.
-		time.Sleep(3 * time.Minute)
 		window := time.Minute
-		var multiErr error
-		multiErr = multierr.Append(multiErr, firstTest.check(ctx, logger, vm, window))
-
-		for _, test := range restTests {
-			// Replace the text file with the next step metrics
-			err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{test.fileToUpload})
-			if err != nil {
-				t.Fatal(err)
+		for i, test := range testChecks {
+			if i > 0 {
+				// Replace the text file with the next step metrics
+				err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{test.fileToUpload})
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 
-			// Wait until the new points have arrived and complete the check for this test input.
-			time.Sleep(3 * time.Minute)
-			multiErr = multierr.Append(multiErr, test.check(ctx, logger, vm, window))
-
-			if multiErr != nil {
-				t.Error(multiErr)
+			// Poll with backoff until the new metric points arrive and assertions pass.
+			// The Prometheus scrape interval is 10s, so polling every 10s up to 3 minutes
+			// allows steps to complete as soon as new points arrive (typically 15-30s).
+			const (
+				scrapeInterval = 10 * time.Second
+				maxAttempts    = 18 // 18 * 10s = 3 minutes timeout ceiling
+			)
+			retryPolicy := backoff.WithContext(
+				backoff.WithMaxRetries(backoff.NewConstantBackOff(scrapeInterval), maxAttempts),
+				ctx,
+			)
+			if err := backoff.Retry(func() error {
+				return test.check(ctx, logger, vm, window)
+			}, retryPolicy); err != nil {
+				t.Errorf("step %d check failed: %v", i+1, err)
 			}
 		}
 	})
