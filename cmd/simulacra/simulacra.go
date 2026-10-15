@@ -33,6 +33,7 @@ import (
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/files"
 	"github.com/binxio/gcloudconfig"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
@@ -166,7 +167,7 @@ func getReceiversFromConfig(ctx context.Context, vm *gce.VM, logger *logging.Dir
 		return []string{}, nil
 	}
 
-	config, err := confgenerator.MergeConfFiles(ctx, configFilePath)
+	config, err := files.BuildUnifiedConfigFromFile(ctx, configFilePath)
 	if err != nil {
 		return nil, err
 	}
