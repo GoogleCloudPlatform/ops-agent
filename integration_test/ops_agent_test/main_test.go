@@ -4168,13 +4168,11 @@ traces:
 				Optional: false,
 			},
 		}
-		var multiErr error
 		for _, test := range tests {
-			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, false))
-			if multiErr != nil {
-				t.Error(multiErr)
+			if err := waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, false); err != nil {
+				t.Error(err)
+				break
 			}
-
 		}
 
 		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
@@ -4507,12 +4505,11 @@ traces:
 				},
 			}
 		}
-		var multiErr error
 		for _, test := range tests {
-			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, true))
-		}
-		if multiErr != nil {
-			t.Error(multiErr)
+			if err := waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, true); err != nil {
+				t.Error(err)
+				break
+			}
 		}
 
 		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
