@@ -28,6 +28,8 @@ var (
 	flagServiceNamespace  = flag.String("service_namespace", "", "service.namespace attribute value")
 	flagServiceInstanceID = flag.String("service_instance_id", "", "service.instance.id attribute value")
 	flagServiceVersion    = flag.String("service_version", "", "service.version attribute value")
+	flagDuration          = flag.Duration("duration", 20*time.Second, "duration to periodically emit metrics before exiting")
+	flagInterval          = flag.Duration("interval", 3*time.Second, "periodic reader export interval")
 )
 
 func getServiceAttributes() []attribute.KeyValue {
@@ -54,7 +56,7 @@ func installMetricExportPipeline(ctx context.Context) (func(context.Context) err
 	}
 	metricResource := resource.NewWithAttributes("", getServiceAttributes()...)
 	metricProvider := metricsdk.NewMeterProvider(
-		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
+		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter, metricsdk.WithInterval(*flagInterval))),
 		metricsdk.WithResource(metricResource),
 		metricsdk.WithView(func(i metricsdk.Instrument) (metricsdk.Stream, bool) {
 			s := metricsdk.Stream{Name: i.Name, Description: i.Description, Unit: i.Unit}
@@ -100,6 +102,10 @@ func main() {
 	testHistogramMetric(ctx, meter, "otlp.test.histogram")
 	testUpDownCounterMetric(ctx, meter, "otlp.test.updowncounter")
 	testCumulativeMetric(ctx, meter, "otlp.test.cumulative")
+
+	if *flagDuration > 0 {
+		time.Sleep(*flagDuration)
+	}
 }
 
 func testCumulativeMetric(ctx context.Context, meter metric.Meter, name string) {
