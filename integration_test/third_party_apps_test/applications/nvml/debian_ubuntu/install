@@ -68,7 +68,8 @@ if [[ $ID == debian ]]; then
 fi
 sudo apt update
 
-DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
+lspci -n || true
+    DEVICE_CODE=$(lspci -n | grep -ioE '10de:[0-9a-fA-F]{4}' | head -n 1 | tr '[:upper:]' '[:lower:]' || true)
 case $DEVICE_CODE in
     # V100 | P4
     # Device PCIe ID lookup: https://envytools.readthedocs.io/en/latest/hw/pciid.html
