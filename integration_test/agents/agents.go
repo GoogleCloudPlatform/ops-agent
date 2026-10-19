@@ -1190,7 +1190,7 @@ func configureGcloudStorage(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	if !gce.IsARM(vm.ImageSpec) {
 		return
 	}
-	cmd := "sudo gcloud config set storage/check_hashes if_fast_else_skip && sudo gcloud config set storage/use_gcloud_crc32c false"
+	cmd := "sudo gcloud config set storage/check_hashes if_fast_else_skip"
 	if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
 		logger.Printf("Failed to configure gcloud storage check_hashes (proceeding anyway): %v", err)
 	}
