@@ -1,11 +1,11 @@
 # Ops Agent development
 
 Cloud Operations Suite Agent (Ops Agent) combines logging and metrics into a
-single agent. Under the hood, it embeds
+single agent. Under the hood, it used to
 [Fluent Bit](https://github.com/fluent/fluent-bit) as a subagent for logging,
 and embeds
 [OpenTelemetry Operations collector](https://github.com/GoogleCloudPlatform/opentelemetry-operations-collector)
-as a subagent for metrics.
+as a subagent for metrics. Now, we are moving it to a pure OTel Collector.
 
 ## Where code lives
 
