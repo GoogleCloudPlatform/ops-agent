@@ -1179,6 +1179,23 @@ func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.V
 	return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, artifactBucket)
 }
 
+// configureGcloudStorage configures gcloud storage properties to avoid interactive prompts
+// and transfer aborts on environments where fast crc32c tools (such as gcloud-crc32c) are not pre-installed
+// (e.g. Ubuntu ARM64 instances where Google Cloud SDK is managed via read-only Snap packages).
+// See b/575396018 for details.
+func configureGcloudStorage(ctx context.Context, logger *log.Logger, vm *gce.VM) {
+	if gce.IsWindows(vm.ImageSpec) {
+		return
+	}
+	if !gce.IsARM(vm.ImageSpec) {
+		return
+	}
+	cmd := "sudo gcloud config set storage/check_hashes if_fast_else_skip"
+	if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
+		logger.Printf("Failed to configure gcloud storage check_hashes (proceeding anyway): %v", err)
+	}
+}
+
 // InstallOpsAgentUAPPluginFromGCS installs the Ops Agent plugin tarball from GCS onto the given Linux VM.
 //
 // gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
@@ -1186,6 +1203,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
+	configureGcloudStorage(ctx, logger, vm)
 
 	if gce.IsWindows(vm.ImageSpec) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin"); err != nil {
@@ -1212,7 +1230,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 			return err
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud --quiet storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
 			return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
 		}
 
@@ -1251,7 +1269,8 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo gcloud storage cp -r %s/* %s", gcsPath, linuxAgentGCSDownloadPath)); err != nil {
+		configureGcloudStorage(ctx, logger, vm)
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo gcloud --quiet storage cp -r %s/* %s", gcsPath, linuxAgentGCSDownloadPath)); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
 		//Print the contents of the agent download directory into the logs.
