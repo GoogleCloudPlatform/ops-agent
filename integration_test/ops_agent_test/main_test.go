@@ -2349,7 +2349,7 @@ func getCommonLabels(vm *gce.VM) []*metadata.MetricLabel {
 	return []*metadata.MetricLabel{
 		{Name: "instance_name", ValueRegex: vm.Name},
 		{Name: "machine_type", ValueRegex: fmt.Sprintf("projects/[0-9]+/machineTypes/%s", vm.MachineType)},
-		{Name: "otel_scope_version", ValueRegex: "v0.[0-9]+.0"},
+		{Name: "otel_scope_version", ValueRegex: "v0.[0-9]+.[0-9]+"},
 		{Name: "otel_scope_name", ValueRegex: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"},
 	}
 }
