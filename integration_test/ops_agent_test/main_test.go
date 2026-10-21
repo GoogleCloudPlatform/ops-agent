@@ -3925,7 +3925,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// To update this, first run `mirror_content.sh` under `integration_test`. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
-	goVersion := "1.26.1"
+	goVersion := "1.26.10"
 
 	goArch := "amd64"
 	if gce.IsARM(vm.ImageSpec) {
