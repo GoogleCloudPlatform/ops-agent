@@ -1459,7 +1459,6 @@ func TestWindowsEventLogV2(t *testing.T) {
 				"System":      "system_xml_msg",
 			},
 		}
-		beforeWrite := time.Now().Add(-time.Minute)
 		for r := range payloads {
 			for log, payload := range payloads[r] {
 				if err := writeToWindowsEventLog(ctx, logger, vm, log, payload); err != nil {
@@ -1499,7 +1498,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 			err := backoff.Retry(func() error {
 				// Pass no jsonPayload.* filter to Cloud Logging so it only queries
 				// synchronously-indexed primary LogEntry metadata (logName, instance_id, timestamp, severity).
-				entries, err := gce.QueryAllLogs(ctx, logger, vm, logName, time.Since(beforeWrite), extraFilter, 1)
+				entries, err := gce.QueryAllLogs(ctx, logger, vm, logName, time.Hour, extraFilter, 1)
 				if err != nil {
 					return err
 				}
