@@ -339,3 +339,7 @@ func (a Statements) Append(b ...Statements) Statements {
 	}
 	return a
 }
+
+func ExtractPatterns(a Value, pattern string) Value {
+	return valuef(`ExtractPatterns(%s, %q)`, a, pattern)
+}
