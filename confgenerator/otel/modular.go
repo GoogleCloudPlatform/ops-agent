@@ -137,6 +137,7 @@ type ModularConfig struct {
 	Pipelines         map[string]Pipeline
 	Exporters         map[ExporterType]ExporterComponents
 	Extensions        map[string]Component
+	ServiceExtensions []string
 	MetricsPort       uint16
 
 	// Test-only options:

@@ -37,6 +37,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/files"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
@@ -162,7 +163,7 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	// Write config files in temp directory
 	tempPath := t.TempDir()
 	for k, v := range genFiles {
-		err := confgenerator.WriteConfigFile([]byte(v), filepath.Join(tempPath, k))
+		err := files.WriteConfigFile([]byte(v), filepath.Join(tempPath, k))
 
 		if err != nil {
 			t.Fatal(err)

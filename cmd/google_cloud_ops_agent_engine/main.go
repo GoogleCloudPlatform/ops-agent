@@ -22,9 +22,10 @@ import (
 
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/files"
+	"github.com/GoogleCloudPlatform/ops-agent/pkg/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
+	"github.com/GoogleCloudPlatform/ops-agent/pkg/self_metrics"
 )
 
 var (
@@ -55,7 +56,7 @@ func main() {
 func run() error {
 	ctx := context.Background()
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(ctx, *input)
+	uc, err := files.BuildUnifiedConfigFromFile(ctx, *input)
 	if err != nil {
 		return err
 	}
@@ -80,5 +81,5 @@ func run() error {
 			return err
 		}
 	}
-	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
+	return files.GenerateFilesFromConfig(ctx, uc, *service, *logsDir, *stateDir, *outDir)
 }
