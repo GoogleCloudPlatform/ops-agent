@@ -40,9 +40,9 @@ template config go_test = common {
       // Using the internal IP address also avoids issues with the firewall.
       USE_INTERNAL_IP = 'true'
 
-      // Cap integration test parallelism to prevent runner memory exhaustion (OOM)
-      // and regional GCE quota exhaustion.
-      TEST_PARALLEL = '150'
+      // Run integration tests with 250 parallel workers for single-wave execution.
+      // With the in-process Compute Engine REST API client, runner memory stays under 5 GB (well below host capacity).
+      TEST_PARALLEL = '250'
 
       // TRANSFERS_BUCKET and SERVICE_EMAIL are always modified as a pair.
       // when the build is running trusted (reviewed) code, it's OK to set
