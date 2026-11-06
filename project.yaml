@@ -13,6 +13,17 @@
 # limitations under the License.
 
 targets:
+  stonking:
+    os_versions: [ubuntu-26.10*]
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2610-amd64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2610-amd64
   resolute:
     os_versions: [ubuntu-26.04*]
     package_extension:
