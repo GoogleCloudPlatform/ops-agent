@@ -17,11 +17,15 @@ on:
   pull_request_target:
     types: [ready_for_review]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   add-owner:
     runs-on: ubuntu-latest
     steps:
       - name: run
-        uses: kentaro-m/auto-assign-action@v1.1.1
+        uses: kentaro-m/auto-assign-action@f4648c0a9fdb753479e9e75fc251f507ce17bb7e # v2.0.0
         with:
           configuration-path: ".github/review-assignment-config.yml"
