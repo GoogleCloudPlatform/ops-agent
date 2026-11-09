@@ -1237,6 +1237,7 @@ receivers:
         extra_scrape_metrics: false
       runtime:
         gogc: 75
+        log_level: info
       scrape_configs:
       - job_name: prometheus
         honor_timestamps: true
