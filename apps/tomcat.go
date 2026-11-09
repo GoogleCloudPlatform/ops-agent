@@ -45,6 +45,9 @@ func (r MetricsReceiverTomcat) Pipelines(_ context.Context) ([]otel.ReceiverPipe
 			[]otel.Component{
 				otel.MetricStartTime(),
 				otel.MetricsTransform(
+					// jmx-metrics >= 1.33 reports tomcat.sessions as an int gauge;
+					// keep it a double so it matches existing metric descriptors.
+					otel.UpdateMetric("tomcat.sessions", otel.ToggleScalarDataType),
 					otel.AddPrefix("workload.googleapis.com"),
 				),
 				otel.TransformationMetrics(
