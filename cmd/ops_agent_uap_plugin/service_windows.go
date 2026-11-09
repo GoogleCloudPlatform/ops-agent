@@ -287,9 +287,6 @@ func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPlug
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
-		// Keep log entries free of the default stanza scope name/version, which the
-		// Google Cloud exporter would otherwise add as labels to every LogEntry.
-		"--feature-gates=-pkg.stanza.addDefaultScopeName",
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
