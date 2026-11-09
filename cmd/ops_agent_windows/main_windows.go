@@ -152,6 +152,9 @@ func initServices() error {
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
 				"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
+				// Keep log entries free of the default stanza scope name/version, which the
+				// Google Cloud exporter would otherwise add as labels to every LogEntry.
+				"--feature-gates=-pkg.stanza.addDefaultScopeName",
 			},
 		},
 		{

@@ -535,6 +535,8 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	cmd := exec.Command(
 		*otelopscolPath,
 		"--config=env:OTELOPSCOL_CONFIG",
+		// Match the flags the Ops Agent passes to otelopscol.
+		"--feature-gates=-pkg.stanza.addDefaultScopeName",
 	)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("OTELOPSCOL_CONFIG=%s", config),
