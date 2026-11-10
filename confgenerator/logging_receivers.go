@@ -249,7 +249,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 			Config: receiver_config,
 		},
 		Processors: map[string][]otel.Component{
-			"logs": nil,
+			"logs": {otel.ClearDefaultStanzaScope()},
 		},
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.Logging,
@@ -374,7 +374,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 			Config: config,
 		},
 		Processors: map[string][]otel.Component{
-			"logs": processors,
+			"logs": append([]otel.Component{otel.ClearDefaultStanzaScope()}, processors...),
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{
@@ -684,7 +684,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 				Config: receiver_config,
 			},
 			Processors: map[string][]otel.Component{
-				"logs": p,
+				"logs": append([]otel.Component{otel.ClearDefaultStanzaScope()}, p...),
 			},
 			ExporterTypes: map[string]otel.ExporterType{
 				"logs": otel.Logging,
@@ -1094,7 +1094,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 			Config: receiver_config,
 		},
 		Processors: map[string][]otel.Component{
-			"logs": modify_fields_processors,
+			"logs": append([]otel.Component{otel.ClearDefaultStanzaScope()}, modify_fields_processors...),
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{

@@ -706,6 +706,18 @@ func DisableOtlpRoundTrip() Component {
 	)
 }
 
+// ClearDefaultStanzaScope resets the default instrumentation scope name and
+// version that pkg/stanza/adapter stamps onto batches from stanza-based log
+// receivers (pkg.stanza.addDefaultScopeName, enabled by default since contrib
+// v0.163.0), so the googlecloud and OTLP log exporters do not emit new
+// instrumentation_source / instrumentation_version labels on every LogEntry.
+func ClearDefaultStanzaScope() Component {
+	return Transform("log", "scope", ottl.NewStatements(
+		ottl.LValue{"name"}.Set(ottl.StringLiteral("")),
+		ottl.LValue{"version"}.Set(ottl.StringLiteral("")),
+	))
+}
+
 // This processor preserves instrumentation scope name and version in logRecord attributes, if they exist. This processor is required to send logs to telemetry.googleapis.com through an otlp exporter.
 func PreserveInstrumentationScope() Component {
 	scopeName := ottl.RValue("instrumentation_scope.name")
