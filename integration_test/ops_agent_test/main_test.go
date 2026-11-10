@@ -5728,8 +5728,8 @@ func TestUninstallRemovesService(t *testing.T) {
 			checkServiceCmd = `output=$(systemctl status 'google-cloud-ops-agent*' 2>/dev/null); if [ -n "$output" ]; then echo "Service exists: $output"; exit 1; fi`
 		}
 
-		if out, err := gce.RunRemotely(ctx, logger, vm, checkServiceCmd); err != nil {
-			t.Fatalf("Service still exists after uninstall, or error checking status: %v. Output: %s", err, out.Stdout)
+		if err := runRemotelyWithRetry(ctx, logger, vm, checkServiceCmd, 12, 5*time.Second); err != nil {
+			t.Fatalf("Service still exists after uninstall, or error checking status: %v", err)
 		}
 	})
 }
