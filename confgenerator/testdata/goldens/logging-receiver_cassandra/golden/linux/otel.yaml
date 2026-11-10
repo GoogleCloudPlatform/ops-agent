@@ -52,7 +52,7 @@ processors:
         match_type: strict
         metric_names:
         - fluentbit_uptime
-  filter/health_checks_1:
+  filter/health_checks_2:
     error_mode: ignore
     logs:
       log_record:
@@ -98,7 +98,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
-  logstransform/logging_cassandra__debug_0:
+  logstransform/logging_cassandra__debug_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -111,7 +111,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/logging_cassandra__gc_0:
+  logstransform/logging_cassandra__gc_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -124,7 +124,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/logging_cassandra__system_0:
+  logstransform/logging_cassandra__system_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -663,6 +663,13 @@ processors:
   transform/health_checks_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/health_checks_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__parsed_json"], ParseJSON(body["message"])) where (body != nil and body["message"] != nil)
@@ -721,7 +728,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/health_checks_2:
+  transform/health_checks_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -748,7 +755,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/health_checks_3:
+  transform/health_checks_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -777,7 +784,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__debug_1:
+  transform/logging_cassandra__debug_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__debug_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -839,7 +853,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__debug_2:
+  transform/logging_cassandra__debug_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -859,7 +873,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "WARN"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__debug_3:
+  transform/logging_cassandra__debug_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -888,7 +902,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "cassandra_debug") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__gc_1:
+  transform/logging_cassandra__gc_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__gc_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -952,7 +973,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__gc_2:
+  transform/logging_cassandra__gc_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1018,7 +1039,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__gc_3:
+  transform/logging_cassandra__gc_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1039,7 +1060,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warning"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__gc_4:
+  transform/logging_cassandra__gc_5:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1068,7 +1089,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "cassandra_gc") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__system_1:
+  transform/logging_cassandra__system_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__system_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1130,7 +1158,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__system_2:
+  transform/logging_cassandra__system_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1150,7 +1178,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "WARN"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__system_3:
+  transform/logging_cassandra__system_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1243,6 +1271,13 @@ processors:
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_syslog_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1435,9 +1470,10 @@ service:
       - googlecloud/logging
       processors:
       - transform/health_checks_0
-      - filter/health_checks_1
-      - transform/health_checks_2
+      - transform/health_checks_1
+      - filter/health_checks_2
       - transform/health_checks_3
+      - transform/health_checks_4
       - resourcedetection/_global_0
       receivers:
       - file_log/health_checks
@@ -1455,10 +1491,11 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__debug_0
-      - transform/logging_cassandra__debug_1
+      - transform/logging_cassandra__debug_0
+      - logstransform/logging_cassandra__debug_1
       - transform/logging_cassandra__debug_2
       - transform/logging_cassandra__debug_3
+      - transform/logging_cassandra__debug_4
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__debug
@@ -1466,11 +1503,12 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__gc_0
-      - transform/logging_cassandra__gc_1
+      - transform/logging_cassandra__gc_0
+      - logstransform/logging_cassandra__gc_1
       - transform/logging_cassandra__gc_2
       - transform/logging_cassandra__gc_3
       - transform/logging_cassandra__gc_4
+      - transform/logging_cassandra__gc_5
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__gc
@@ -1478,10 +1516,11 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__system_0
-      - transform/logging_cassandra__system_1
+      - transform/logging_cassandra__system_0
+      - logstransform/logging_cassandra__system_1
       - transform/logging_cassandra__system_2
       - transform/logging_cassandra__system_3
+      - transform/logging_cassandra__system_4
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__system
@@ -1490,6 +1529,7 @@ service:
       - googlecloud/logging
       processors:
       - transform/logging_syslog_0
+      - transform/logging_syslog_1
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_syslog

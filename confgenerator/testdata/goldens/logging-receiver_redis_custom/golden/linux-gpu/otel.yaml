@@ -57,7 +57,7 @@ processors:
         match_type: strict
         metric_names:
         - fluentbit_uptime
-  filter/health_checks_1:
+  filter/health_checks_2:
     error_mode: ignore
     logs:
       log_record:
@@ -653,6 +653,13 @@ processors:
   transform/health_checks_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/health_checks_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__parsed_json"], ParseJSON(body["message"])) where (body != nil and body["message"] != nil)
@@ -711,7 +718,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/health_checks_2:
+  transform/health_checks_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -738,7 +745,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/health_checks_3:
+  transform/health_checks_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -833,6 +840,13 @@ processors:
   transform/logging_redis__custom_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_redis__custom_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^\\\\[?(?<pid>\\\\d+):?(?<roleChar>[A-Z])?\\\\]?\\\\s+(?<time>\\\\d{2}\\\\s+\\\\w+(?:\\\\s+\\\\d{4})?\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2}.\\\\d{3})\\\\s+(?<level>(\\\\*|#|-|\\\\.))\\\\s+(?<message>.*)$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^\\\\[?(?<pid>\\\\d+):?(?<roleChar>[A-Z])?\\\\]?\\\\s+(?<time>\\\\d{2}\\\\s+\\\\w+(?:\\\\s+\\\\d{4})?\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2}.\\\\d{3})\\\\s+(?<level>(\\\\*|#|-|\\\\.))\\\\s+(?<message>.*)$\"))"
@@ -892,7 +906,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_redis__custom_1:
+  transform/logging_redis__custom_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -921,7 +935,7 @@ processors:
       - set(cache["mapped_value"], "DEBUG") where cache["value"] == "."
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_redis__custom_2:
+  transform/logging_redis__custom_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -953,6 +967,13 @@ processors:
   transform/logging_redis__default_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_redis__default_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^\\\\[?(?<pid>\\\\d+):?(?<roleChar>[A-Z])?\\\\]?\\\\s+(?<time>\\\\d{2}\\\\s+\\\\w+(?:\\\\s+\\\\d{4})?\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2}.\\\\d{3})\\\\s+(?<level>(\\\\*|#|-|\\\\.))\\\\s+(?<message>.*)$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^\\\\[?(?<pid>\\\\d+):?(?<roleChar>[A-Z])?\\\\]?\\\\s+(?<time>\\\\d{2}\\\\s+\\\\w+(?:\\\\s+\\\\d{4})?\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2}.\\\\d{3})\\\\s+(?<level>(\\\\*|#|-|\\\\.))\\\\s+(?<message>.*)$\"))"
@@ -1012,7 +1033,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_redis__default_1:
+  transform/logging_redis__default_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1041,7 +1062,7 @@ processors:
       - set(cache["mapped_value"], "DEBUG") where cache["value"] == "."
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_redis__default_2:
+  transform/logging_redis__default_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1073,6 +1094,13 @@ processors:
   transform/logging_redis__syslog_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_redis__syslog_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__body_string"], body) where IsString(body)
@@ -1083,7 +1111,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_redis__syslog_1:
+  transform/logging_redis__syslog_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1113,6 +1141,13 @@ processors:
       - set(cache["value"], "redis_syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_syslog_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1391,9 +1426,10 @@ service:
       - googlecloud/logging
       processors:
       - transform/health_checks_0
-      - filter/health_checks_1
-      - transform/health_checks_2
+      - transform/health_checks_1
+      - filter/health_checks_2
       - transform/health_checks_3
+      - transform/health_checks_4
       - resourcedetection/_global_0
       receivers:
       - file_log/health_checks
@@ -1412,6 +1448,7 @@ service:
       - googlecloud/logging
       processors:
       - transform/logging_syslog_0
+      - transform/logging_syslog_1
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_syslog
@@ -1422,6 +1459,7 @@ service:
       - transform/logging_redis__custom_0
       - transform/logging_redis__custom_1
       - transform/logging_redis__custom_2
+      - transform/logging_redis__custom_3
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_redis__custom
@@ -1432,6 +1470,7 @@ service:
       - transform/logging_redis__default_0
       - transform/logging_redis__default_1
       - transform/logging_redis__default_2
+      - transform/logging_redis__default_3
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_redis__default
@@ -1441,6 +1480,7 @@ service:
       processors:
       - transform/logging_redis__syslog_0
       - transform/logging_redis__syslog_1
+      - transform/logging_redis__syslog_2
       - transform/logs_redis__syslog_logging_redis__syslog_0
       - transform/logs_redis__syslog_logging_redis__syslog_1
       - resourcedetection/_global_0

@@ -566,7 +566,8 @@ func (r AgentSelfMetrics) LoggingPingPipeline(ctx context.Context) otel.Receiver
 func (r AgentSelfMetrics) HealthChecksPipeline(ctx context.Context) otel.ReceiverPipeline {
 	healthChecksPath := filepath.Join(r.LogsDir, "health-checks.log")
 
-	logProccesors := generateHealthLogsParsingComponents(ctx)
+	logProccesors := []otel.Component{otel.ClearDefaultStanzaScope()}
+	logProccesors = append(logProccesors, generateHealthLogsParsingComponents(ctx)...)
 	logProccesors = append(logProccesors, generateStructuredHealthLogsOtelComponents(ctx)...)
 	logProccesors = append(logProccesors, otelSetLogNameComponents(ctx, healthLogsTag)...)
 

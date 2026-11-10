@@ -57,7 +57,7 @@ processors:
         match_type: strict
         metric_names:
         - fluentbit_uptime
-  filter/health_checks_1:
+  filter/health_checks_2:
     error_mode: ignore
     logs:
       log_record:
@@ -653,6 +653,13 @@ processors:
   transform/health_checks_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/health_checks_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__parsed_json"], ParseJSON(body["message"])) where (body != nil and body["message"] != nil)
@@ -711,7 +718,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/health_checks_2:
+  transform/health_checks_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -738,7 +745,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/health_checks_3:
+  transform/health_checks_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -768,6 +775,13 @@ processors:
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_mongodb_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_mongodb_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -826,18 +840,18 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_1:
+  transform/logging_mongodb_10:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["t"]["$date"]) where (body != nil and body["t"] != nil and body["t"]["$date"] != nil)
-      - delete_key(body["t"], "$date") where (body != nil and body["t"] != nil and body["t"]["$date"] != nil)
+      - set(cache["__field_0"], body["attr"]) where (body != nil and body["attr"] != nil)
+      - delete_key(body, "attr") where (body != nil and body["attr"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(body["time"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_10:
+      - set(body["attributes"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_mongodb_11:
     error_mode: ignore
     log_statements:
     - context: log
@@ -903,7 +917,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_11:
+  transform/logging_mongodb_12:
     error_mode: ignore
     log_statements:
     - context: log
@@ -932,7 +946,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "W"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_mongodb_12:
+  transform/logging_mongodb_13:
     error_mode: ignore
     log_statements:
     - context: log
@@ -951,7 +965,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"]) where (cache != nil and cache["__field_1"] != nil)
       - set(body["message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_13:
+  transform/logging_mongodb_14:
     error_mode: ignore
     log_statements:
     - context: log
@@ -985,8 +999,19 @@ processors:
     log_statements:
     - context: log
       statements:
-      - delete_key(body, "t") where ((body != nil and body["t"] != nil) and (body != nil and body["t"] != nil))
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["t"]["$date"]) where (body != nil and body["t"] != nil and body["t"]["$date"] != nil)
+      - delete_key(body["t"], "$date") where (body != nil and body["t"] != nil and body["t"]["$date"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(body["time"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_mongodb_3:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(body, "t") where ((body != nil and body["t"] != nil) and (body != nil and body["t"] != nil))
+  transform/logging_mongodb_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1047,7 +1072,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_4:
+  transform/logging_mongodb_5:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1058,14 +1083,14 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["temp_attributes_message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_5:
+  transform/logging_mongodb_6:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - set(body["msg"], body["temp_attributes_message"]) where (body != nil and body["temp_attributes_message"] != nil)
       - delete_key(body, "temp_attributes_message") where ((body != nil and body["temp_attributes_message"] != nil) and (body != nil and body["temp_attributes_message"] != nil))
-  transform/logging_mongodb_6:
+  transform/logging_mongodb_7:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1076,7 +1101,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["component"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_7:
+  transform/logging_mongodb_8:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1087,7 +1112,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["context"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_8:
+  transform/logging_mongodb_9:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1098,17 +1123,6 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
       - set(body["json_message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_mongodb_9:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["attr"]) where (body != nil and body["attr"] != nil)
-      - delete_key(body, "attr") where (body != nil and body["attr"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(body["attributes"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_ping_0:
     error_mode: ignore
     log_statements:
@@ -1173,6 +1187,13 @@ processors:
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_syslog_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1336,9 +1357,10 @@ service:
       - googlecloud/logging
       processors:
       - transform/health_checks_0
-      - filter/health_checks_1
-      - transform/health_checks_2
+      - transform/health_checks_1
+      - filter/health_checks_2
       - transform/health_checks_3
+      - transform/health_checks_4
       - resourcedetection/_global_0
       receivers:
       - file_log/health_checks
@@ -1357,6 +1379,7 @@ service:
       - googlecloud/logging
       processors:
       - transform/logging_syslog_0
+      - transform/logging_syslog_1
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_syslog
@@ -1378,6 +1401,7 @@ service:
       - transform/logging_mongodb_11
       - transform/logging_mongodb_12
       - transform/logging_mongodb_13
+      - transform/logging_mongodb_14
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_mongodb

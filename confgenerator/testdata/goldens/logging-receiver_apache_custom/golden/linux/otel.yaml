@@ -52,7 +52,7 @@ processors:
         match_type: strict
         metric_names:
         - fluentbit_uptime
-  filter/health_checks_1:
+  filter/health_checks_2:
     error_mode: ignore
     logs:
       log_record:
@@ -624,6 +624,13 @@ processors:
   transform/health_checks_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/health_checks_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__parsed_json"], ParseJSON(body["message"])) where (body != nil and body["message"] != nil)
@@ -682,7 +689,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/health_checks_2:
+  transform/health_checks_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -709,7 +716,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/health_checks_3:
+  transform/health_checks_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -741,6 +748,13 @@ processors:
   transform/logging_apache__custom__access_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_apache__custom__access_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\"))"
@@ -800,7 +814,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_apache__custom__access_1:
+  transform/logging_apache__custom__access_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -883,7 +897,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/apache_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_apache__custom__access_2:
+  transform/logging_apache__custom__access_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -915,6 +929,13 @@ processors:
   transform/logging_apache__custom__error_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_apache__custom__error_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^\\\\[(?<time>[^\\\\]]+)\\\\] \\\\[(?:(?<module>\\\\w+):)?(?<level>[\\\\w\\\\d]+)\\\\](?: \\\\[pid (?<pid>\\\\d+)(?::tid (?<tid>[0-9]+))?\\\\])?(?: (?<errorCode>[^\\\\[:]*):?)?(?: \\\\[client (?<client>[^\\\\]]*)\\\\])? (?<message>.*)$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^\\\\[(?<time>[^\\\\]]+)\\\\] \\\\[(?:(?<module>\\\\w+):)?(?<level>[\\\\w\\\\d]+)\\\\](?: \\\\[pid (?<pid>\\\\d+)(?::tid (?<tid>[0-9]+))?\\\\])?(?: (?<errorCode>[^\\\\[:]*):?)?(?: \\\\[client (?<client>[^\\\\]]*)\\\\])? (?<message>.*)$\"))"
@@ -975,7 +996,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_apache__custom__error_1:
+  transform/logging_apache__custom__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1006,7 +1027,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_apache__custom__error_2:
+  transform/logging_apache__custom__error_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1036,6 +1057,13 @@ processors:
       - set(cache["value"], "apache_custom_error") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_apache__default__access_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_apache__default__access_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1097,7 +1125,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_apache__default__access_1:
+  transform/logging_apache__default__access_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1180,7 +1208,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/apache_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_apache__default__access_2:
+  transform/logging_apache__default__access_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1210,6 +1238,13 @@ processors:
       - set(cache["value"], "apache_default_access") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_apache__default__error_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_apache__default__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1272,7 +1307,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_apache__default__error_1:
+  transform/logging_apache__default__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1303,7 +1338,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_apache__default__error_2:
+  transform/logging_apache__default__error_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1335,6 +1370,13 @@ processors:
   transform/logging_apache__syslog__access_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_apache__syslog__access_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__body_string"], body) where IsString(body)
@@ -1345,7 +1387,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_apache__syslog__access_1:
+  transform/logging_apache__syslog__access_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1377,6 +1419,13 @@ processors:
   transform/logging_apache__syslog__error_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_apache__syslog__error_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__body_string"], body) where IsString(body)
@@ -1387,7 +1436,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_apache__syslog__error_1:
+  transform/logging_apache__syslog__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1480,6 +1529,13 @@ processors:
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_syslog_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1939,9 +1995,10 @@ service:
       - googlecloud/logging
       processors:
       - transform/health_checks_0
-      - filter/health_checks_1
-      - transform/health_checks_2
+      - transform/health_checks_1
+      - filter/health_checks_2
       - transform/health_checks_3
+      - transform/health_checks_4
       - resourcedetection/_global_0
       receivers:
       - file_log/health_checks
@@ -1962,6 +2019,7 @@ service:
       - transform/logging_apache__custom__access_0
       - transform/logging_apache__custom__access_1
       - transform/logging_apache__custom__access_2
+      - transform/logging_apache__custom__access_3
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_apache__custom__access
@@ -1972,6 +2030,7 @@ service:
       - transform/logging_apache__custom__error_0
       - transform/logging_apache__custom__error_1
       - transform/logging_apache__custom__error_2
+      - transform/logging_apache__custom__error_3
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_apache__custom__error
@@ -1982,6 +2041,7 @@ service:
       - transform/logging_apache__default__access_0
       - transform/logging_apache__default__access_1
       - transform/logging_apache__default__access_2
+      - transform/logging_apache__default__access_3
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_apache__default__access
@@ -1992,6 +2052,7 @@ service:
       - transform/logging_apache__default__error_0
       - transform/logging_apache__default__error_1
       - transform/logging_apache__default__error_2
+      - transform/logging_apache__default__error_3
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_apache__default__error
@@ -2001,6 +2062,7 @@ service:
       processors:
       - transform/logging_apache__syslog__access_0
       - transform/logging_apache__syslog__access_1
+      - transform/logging_apache__syslog__access_2
       - transform/logs_apache__syslog__access_logging_apache__syslog__access_0
       - transform/logs_apache__syslog__access_logging_apache__syslog__access_1
       - resourcedetection/_global_0
@@ -2012,6 +2074,7 @@ service:
       processors:
       - transform/logging_apache__syslog__error_0
       - transform/logging_apache__syslog__error_1
+      - transform/logging_apache__syslog__error_2
       - transform/logs_apache__syslog__error_logging_apache__syslog__error_0
       - transform/logs_apache__syslog__error_logging_apache__syslog__error_1
       - resourcedetection/_global_0
@@ -2022,6 +2085,7 @@ service:
       - googlecloud/logging
       processors:
       - transform/logging_syslog_0
+      - transform/logging_syslog_1
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_syslog
