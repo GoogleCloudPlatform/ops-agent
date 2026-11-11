@@ -2416,7 +2416,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		// 2. Expected metric in stdout once both JSON exporter and target HTTP server are ready.
 		b := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(3*time.Second), 20), ctx)
 		if err := backoff.Retry(func() error {
-			out, err := gce.RunRemotely(ctx, logger, vm, `curl -s "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+			out, err := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
 			if err != nil {
 				return err
 			}
