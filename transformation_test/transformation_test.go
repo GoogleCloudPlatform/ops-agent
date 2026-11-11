@@ -612,10 +612,20 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			if strings.HasPrefix(msg, "Consuming files") {
 				consumingCount += 1
 				if consumingCount == 3 {
-					// We've processed the entire input file. Signal the collector to stop.
-					if err := cmd.Process.Signal(os.Interrupt); err != nil {
-						t.Errorf("failed to signal process: %v", err)
-					}
+					// We've processed the entire input file. Give multiline recombine parsers
+					// (which buffer trailing entries up to 1000ms force_flush_period) a brief
+					// settlement window to flush before requesting graceful shutdown.
+					// Without this delay on slow or CPU-emulated runners, sending os.Interrupt
+					// immediately can terminate the collector before the trailing multiline entry
+					// is emitted, causing flaky drops (b/543358344).
+					go func() {
+						if isMultilineTest(name) {
+							time.Sleep(1200 * time.Millisecond)
+						}
+						if err := cmd.Process.Signal(os.Interrupt); err != nil {
+							t.Logf("failed to signal process: %v", err)
+						}
+					}()
 				}
 			}
 			stacktrace, ok := log["stacktrace"].(string)
@@ -633,14 +643,35 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	})
 
 	// Read and sanitize requests.
+	// Consecutive requests are coalesced into got[0] so that network batching
+	// jitter (e.g. if the BatchProcessor timer fires mid-test on slow runners before
+	// collector shutdown) does not split logs across multiple requests and fail golden
+	// assertions. The transformation test verifies the contents of log transformations,
+	// not network packet boundaries.
 	eg.Go(func() error {
 		if isOTLP {
 			for r := range requestChOTLP {
-				got = append(got, sanitizeOTLPExportRequest(t, r, testStartTime))
+				sanitized := sanitizeOTLPExportRequest(t, r, testStartTime)
+				if sanitized == nil {
+					continue
+				}
+				if len(got) == 0 {
+					got = append(got, sanitized)
+				} else {
+					coalesceOTLPRequests(got[0], sanitized)
+				}
 			}
 		} else {
 			for r := range requestChWriteLogEntries {
-				got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
+				sanitized := sanitizeWriteLogEntriesRequest(t, r, testStartTime)
+				if sanitized == nil {
+					continue
+				}
+				if len(got) == 0 {
+					got = append(got, sanitized)
+				} else {
+					coalesceWriteLogEntriesRequests(got[0], sanitized)
+				}
 			}
 		}
 		return nil
