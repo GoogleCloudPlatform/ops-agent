@@ -686,10 +686,6 @@ processors:
   metricstransform/tomcat_1:
     transforms:
     - action: update
-      include: tomcat.sessions
-      operations:
-      - action: toggle_scalar_data_type
-    - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}

@@ -296,15 +296,16 @@ RUN Copy-Item -Path bin/fluent-bit.exe -Destination /work/out/bin/; `
 # a required build flag to support jmx receiver in operations-collector
 ###############################################################################
 
-ADD https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_windows_hotspot_21.0.13_9.msi /local/jdk-21-windows-x64.msi
-RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-21-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
+ADD https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.msi /local/jdk-17-windows-x64.msi
+RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-17-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
 
 COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
+COPY builds/jmx-metrics-exclude-grpc.init.gradle /work/builds/jmx-metrics-exclude-grpc.init.gradle
 
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
-RUN ./gradlew --no-daemon :jmx-metrics:assemble; `
-    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
+RUN ./gradlew --no-daemon --init-script ../../builds/jmx-metrics-exclude-grpc.init.gradle :jmx-metrics:build; `
+    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build OT collector

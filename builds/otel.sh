@@ -25,11 +25,14 @@ LDFLAGS=""
 # If this is not a local build, then we build otel java and add it to
 # the ldflags.
 if [ "$SKIP_OTEL_JAVA" != "true" ]; then
+    # Excludes the unused grpc-netty-shaded dependency, which is the only thing
+    # that bundles Guava into the jmx-metrics jar.
+    JMX_INIT_SCRIPT="$(cd "$(dirname "$0")" && pwd)/jmx-metrics-exclude-grpc.init.gradle"
     cd submodules/opentelemetry-java-contrib
 
     mkdir -p "$DESTDIR"
-    ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork :jmx-metrics:assemble
-    cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha.jar "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"
+    ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork --init-script "$JMX_INIT_SCRIPT" :jmx-metrics:build
+    cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha-SNAPSHOT.jar "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"
 
     # Rename LICENSE file because it causes issues with file hash consistency due to an unknown
     # issue with the debuild/rpmbuild processes. Something is unzipping the jar in a case-insensitive

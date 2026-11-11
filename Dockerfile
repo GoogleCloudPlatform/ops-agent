@@ -21,9 +21,9 @@
 
 
 ARG CMAKE_VERSION=3.25.2
-ARG OPENJDK_MAJOR_VERSION=21
-ARG OPENJDK_FULL_VERSION=21.0.13
-ARG OPENJDK_VERSION_SUFFIX=9
+ARG OPENJDK_MAJOR_VERSION=17
+ARG OPENJDK_FULL_VERSION=17.0.8
+ARG OPENJDK_VERSION_SUFFIX=7
 ARG GO_VERSION=1.26.10
 
 # Manually prepare a recent enough version of CMake.
@@ -53,7 +53,7 @@ ARG OPENJDK_MAJOR_VERSION
 ARG OPENJDK_FULL_VERSION
 ARG OPENJDK_VERSION_SUFFIX
 
-ENV hash=d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c
+ENV hash=aa5fc7d388fe544e5d85902e68399d5299e931f9b280d358a3cbee218d6017b0
 ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_x64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
     /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
@@ -62,7 +62,7 @@ ARG OPENJDK_MAJOR_VERSION
 ARG OPENJDK_FULL_VERSION
 ARG OPENJDK_VERSION_SUFFIX
 
-ENV hash=e3522e707fc7dbe2a72c30746b1e7068301a0213ecd213d4491f35a14eb55578
+ENV hash=c43688163cfdcb1a6e6fe202cc06a51891df746b954c55dbd01430e7d7326d00
 ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_aarch64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
     /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
@@ -110,7 +110,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -215,7 +215,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -326,7 +326,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -403,9 +403,7 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config zip
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -428,7 +426,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -530,7 +528,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -653,7 +651,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -758,7 +756,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -863,7 +861,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -963,7 +961,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -1063,7 +1061,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -1163,7 +1161,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -1263,7 +1261,7 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 # Install gradle. The first invocation of gradlew does this
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
+COPY ./builds/otel.sh ./builds/jmx-metrics-exclude-grpc.init.gradle ./
 RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
