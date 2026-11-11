@@ -37,6 +37,7 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9-arm64
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   - suse-cloud:sles-15-arm64
+  - ubuntu-os-cloud:ubuntu-2610-arm64 # PGDG stonking-pgdg publishes amd64 only: http://apt.postgresql.org/pub/repos/apt/dists/stonking-pgdg/Release
 supported_app_version: ["10.18+"]
 expected_metrics:
   - kind: GAUGE

@@ -62,7 +62,7 @@ processors:
         match_type: strict
         metric_names:
         - fluentbit_uptime
-  filter/health_checks_1:
+  filter/health_checks_2:
     error_mode: ignore
     logs:
       log_record:
@@ -688,6 +688,13 @@ processors:
   transform/health_checks_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/health_checks_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__parsed_json"], ParseJSON(body["message"])) where (body != nil and body["message"] != nil)
@@ -746,7 +753,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/health_checks_2:
+  transform/health_checks_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -773,7 +780,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/health_checks_3:
+  transform/health_checks_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -881,6 +888,13 @@ processors:
   transform/logging_test__syslog__source__id__tcp_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_test__syslog__source__id__tcp_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__body_string"], body) where IsString(body)
@@ -891,7 +905,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_test__syslog__source__id__tcp_1:
+  transform/logging_test__syslog__source__id__tcp_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -923,6 +937,13 @@ processors:
   transform/logging_test__syslog__source__id__udp_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_test__syslog__source__id__udp_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__body_string"], body) where IsString(body)
@@ -933,7 +954,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_test__syslog__source__id__udp_1:
+  transform/logging_test__syslog__source__id__udp_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1235,9 +1256,10 @@ service:
       - googlecloud/logging
       processors:
       - transform/health_checks_0
-      - filter/health_checks_1
-      - transform/health_checks_2
+      - transform/health_checks_1
+      - filter/health_checks_2
       - transform/health_checks_3
+      - transform/health_checks_4
       - resourcedetection/_global_0
       receivers:
       - file_log/health_checks
@@ -1257,6 +1279,7 @@ service:
       processors:
       - transform/logging_test__syslog__source__id__tcp_0
       - transform/logging_test__syslog__source__id__tcp_1
+      - transform/logging_test__syslog__source__id__tcp_2
       - transform/logs_pipeline1_logging_test__syslog__source__id__tcp_0
       - resourcedetection/_global_0
       receivers:
@@ -1267,6 +1290,7 @@ service:
       processors:
       - transform/logging_test__syslog__source__id__udp_0
       - transform/logging_test__syslog__source__id__udp_1
+      - transform/logging_test__syslog__source__id__udp_2
       - transform/logs_pipeline2_logging_test__syslog__source__id__udp_0
       - resourcedetection/_global_0
       receivers:
