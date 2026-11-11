@@ -4,5 +4,45 @@ curl https://downloads.apache.org/cassandra/KEYS --output /etc/apt/trusted.gpg.d
 source /etc/os-release
 echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 sudo apt update
+
+no_sysv_generator=false
+if [[ ! -e /usr/lib/systemd/system-generators/systemd-sysv-generator && ! -e /lib/systemd/system-generators/systemd-sysv-generator ]]; then
+  no_sysv_generator=true
+  # Without the SysV generator the package's postinst "invoke-rc.d cassandra start"
+  # fails (no cassandra.service), so block service starts during the install.
+  printf '#!/bin/sh\nexit 101\n' | sudo tee /usr/sbin/policy-rc.d > /dev/null
+  sudo chmod +x /usr/sbin/policy-rc.d
+fi
+
 sudo apt install -y openjdk-11-jre cassandra
+
+if [[ "${no_sysv_generator}" == true ]]; then
+  sudo rm -f /usr/sbin/policy-rc.d
+fi
+
+# systemd v260+ (e.g. Ubuntu 26.10) no longer generates units from SysV init
+# scripts, so wrap /etc/init.d/cassandra in a native unit when the generator is gone.
+if [[ ! -e /usr/lib/systemd/system-generators/systemd-sysv-generator && ! -e /lib/systemd/system-generators/systemd-sysv-generator ]]; then
+  sudo tee /etc/systemd/system/cassandra.service > /dev/null << EOF
+[Unit]
+Description=Apache Cassandra (SysV init script wrapper)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+ExecStart=/etc/init.d/cassandra start
+ExecStop=/etc/init.d/cassandra stop
+RemainAfterExit=yes
+GuessMainPID=no
+KillMode=process
+TimeoutSec=5min
+SuccessExitStatus=5 6
+
+[Install]
+WantedBy=multi-user.target
+EOF
+fi
+
+sudo systemctl daemon-reload
 sudo service cassandra start
