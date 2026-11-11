@@ -57,7 +57,7 @@ processors:
         match_type: strict
         metric_names:
         - fluentbit_uptime
-  filter/health_checks_1:
+  filter/health_checks_2:
     error_mode: ignore
     logs:
       log_record:
@@ -103,7 +103,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
-  logstransform/logging_cassandra__custom__debug_0:
+  logstransform/logging_cassandra__custom__debug_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -116,7 +116,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/logging_cassandra__custom__gc_0:
+  logstransform/logging_cassandra__custom__gc_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -129,7 +129,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/logging_cassandra__custom__system_0:
+  logstransform/logging_cassandra__custom__system_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -142,7 +142,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/logging_cassandra__default__debug_0:
+  logstransform/logging_cassandra__default__debug_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -155,7 +155,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/logging_cassandra__default__gc_0:
+  logstransform/logging_cassandra__default__gc_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -168,7 +168,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/logging_cassandra__default__system_0:
+  logstransform/logging_cassandra__default__system_1:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -848,6 +848,13 @@ processors:
   transform/health_checks_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/health_checks_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__parsed_json"], ParseJSON(body["message"])) where (body != nil and body["message"] != nil)
@@ -906,7 +913,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/health_checks_2:
+  transform/health_checks_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -933,7 +940,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/health_checks_3:
+  transform/health_checks_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -962,7 +969,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__custom__debug_1:
+  transform/logging_cassandra__custom__debug_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__custom__debug_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1024,7 +1038,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__custom__debug_2:
+  transform/logging_cassandra__custom__debug_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1044,7 +1058,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "WARN"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__custom__debug_3:
+  transform/logging_cassandra__custom__debug_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1073,7 +1087,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "cassandra_custom_debug") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__custom__gc_1:
+  transform/logging_cassandra__custom__gc_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__custom__gc_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1086,72 +1107,6 @@ processors:
       - set(cache["__time_valid"], true) where ((body != nil and body["time"] != nil) and Time(body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
       - set(time, Time(body["time"], "%Y-%m-%dT%H:%M:%S.%L%z")) where cache["__time_valid"] == true
       - delete_key(body, "time") where ((body != nil and body["time"] != nil) and cache["__time_valid"] == true)
-      - set(body["timeStopped"], Double(body["timeStopped"])) where ((body != nil and body["timeStopped"] != nil) and Double(body["timeStopped"]) != nil)
-      - set(body["timeStopping"], Double(body["timeStopping"])) where ((body != nil and body["timeStopping"] != nil) and Double(body["timeStopping"]) != nil)
-      - set(body["uptime"], Double(body["uptime"])) where ((body != nil and body["uptime"] != nil) and Double(body["uptime"]) != nil)
-      - merge_maps(attributes, body["logging.googleapis.com/labels"], "upsert") where body["logging.googleapis.com/labels"] != nil
-      - delete_key(body, "logging.googleapis.com/labels") where (body != nil and body["logging.googleapis.com/labels"] != nil)
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/httpRequest"]) where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
-      - delete_key(body, "logging.googleapis.com/httpRequest") where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(attributes["gcp.http_request"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/logName"]) where (body != nil and body["logging.googleapis.com/logName"] != nil)
-      - delete_key(body, "logging.googleapis.com/logName") where (body != nil and body["logging.googleapis.com/logName"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
-      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
-      - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
-      - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
-      - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - set(span_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["logging.googleapis.com/trace"]) where (body != nil and body["logging.googleapis.com/trace"] != nil)
-      - delete_key(body, "logging.googleapis.com/trace") where (body != nil and body["logging.googleapis.com/trace"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
-      - delete_key(cache, "__setif_value") where (cache != nil and cache["__setif_value"] != nil)
-      - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
-      - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__custom__gc_2:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^\\\\[(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}\\\\.\\\\d{3,6}(?:Z|[+-]\\\\d{2}:?\\\\d{2}))\\\\]\\\\s?\\\\[(?<uptime>\\\\d+\\\\.\\\\d{3,6})s?\\\\]\\\\s?\\\\[(?<pid>\\\\d+)\\\\]\\\\s?\\\\[(?<tid>\\\\d+)\\\\]\\\\s?\\\\[(?<level>\\\\w+)\\\\s?\\\\]\\\\s?(?<message>(?:Total time for which application threads were stopped: (?<timeStopped>\\\\d+\\\\.\\\\d+) seconds, Stopping threads took: (?<timeStopping>\\\\d+\\\\.\\\\d+)[\\\\s\\\\S]*|[\\\\s\\\\S]+))\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^\\\\[(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}\\\\.\\\\d{3,6}(?:Z|[+-]\\\\d{2}:?\\\\d{2}))\\\\]\\\\s?\\\\[(?<uptime>\\\\d+\\\\.\\\\d{3,6})s?\\\\]\\\\s?\\\\[(?<pid>\\\\d+)\\\\]\\\\s?\\\\[(?<tid>\\\\d+)\\\\]\\\\s?\\\\[(?<level>\\\\w+)\\\\s?\\\\]\\\\s?(?<message>(?:Total time for which application threads were stopped: (?<timeStopped>\\\\d+\\\\.\\\\d+) seconds, Stopping threads took: (?<timeStopping>\\\\d+\\\\.\\\\d+)[\\\\s\\\\S]*|[\\\\s\\\\S]+))\"))"
-      - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
-      - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
-      - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
-      - set(cache["__time_valid"], false)
-      - set(cache["__time_valid"], true) where ((body != nil and body["time"] != nil) and Time(body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-      - set(time, Time(body["time"], "%Y-%m-%dT%H:%M:%S.%L%z")) where cache["__time_valid"] == true
-      - delete_key(body, "time") where ((body != nil and body["time"] != nil) and cache["__time_valid"] == true)
-      - set(body["pid"], Int(body["pid"])) where ((body != nil and body["pid"] != nil) and Int(body["pid"]) != nil)
-      - set(body["tid"], Int(body["tid"])) where ((body != nil and body["tid"] != nil) and Int(body["tid"]) != nil)
       - set(body["timeStopped"], Double(body["timeStopped"])) where ((body != nil and body["timeStopped"] != nil) and Double(body["timeStopped"]) != nil)
       - set(body["timeStopping"], Double(body["timeStopping"])) where ((body != nil and body["timeStopping"] != nil) and Double(body["timeStopping"]) != nil)
       - set(body["uptime"], Double(body["uptime"])) where ((body != nil and body["uptime"] != nil) and Double(body["uptime"]) != nil)
@@ -1208,6 +1163,72 @@ processors:
     log_statements:
     - context: log
       statements:
+      - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^\\\\[(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}\\\\.\\\\d{3,6}(?:Z|[+-]\\\\d{2}:?\\\\d{2}))\\\\]\\\\s?\\\\[(?<uptime>\\\\d+\\\\.\\\\d{3,6})s?\\\\]\\\\s?\\\\[(?<pid>\\\\d+)\\\\]\\\\s?\\\\[(?<tid>\\\\d+)\\\\]\\\\s?\\\\[(?<level>\\\\w+)\\\\s?\\\\]\\\\s?(?<message>(?:Total time for which application threads were stopped: (?<timeStopped>\\\\d+\\\\.\\\\d+) seconds, Stopping threads took: (?<timeStopping>\\\\d+\\\\.\\\\d+)[\\\\s\\\\S]*|[\\\\s\\\\S]+))\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^\\\\[(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}\\\\.\\\\d{3,6}(?:Z|[+-]\\\\d{2}:?\\\\d{2}))\\\\]\\\\s?\\\\[(?<uptime>\\\\d+\\\\.\\\\d{3,6})s?\\\\]\\\\s?\\\\[(?<pid>\\\\d+)\\\\]\\\\s?\\\\[(?<tid>\\\\d+)\\\\]\\\\s?\\\\[(?<level>\\\\w+)\\\\s?\\\\]\\\\s?(?<message>(?:Total time for which application threads were stopped: (?<timeStopped>\\\\d+\\\\.\\\\d+) seconds, Stopping threads took: (?<timeStopping>\\\\d+\\\\.\\\\d+)[\\\\s\\\\S]*|[\\\\s\\\\S]+))\"))"
+      - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
+      - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
+      - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
+      - set(cache["__time_valid"], false)
+      - set(cache["__time_valid"], true) where ((body != nil and body["time"] != nil) and Time(body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+      - set(time, Time(body["time"], "%Y-%m-%dT%H:%M:%S.%L%z")) where cache["__time_valid"] == true
+      - delete_key(body, "time") where ((body != nil and body["time"] != nil) and cache["__time_valid"] == true)
+      - set(body["pid"], Int(body["pid"])) where ((body != nil and body["pid"] != nil) and Int(body["pid"]) != nil)
+      - set(body["tid"], Int(body["tid"])) where ((body != nil and body["tid"] != nil) and Int(body["tid"]) != nil)
+      - set(body["timeStopped"], Double(body["timeStopped"])) where ((body != nil and body["timeStopped"] != nil) and Double(body["timeStopped"]) != nil)
+      - set(body["timeStopping"], Double(body["timeStopping"])) where ((body != nil and body["timeStopping"] != nil) and Double(body["timeStopping"]) != nil)
+      - set(body["uptime"], Double(body["uptime"])) where ((body != nil and body["uptime"] != nil) and Double(body["uptime"]) != nil)
+      - merge_maps(attributes, body["logging.googleapis.com/labels"], "upsert") where body["logging.googleapis.com/labels"] != nil
+      - delete_key(body, "logging.googleapis.com/labels") where (body != nil and body["logging.googleapis.com/labels"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/httpRequest"]) where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
+      - delete_key(body, "logging.googleapis.com/httpRequest") where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.http_request"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/logName"]) where (body != nil and body["logging.googleapis.com/logName"] != nil)
+      - delete_key(body, "logging.googleapis.com/logName") where (body != nil and body["logging.googleapis.com/logName"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/operation"]) where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(body, "logging.googleapis.com/operation") where (body != nil and body["logging.googleapis.com/operation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.operation"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
+      - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
+      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
+      - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - set(span_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["logging.googleapis.com/trace"]) where (body != nil and body["logging.googleapis.com/trace"] != nil)
+      - delete_key(body, "logging.googleapis.com/trace") where (body != nil and body["logging.googleapis.com/trace"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"]) where (cache != nil and cache["__field_0"] != nil)
+      - delete_key(cache, "__setif_value") where (cache != nil and cache["__setif_value"] != nil)
+      - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
+      - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+  transform/logging_cassandra__custom__gc_4:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
       - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
       - set(cache["__field_1"], body["level"]) where (body != nil and body["level"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1224,7 +1245,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warning"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__custom__gc_4:
+  transform/logging_cassandra__custom__gc_5:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1253,7 +1274,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "cassandra_custom_gc") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__custom__system_1:
+  transform/logging_cassandra__custom__system_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__custom__system_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1315,7 +1343,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__custom__system_2:
+  transform/logging_cassandra__custom__system_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1335,7 +1363,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "WARN"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__custom__system_3:
+  transform/logging_cassandra__custom__system_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1364,7 +1392,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "cassandra_custom_system") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__default__debug_1:
+  transform/logging_cassandra__default__debug_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__default__debug_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1426,7 +1461,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__default__debug_2:
+  transform/logging_cassandra__default__debug_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1446,7 +1481,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "WARN"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__default__debug_3:
+  transform/logging_cassandra__default__debug_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1475,7 +1510,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "cassandra_default_debug") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__default__gc_1:
+  transform/logging_cassandra__default__gc_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__default__gc_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1539,7 +1581,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__default__gc_2:
+  transform/logging_cassandra__default__gc_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1605,7 +1647,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__default__gc_3:
+  transform/logging_cassandra__default__gc_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1626,7 +1668,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warning"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__default__gc_4:
+  transform/logging_cassandra__default__gc_5:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1655,7 +1697,14 @@ processors:
       - set(cache["value"], cache["__field_3"]) where (cache != nil and cache["__field_3"] != nil)
       - set(cache["value"], "cassandra_default_gc") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__default__system_1:
+  transform/logging_cassandra__default__system_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__default__system_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1717,7 +1766,7 @@ processors:
       - set(cache["__setif_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "") where (cache != nil and cache["__setif_value"] != nil)
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/logging_cassandra__default__system_2:
+  transform/logging_cassandra__default__system_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1737,7 +1786,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "WARN"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/logging_cassandra__default__system_3:
+  transform/logging_cassandra__default__system_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1769,6 +1818,13 @@ processors:
   transform/logging_cassandra__syslog__debug_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__syslog__debug_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__body_string"], body) where IsString(body)
@@ -1779,7 +1835,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_cassandra__syslog__debug_1:
+  transform/logging_cassandra__syslog__debug_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1811,6 +1867,13 @@ processors:
   transform/logging_cassandra__syslog__gc_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__syslog__gc_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__body_string"], body) where IsString(body)
@@ -1821,7 +1884,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_cassandra__syslog__gc_1:
+  transform/logging_cassandra__syslog__gc_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1853,6 +1916,13 @@ processors:
   transform/logging_cassandra__syslog__system_0:
     error_mode: ignore
     log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_cassandra__syslog__system_1:
+    error_mode: ignore
+    log_statements:
     - context: log
       statements:
       - set(cache["__body_string"], body) where IsString(body)
@@ -1863,7 +1933,7 @@ processors:
       - set(attributes, {})
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
-  transform/logging_cassandra__syslog__system_1:
+  transform/logging_cassandra__syslog__system_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1956,6 +2026,13 @@ processors:
       - set(cache["value"], "ops-agent-health") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/logging_syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/logging_syslog_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -3155,9 +3232,10 @@ service:
       - googlecloud/logging
       processors:
       - transform/health_checks_0
-      - filter/health_checks_1
-      - transform/health_checks_2
+      - transform/health_checks_1
+      - filter/health_checks_2
       - transform/health_checks_3
+      - transform/health_checks_4
       - resourcedetection/_global_0
       receivers:
       - file_log/health_checks
@@ -3175,10 +3253,11 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__custom__debug_0
-      - transform/logging_cassandra__custom__debug_1
+      - transform/logging_cassandra__custom__debug_0
+      - logstransform/logging_cassandra__custom__debug_1
       - transform/logging_cassandra__custom__debug_2
       - transform/logging_cassandra__custom__debug_3
+      - transform/logging_cassandra__custom__debug_4
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__custom__debug
@@ -3186,11 +3265,12 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__custom__gc_0
-      - transform/logging_cassandra__custom__gc_1
+      - transform/logging_cassandra__custom__gc_0
+      - logstransform/logging_cassandra__custom__gc_1
       - transform/logging_cassandra__custom__gc_2
       - transform/logging_cassandra__custom__gc_3
       - transform/logging_cassandra__custom__gc_4
+      - transform/logging_cassandra__custom__gc_5
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__custom__gc
@@ -3198,10 +3278,11 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__custom__system_0
-      - transform/logging_cassandra__custom__system_1
+      - transform/logging_cassandra__custom__system_0
+      - logstransform/logging_cassandra__custom__system_1
       - transform/logging_cassandra__custom__system_2
       - transform/logging_cassandra__custom__system_3
+      - transform/logging_cassandra__custom__system_4
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__custom__system
@@ -3209,10 +3290,11 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__default__debug_0
-      - transform/logging_cassandra__default__debug_1
+      - transform/logging_cassandra__default__debug_0
+      - logstransform/logging_cassandra__default__debug_1
       - transform/logging_cassandra__default__debug_2
       - transform/logging_cassandra__default__debug_3
+      - transform/logging_cassandra__default__debug_4
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__default__debug
@@ -3220,11 +3302,12 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__default__gc_0
-      - transform/logging_cassandra__default__gc_1
+      - transform/logging_cassandra__default__gc_0
+      - logstransform/logging_cassandra__default__gc_1
       - transform/logging_cassandra__default__gc_2
       - transform/logging_cassandra__default__gc_3
       - transform/logging_cassandra__default__gc_4
+      - transform/logging_cassandra__default__gc_5
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__default__gc
@@ -3232,10 +3315,11 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - logstransform/logging_cassandra__default__system_0
-      - transform/logging_cassandra__default__system_1
+      - transform/logging_cassandra__default__system_0
+      - logstransform/logging_cassandra__default__system_1
       - transform/logging_cassandra__default__system_2
       - transform/logging_cassandra__default__system_3
+      - transform/logging_cassandra__default__system_4
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_cassandra__default__system
@@ -3245,6 +3329,7 @@ service:
       processors:
       - transform/logging_cassandra__syslog__debug_0
       - transform/logging_cassandra__syslog__debug_1
+      - transform/logging_cassandra__syslog__debug_2
       - logstransform/logs_cassandra__syslog__system_logging_cassandra__syslog__debug_0
       - transform/logs_cassandra__syslog__system_logging_cassandra__syslog__debug_1
       - transform/logs_cassandra__syslog__system_logging_cassandra__syslog__debug_2
@@ -3264,6 +3349,7 @@ service:
       processors:
       - transform/logging_cassandra__syslog__gc_0
       - transform/logging_cassandra__syslog__gc_1
+      - transform/logging_cassandra__syslog__gc_2
       - logstransform/logs_cassandra__syslog__system_logging_cassandra__syslog__gc_0
       - transform/logs_cassandra__syslog__system_logging_cassandra__syslog__gc_1
       - transform/logs_cassandra__syslog__system_logging_cassandra__syslog__gc_2
@@ -3283,6 +3369,7 @@ service:
       processors:
       - transform/logging_cassandra__syslog__system_0
       - transform/logging_cassandra__syslog__system_1
+      - transform/logging_cassandra__syslog__system_2
       - logstransform/logs_cassandra__syslog__system_logging_cassandra__syslog__system_0
       - transform/logs_cassandra__syslog__system_logging_cassandra__syslog__system_1
       - transform/logs_cassandra__syslog__system_logging_cassandra__syslog__system_2
@@ -3301,6 +3388,7 @@ service:
       - googlecloud/logging
       processors:
       - transform/logging_syslog_0
+      - transform/logging_syslog_1
       - resourcedetection/_global_0
       receivers:
       - file_log/logging_syslog
