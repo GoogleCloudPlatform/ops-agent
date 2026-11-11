@@ -304,7 +304,7 @@ COPY builds/jmx-metrics-exclude-grpc.init.gradle /work/builds/jmx-metrics-exclud
 
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
-RUN ./gradlew --no-daemon --init-script /work/builds/jmx-metrics-exclude-grpc.init.gradle :jmx-metrics:build; `
+RUN ./gradlew --no-daemon --init-script ../../builds/jmx-metrics-exclude-grpc.init.gradle :jmx-metrics:build; `
     Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
