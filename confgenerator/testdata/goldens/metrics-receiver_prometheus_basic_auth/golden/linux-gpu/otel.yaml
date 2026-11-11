@@ -1010,6 +1010,7 @@ receivers:
         extra_scrape_metrics: false
       runtime:
         gogc: 75
+        log_level: info
       scrape_configs:
       - job_name: node
         honor_timestamps: true
@@ -1064,6 +1065,10 @@ receivers:
             location: test-zone
             machine_type: test-machine-type
             namespace: test-instance-id/test-instance-name
+      storage:
+        tsdb:
+          outofordertimewindow: 0
+          retention: {}
       otlp:
         translation_strategy: UnderscoreEscapingWithSuffixes
         label_name_underscore_sanitization: true
