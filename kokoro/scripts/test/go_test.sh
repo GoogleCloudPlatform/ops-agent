@@ -202,9 +202,14 @@ if [[ -n "${GOTESTSUM_RERUN_FAILS:-}" ]]; then
   gotestsum_args+=( "--rerun-fails=${GOTESTSUM_RERUN_FAILS}" )
 fi
 
+# Allow overriding Kokoro environment's TEST_PARALLEL for benchmarking.
+if [[ -n "${TEST_PARALLEL_OVERRIDE:-}" ]]; then
+  TEST_PARALLEL="${TEST_PARALLEL_OVERRIDE}"
+fi
+
 # Set up some command line flags for "go test".
 go_test_args=(
-  -test.parallel="${TEST_PARALLEL:-150}"
+  -test.parallel="${TEST_PARALLEL:-250}"
   -tags=integration_test
   -timeout=3h
 )
