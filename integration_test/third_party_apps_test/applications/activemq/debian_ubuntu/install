@@ -19,5 +19,12 @@ sudo sed -i 's/dataDirectory="${activemq.base}\/data">/dataDirectory="${activemq
 sudo ln -s /etc/activemq/instances-available/main /etc/activemq/instances-enabled/main
 
 sudo systemctl daemon-reload
-sudo systemctl enable activemq
-sudo systemctl restart activemq 
+if [[ -e /usr/lib/systemd/system/activemq@.service || -e /lib/systemd/system/activemq@.service ]]; then
+  # Newer packages (e.g. Ubuntu 26.10) drop /etc/init.d/activemq and ship a
+  # systemd template unit; each enabled instance runs as activemq@<instance>.
+  sudo systemctl enable activemq@main
+  sudo systemctl restart activemq@main
+else
+  sudo systemctl enable activemq
+  sudo systemctl restart activemq
+fi
