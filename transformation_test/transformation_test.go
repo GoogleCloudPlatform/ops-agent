@@ -633,14 +633,35 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	})
 
 	// Read and sanitize requests.
+	// Consecutive requests are coalesced into got[0] so that network batching
+	// jitter (e.g. if the BatchProcessor timer fires mid-test on slow runners before
+	// collector shutdown) does not split logs across multiple requests and fail golden
+	// assertions. The transformation test verifies the contents of log transformations,
+	// not network packet boundaries.
 	eg.Go(func() error {
 		if isOTLP {
 			for r := range requestChOTLP {
-				got = append(got, sanitizeOTLPExportRequest(t, r, testStartTime))
+				sanitized := sanitizeOTLPExportRequest(t, r, testStartTime)
+				if sanitized == nil {
+					continue
+				}
+				if len(got) == 0 {
+					got = append(got, sanitized)
+				} else {
+					coalesceOTLPRequests(got[0], sanitized)
+				}
 			}
 		} else {
 			for r := range requestChWriteLogEntries {
-				got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
+				sanitized := sanitizeWriteLogEntriesRequest(t, r, testStartTime)
+				if sanitized == nil {
+					continue
+				}
+				if len(got) == 0 {
+					got = append(got, sanitized)
+				} else {
+					coalesceWriteLogEntriesRequests(got[0], sanitized)
+				}
 			}
 		}
 		return nil
