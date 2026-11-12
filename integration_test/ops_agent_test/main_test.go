@@ -2410,16 +2410,22 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
-		// Wait until both are ready
-		time.Sleep(30 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
-		// We will abort when:
-		// 1. JSON exporter is not started: in this case the stderr will have:
-		// "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
-		// 2. The HTTP server is not started: in this case the stdout will not
-		// have the expected Prometheus style metrics
-		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") || !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
-			t.Fatal("Json Exporter failed to start")
+		// Wait until both the HTTP server and JSON exporter are ready.
+		// JSON exporter will return:
+		// 1. Connection refused if JSON exporter is not yet listening on port 7979.
+		// 2. Expected metric in stdout once both JSON exporter and target HTTP server are ready.
+		b := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(3*time.Second), 20), ctx)
+		if err := backoff.Retry(func() error {
+			out, err := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+			if err != nil {
+				return err
+			}
+			if strings.Contains(out.Stderr, "Connection refused") || !strings.Contains(out.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
+				return fmt.Errorf("json exporter not ready yet, stdout: %q, stderr: %q", out.Stdout, out.Stderr)
+			}
+			return nil
+		}, b); err != nil {
+			t.Fatalf("Json Exporter failed to start: %v", err)
 		}
 		// Initially, __address__ is the target[0] which is
 		// "http://localhost:8000/data.json";
