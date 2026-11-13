@@ -1,31 +1,11 @@
-// Copyright 2020 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-// Package confgenerator represents the Ops Agent configuration and provides functions to generate subagents configuration from unified agent.
 package confgenerator
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"maps"
 	"path"
-	"regexp"
-	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -231,6 +211,7 @@ const (
 )
 
 // fileStorageExtension returns a configured file_storage extension to be used by all receivers and exporters.
+
 func fileStorageExtension(stateDir string) otel.Component {
 	return otel.Component{
 		Type: fileStorageExtensionType,
@@ -242,6 +223,7 @@ func fileStorageExtension(stateDir string) otel.Component {
 }
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir, logsDir string) (string, error) {
+	ctx = ContextWithGlobalConfig(ctx, uc.Global)
 	p := platform.FromContext(ctx)
 
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
@@ -272,7 +254,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		return "", err
 	}
 
-	otelConfig, err := otel.ModularConfig{
+	otelConf := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
@@ -330,7 +312,16 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 			googleClientAuthExtensionType: {Type: googleClientAuthExtensionType, Config: map[string]string{}},
 			fileStorageExtensionType:      fileStorageExtension(stateDir),
 		},
-	}.Generate(ctx)
+	}
+	if uc.Global.GetEnableOpsAgentHealthExtension() {
+		otelConf.Extensions["opsagenthealth"] = otel.Component{
+			Type:   "opsagenthealth",
+			Config: map[string]interface{}{},
+		}
+		otelConf.ServiceExtensions = append(otelConf.ServiceExtensions, "opsagenthealth")
+	}
+
+	otelConfig, err := otelConf.Generate(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -377,72 +368,6 @@ func (p PipelineInstance) simplifiedLoggingComponents(ctx context.Context) (Inte
 	}
 	// Now receiver has been merged as much as possible.
 	return receiver, processors, nil
-}
-
-func (p PipelineInstance) FluentBitComponents(ctx context.Context) (fbSource, error) {
-	tag := fmt.Sprintf("%s.%s", p.PID, p.RID)
-
-	// For fluent_forward we create the tag in the following format:
-	// <hash_string>.<pipeline_id>.<receiver_id>.<existing_tag>
-	//
-	// hash_string: Deterministic unique identifier for the pipeline_id + receiver_id.
-	//   This is needed to prevent collisions between receivers in the same
-	//   pipeline when using the glob syntax for matching (using wildcards).
-	// pipeline_id: User defined pipeline_id but with the "." replaced with "_"
-	//   since the "." character is reserved to be used as a delimiter in the
-	//   Lua script.
-	// receiver_id: User defined receiver_id but with the "." replaced with "_"
-	//   since the "." character is reserved to be used as a delimiter in the
-	//   Lua script.
-	//  existing_tag: Tag associated with the record prior to ingesting.
-	//
-	// For an example testing collisions in receiver_ids, see:
-	//
-	// testdata/valid/linux/logging-receiver_forward_multiple_receivers_conflicting_id
-	if p.Receiver.Type() == "fluent_forward" {
-		hashString := getMD5Hash(tag)
-
-		// Note that we only update the tag for the tag. The LogName will still
-		// use the user defined receiver_id without this replacement.
-		pipelineIdCleaned := strings.ReplaceAll(p.PID, ".", "_")
-		receiverIdCleaned := strings.ReplaceAll(p.RID, ".", "_")
-		tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
-	}
-	receiver, processors, err := p.simplifiedLoggingComponents(ctx)
-	if err != nil {
-		return fbSource{}, err
-	}
-	var components []fluentbit.Component
-	receiverComponents := receiver.Components(ctx, tag)
-	components = append(components, receiverComponents...)
-
-	// To match on fluent_forward records, we need to account for the addition
-	// of the existing tag (unknown during config generation) as the suffix
-	// of the tag.
-	globSuffix := ""
-	regexSuffix := ""
-	if p.Receiver.Type() == "fluent_forward" {
-		regexSuffix = `\..*`
-		globSuffix = `.*`
-	}
-	tagRegex := regexp.QuoteMeta(tag) + regexSuffix
-	tag = tag + globSuffix
-
-	for i, processor := range processors {
-		processorComponents := processor.Components(ctx, tag, strconv.Itoa(i))
-		components = append(components, processorComponents...)
-	}
-	components = append(components, setLogNameComponents(ctx, tag, p.RID, p.Receiver.Type())...)
-
-	// Logs ingested using the fluent_forward receiver must add the existing_tag
-	// on the record to the LogName. This is done with a Lua filter.
-	if p.Receiver.Type() == "fluent_forward" {
-		components = append(components, fluentbit.LuaFilterComponents(tag, addLogNameLuaFunction, addLogNameLuaScriptContents)...)
-	}
-	return fbSource{
-		TagRegex:   tagRegex,
-		Components: components,
-	}, nil
 }
 
 func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
@@ -518,6 +443,7 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 }
 
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
+
 func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
@@ -541,23 +467,6 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 
 // GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.
 // It returns a map of filenames to file contents.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(ctx context.Context, logsDir string, stateDir string) (map[string]string, error) {
-	userAgent, _ := platform.FromContext(ctx).UserAgent("Google-Cloud-Ops-Agent-Logging")
-
-	components, err := uc.generateFluentbitComponents(ctx, userAgent)
-	if err != nil {
-		return nil, err
-	}
-
-	c := fluentbit.ModularConfig{
-		Variables: map[string]string{
-			"buffers_dir": path.Join(stateDir, "buffers"),
-			"logs_dir":    logsDir,
-		},
-		Components: components,
-	}
-	return c.Generate()
-}
 
 func contains(s []string, str string) bool {
 	for _, v := range s {
@@ -584,6 +493,7 @@ const (
 
 // addGceMetadataAttributesProcessor annotates logs with labels corresponding
 // to specific instance attributes from the GCE metadata server.
+
 func addGceMetadataAttributesProcessor(ctx context.Context) LoggingProcessorModifyFields {
 	attributes := []string{
 		"dataproc-cluster-name",
@@ -622,54 +532,3 @@ type fbSource struct {
 }
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
-func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
-	l := uc.Logging
-	var out []fluentbit.Component
-	if l.Service.LogLevel == "" {
-		l.Service.LogLevel = "info"
-	}
-	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
-	out = append(out, service.Component())
-	out = append(out, fluentbit.MetricsInputComponent())
-
-	if l != nil && l.Service != nil && (l.Service.OTelLogging == nil || !*l.Service.OTelLogging) {
-		// Type for sorting.
-		var sources []fbSource
-		var tags []string
-		pipelines, err := uc.Pipelines(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, pipeline := range pipelines {
-			if pipeline.Backend != BackendFluentBit {
-				continue
-			}
-			source, err := pipeline.FluentBitComponents(ctx)
-			if err != nil {
-				return nil, err
-			}
-			sources = append(sources, source)
-			tags = append(tags, source.TagRegex)
-		}
-		sort.Slice(sources, func(i, j int) bool { return sources[i].TagRegex < sources[j].TagRegex })
-		sort.Strings(tags)
-
-		for _, s := range sources {
-			out = append(out, s.Components...)
-		}
-		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G", l.Service.Compress))
-		}
-		out = append(out, addGceMetadataAttributesProcessor(ctx).Components(ctx, "*", "*.default-data-proc.gce_metadata")...)
-	}
-	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
-	out = append(out, fluentbit.MetricsOutputComponent(int(uc.GetFluentBitMetricsPort())))
-
-	return out, nil
-}
-
-func getMD5Hash(text string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(text))
-	return hex.EncodeToString(hasher.Sum(nil))
-}

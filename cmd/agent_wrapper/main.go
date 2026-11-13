@@ -23,6 +23,7 @@ import (
 
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/files"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -34,7 +35,7 @@ func getLogFileRotation(config *confgenerator.UnifiedConfig) confgenerator.LogFi
 }
 
 func run(logFilename, configurationPath string, cmd *exec.Cmd) error {
-	ucConfig, err := confgenerator.MergeConfFiles(context.Background(), configurationPath)
+	ucConfig, err := files.BuildUnifiedConfigFromFile(context.Background(), configurationPath)
 	if err != nil {
 		return err
 	}
