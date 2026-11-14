@@ -134,7 +134,7 @@ func ParserFilterComponents(tag string, field string, parserNames []string, pres
 		parseKey = field
 	}
 
-	nestFilters := LuaFilterComponents(tag, ParserNestLuaFunction, fmt.Sprintf(ParserNestLuaScriptContents, parseKey))
+	nestFilters := LuaFilterComponents(tag, ParserNestLuaFunction, fmt.Sprintf(ParserNestLuaScriptContents, LuaQuote(parseKey)))
 	filter := Component{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -159,4 +159,31 @@ func ParserFilterComponents(tag string, field string, parserNames []string, pres
 	parseFilters = append(parseFilters, mergeFilters...)
 
 	return parseFilters
+}
+
+// LuaQuote formats a string as a double-quoted Lua string literal with proper escaping.
+func LuaQuote(in string) string {
+	var b strings.Builder
+	b.Grow(len(in) + 2)
+	b.WriteByte('"')
+	for i := 0; i < len(in); i++ {
+		// N.B. slicing a string gives bytes, not runes
+		switch c := in[i]; {
+		case c == '\\':
+			b.WriteString(`\\`)
+		case c == '"':
+			b.WriteString(`\"`)
+		case c >= ' ' && c <= '~':
+			// printable ASCII character
+			b.WriteByte(c)
+		case i+1 < len(in) && in[i+1] >= '0' && in[i+1] <= '9':
+			// Lua \ddd escapes consume up to 3 digits; pad to 3 digits when followed by a digit.
+			fmt.Fprintf(&b, `\%03d`, c)
+		default:
+			// N.B. Lua character escapes are always integers
+			fmt.Fprintf(&b, `\%d`, c)
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
 }
