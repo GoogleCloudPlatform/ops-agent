@@ -22,7 +22,7 @@ const (
 	ParserNestLuaScriptContents = `
 function parser_nest(tag, timestamp, record)
   local nestedRecord = {}
-  local parseKey = "%s"
+  local parseKey = %s
   for k, v in pairs(record) do
       if k ~= parseKey then
           nestedRecord[k] = v
