@@ -876,7 +876,7 @@ func TestSyslogUDP(t *testing.T) {
 
 		// Write "abcdefg" using the program called logger.
 		// Send a few packets with a short delay to guard against transient UDP drops.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "for i in 1 2 3; do logger -n 0.0.0.0 --udp --port=5140 --rfc5424 -- abcdefg || exit 1; [ $i -lt 3 ] && sleep 1; done"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "for i in 1 2 3; do logger -n 0.0.0.0 --udp --port=5140 --rfc5424 -- abcdefg || exit 1; sleep 1; done"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
