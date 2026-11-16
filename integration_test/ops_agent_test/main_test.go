@@ -869,8 +869,14 @@ func TestSyslogUDP(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Retry in case the collector takes longer than 10s after restart to bind UDP port 5140.
+		if err := runRemotelyWithRetry(ctx, logger, vm, "ss -uln | grep -q -E ':(5140)(\\s|$)' || grep -qi ':1414 ' /proc/net/udp", 6, 5*time.Second); err != nil {
+			t.Fatalf("Error waiting for UDP port 5140: %v", err)
+		}
+
 		// Write "abcdefg" using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 --rfc5424 -- abcdefg"); err != nil {
+		// Send a few packets with a short delay to guard against transient UDP drops.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "for i in 1 2 3; do logger -n 0.0.0.0 --udp --port=5140 --rfc5424 -- abcdefg || exit 1; [ $i -lt 3 ] && sleep 1; done"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
