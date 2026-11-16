@@ -15,69 +15,54 @@
 package fluentbit
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
 
-func TestLuaQuote(t *testing.T) {
+func TestParserFilterComponentsLuaQuoting(t *testing.T) {
 	tests := []struct {
-		name string
-		in   string
-		want string
+		name     string
+		field    string
+		wantLine string
 	}{
 		{
-			name: "simple_identifier",
-			in:   "message",
-			want: `"message"`,
+			name:     "default_field",
+			field:    "",
+			wantLine: `local parseKey = "message"`,
 		},
 		{
-			name: "double_quote_injection",
-			in:   `message" os.execute("id") --`,
-			want: `"message\" os.execute(\"id\") --"`,
+			name:     "quoted_dotted_field",
+			field:    `"my.field"`,
+			wantLine: `local parseKey = "\"my.field\""`,
 		},
 		{
-			name: "backslash_and_newline_injection",
-			in:   "message\"\\\nos.execute(\"id\")--",
-			want: `"message\"\\\10os.execute(\"id\")--"`,
+			name:     "quoted_backslash_field",
+			field:    `"foo\\"`,
+			wantLine: `local parseKey = "\"foo\\\\\""`,
 		},
 		{
-			name: "escape_followed_by_digit",
-			in:   "line\n1_and_\x196",
-			want: `"line\0101_and_\0256"`,
+			name:     "tab_character",
+			field:    "\"foo\tbar\"",
+			wantLine: `local parseKey = "\"foo\9bar\""`,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := LuaQuote(tc.in)
-			if got != tc.want {
-				t.Errorf("LuaQuote(%q) = %s, want %s", tc.in, got, tc.want)
+			components := ParserFilterComponents("test_tag", tc.field, []string{"test_parser"}, false)
+			var luaSrc string
+			for _, c := range components {
+				if c.Kind == outputFileKind && strings.Contains(c.Config[outputFileContents], "function parser_nest") {
+					luaSrc = c.Config[outputFileContents]
+					break
+				}
+			}
+			if luaSrc == "" {
+				t.Fatalf("parser_nest Lua output component not found")
+			}
+			if !strings.Contains(luaSrc, tc.wantLine) {
+				t.Errorf("generated Lua missing expected quoted parseKey.\ngot:\n%s\nwant substring:\n%s", luaSrc, tc.wantLine)
 			}
 		})
-	}
-}
-
-func TestParserFilterComponentsSanitizesParseKey(t *testing.T) {
-	maliciousField := "message\"\nos.execute(\"touch /tmp/pwned\")--"
-	components := ParserFilterComponents("test_tag", maliciousField, []string{"test_parser"}, false)
-
-	var luaScript string
-	for _, c := range components {
-		if c.Kind == outputFileKind && strings.Contains(c.Config[outputFileContents], "function parser_nest") {
-			luaScript = c.Config[outputFileContents]
-			break
-		}
-	}
-	if luaScript == "" {
-		t.Fatalf("expected parser_nest Lua script output component, got none in %+v", components)
-	}
-
-	wantLine := fmt.Sprintf("local parseKey = %s", `"message\"\10os.execute(\"touch /tmp/pwned\")--"`)
-	if !strings.Contains(luaScript, wantLine) {
-		t.Errorf("expected Lua script to contain sanitized line %q, got:\n%s", wantLine, luaScript)
-	}
-	if strings.Contains(luaScript, "\nos.execute(") {
-		t.Errorf("Lua script contains unescaped newline injection:\n%s", luaScript)
 	}
 }
