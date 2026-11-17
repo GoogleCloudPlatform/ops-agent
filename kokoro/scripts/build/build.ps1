@@ -41,6 +41,15 @@ Set-MpPreference -Force -DisableRealtimeMonitoring $true -ErrorAction Continue
 # Try to disable Windows Defender firewall for improved build speed.
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction Continue
 
+# Expand the C: partition to use any unallocated space on the boot disk, since
+# custom Windows VM images do not automatically resize the OS partition on boot.
+Update-HostStorageCache -ErrorAction Continue
+$cPartition = Get-Partition -DriveLetter C
+$maxSize = (Get-PartitionSupportedSize -DriveLetter C).SizeMax
+if ($maxSize -gt ($cPartition.Size + 64MB)) {
+  Resize-Partition -DriveLetter C -Size $maxSize
+}
+
 $gitOnBorgLocation = "$env:KOKORO_ARTIFACTS_DIR/git/unified_agents"
 if (Test-Path -Path $gitOnBorgLocation) {
   Set-Location $gitOnBorgLocation
