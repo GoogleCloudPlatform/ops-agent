@@ -881,10 +881,37 @@ func TestSyslogUDP(t *testing.T) {
 		}
 
 		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
-		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
-		logQuery := rfc5424LogQuery + ` AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
-			t.Error(err)
+		// Query Cloud Logging without filtering on jsonPayload.* to avoid secondary index latency,
+		// and verify the payload regex and label absence in Go memory (matching #2427, #2440, #2450).
+		rfc5424Regex := regexp.MustCompile(`^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$`)
+		retryPolicy := backoff.WithContext(
+			backoff.WithMaxRetries(backoff.NewConstantBackOff(10*time.Second), 45),
+			ctx,
+		)
+		err := backoff.Retry(func() error {
+			entries, err := gce.QueryAllLogs(ctx, logger, vm, "mylog_source", time.Hour, "", 1)
+			if err != nil {
+				return err
+			}
+			for _, entry := range entries {
+				payload, err := unmarshalEntryPayload(entry)
+				if err != nil {
+					continue
+				}
+				msg, _ := payload["message"].(string)
+				if rfc5424Regex.MatchString(msg) {
+					for _, label := range []string{"message", "hostname", "priority"} {
+						if _, hasLabel := entry.Labels[label]; hasLabel {
+							return backoff.Permanent(fmt.Errorf("unexpected label %q found in log entry: %+v", label, entry.Labels))
+						}
+					}
+					return nil
+				}
+			}
+			return fmt.Errorf("syslog rfc5424 log not found in mylog_source (scanned %d entries)", len(entries))
+		}, retryPolicy)
+		if err != nil {
+			t.Errorf("failed waiting for syslog UDP log: %v", err)
 		}
 	})
 }
