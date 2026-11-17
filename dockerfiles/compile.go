@@ -85,9 +85,20 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "rpm",
 	},
 	{
-		from_image:  "rockylinux:9",
+		// Build against the oldest supported EL9 minor (9.2, OpenSSL 3.0).
+		// RHEL 9.7+ rebased OpenSSL to 3.5; binaries built there depend on
+		// OPENSSL_3.4.0 symbol versions that RHEL 9.2-9.6 (EUS/E4S) do not
+		// provide. Rocky mirrors only serve the latest 9.x, so the repos below
+		// are pointed at the 9.2 vault; pinning the image tag alone is not enough.
+		// TODO: Revisit the 9.2 pin once fluent-bit no longer needs OpenSSL 3.4
+		// symbols or RHEL 9.2-9.6 EUS/E4S are out of support.
+		from_image:  "rockylinux/rockylinux:9.2",
 		target_name: "rockylinux9",
-		install_packages: `RUN set -x; dnf -y update && \
+		install_packages: `RUN set -x; \
+		sed -i -e 's|^mirrorlist=|#mirrorlist=|' \
+		  -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir/$releasever|baseurl=https://dl.rockylinux.org/vault/rocky/9.2|' \
+		  /etc/yum.repos.d/rocky*.repo && \
+		dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \

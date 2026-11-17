@@ -180,10 +180,14 @@ COPY --from=centos8-build /google-cloud-ops-agent-plugin*.tar.gz /
 # Build Ops Agent for rockylinux-9
 # ======================================
 
-FROM rockylinux:9 AS rockylinux9-build-base
+FROM rockylinux/rockylinux:9.2 AS rockylinux9-build-base
 ARG OPENJDK_MAJOR_VERSION
 
-RUN set -x; dnf -y update && \
+RUN set -x; \
+		sed -i -e 's|^mirrorlist=|#mirrorlist=|' \
+		  -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir/$releasever|baseurl=https://dl.rockylinux.org/vault/rocky/9.2|' \
+		  /etc/yum.repos.d/rocky*.repo && \
+		dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
