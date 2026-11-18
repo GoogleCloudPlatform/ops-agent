@@ -22,11 +22,13 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
+	"golang.org/x/sys/windows"
 )
 
 // serviceManager is a mock implementation of the serviceManager interface. This is used to test the findPreExistentAgents function.
@@ -209,6 +211,14 @@ func Test_generateSubAgentConfigs(t *testing.T) {
 				t.Errorf("generateSubAgentConfigs() returned error: %v, want error: %v", err, tc.wantError)
 			}
 
+			outDir := filepath.Join(tc.pluginStateDir, GeneratedConfigsOutDir)
+			sd, err := windows.GetNamedSecurityInfo(outDir, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+			if err != nil {
+				t.Fatalf("Failed to get the access control list of %s: %v", outDir, err)
+			}
+			if control, _, err := sd.Control(); err != nil || control&windows.SE_DACL_PROTECTED == 0 {
+				t.Errorf("generateSubAgentConfigs() did not set the access control list of %s, got: %s", outDir, sd)
+			}
 		})
 	}
 }

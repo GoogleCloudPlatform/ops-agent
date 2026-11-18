@@ -20,6 +20,7 @@ After=network-online.target google-cloud-ops-agent.service
 
 [Service]
 RuntimeDirectory=google-cloud-ops-agent-opentelemetry-collector
+RuntimeDirectoryMode=0700
 StateDirectory=google-cloud-ops-agent/opentelemetry-collector
 LogsDirectory=google-cloud-ops-agent
 Type=simple
