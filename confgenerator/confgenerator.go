@@ -61,8 +61,12 @@ func googleCloudLoggingExporter() otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
+			"timeout": "60s",
 			// Keep trying to send log entries for 1 hour before we drop them.
-			"timeout": "3600s",
+			"retry_on_failure": map[string]interface{}{
+				"enabled":          true,
+				"max_elapsed_time": "3600s",
+			},
 			"sending_queue": map[string]interface{}{
 				"enabled": true,
 				// Set queue_size to "(num_consumers + 2)*1000" to always have a new batch ready.
