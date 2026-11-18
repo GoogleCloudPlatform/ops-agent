@@ -12,24 +12,29 @@ verify_driver() {
     nvidia-smi
 }
 
-install_cuda_from_runfile() {
-    # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#runfile
-    # This method requires the matching kernel-devel package to be installed, and
-    # the package may be absent from the repo and cause this method to fail
-    # Remove existing installation before using the runfile
-    remove_cuda_package
-    remove_driver_package
+install_matching_kernel_devel() {
+    # Both DKMS and the CUDA runfile installer require kernel-devel matching
+    # the running kernel $(uname -r).
+    sudo yum install -y pciutils gcc make wget yum-utils
+    local KERNEL_PACKAGE="kernel-devel-$(uname -r)"
+    if rpm -q "$KERNEL_PACKAGE" >/dev/null 2>&1; then
+        echo "$KERNEL_PACKAGE is already installed."
+        return 0
+    fi
+
     # For Rocky Linux 9: when a new OS version becomes available, the default
     # repo setting (/etc/yum.repos.d/rocky.repo) will automatically point to the
     # new version's repo. This is problematic since the new OS is not available
     # right away on GCE. Set up the matched repo to install the correct
-    # kernel-devel-$(uname -r)
+    # kernel-devel-$(uname -r).
     # Not needed for RL8 since 8.10 is already the last RL8 release.
-    REPO_URL="https://dl.rockylinux.org/vault/rocky/$VERSION_ID/AppStream/x86_64/os/"
-    REPO_METADATA="$REPO_URL/repodata/repomd.xml"
-    STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$REPO_METADATA")
-    if [[ $ID == rocky && "$MAJOR_VERSION_ID" == 9 && "$STATUS_CODE" == "200" ]]; then
-        cat <<EOF | sudo tee /etc/yum.repos.d/rocky-matched.repo
+    local STATUS_CODE=""
+    if [[ $ID == rocky && "$MAJOR_VERSION_ID" == 9 ]]; then
+        local REPO_URL="https://dl.rockylinux.org/vault/rocky/$VERSION_ID/AppStream/x86_64/os/"
+        local REPO_METADATA="${REPO_URL}repodata/repomd.xml"
+        STATUS_CODE=$(curl -sL -o /dev/null -w "%{http_code}" "$REPO_METADATA" || true)
+        if [[ "$STATUS_CODE" == "200" ]]; then
+            cat <<EOF | sudo tee /etc/yum.repos.d/rocky-matched.repo
 [appstream-matched]
 name=Rocky Linux \$releasever - AppStream - Matched
 baseurl=$REPO_URL
@@ -39,15 +44,21 @@ countme=1
 metadata_expire=6h
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
 EOF
-    fi
-    sudo yum install -y pciutils wget yum-utils
-    local KERNEL_PACKAGE="kernel-devel-$(uname -r)"
-    if [[ $ID == rocky && "$MAJOR_VERSION_ID" == 9 && "$STATUS_CODE" == "403" ]]; then
-      wget https://dl.rockylinux.org/vault/rocky/$VERSION_ID/AppStream/x86_64/os/Packages/k/${KERNEL_PACKAGE}.rpm
-      KERNEL_PACKAGE=${KERNEL_PACKAGE}.rpm
+        elif [[ "$STATUS_CODE" == "403" ]]; then
+            curl -fSsL -O "https://dl.rockylinux.org/vault/rocky/$VERSION_ID/AppStream/x86_64/os/Packages/k/${KERNEL_PACKAGE}.rpm"
+            KERNEL_PACKAGE="./${KERNEL_PACKAGE}.rpm"
+        fi
     fi
 
-    sudo yum install -y $KERNEL_PACKAGE
+    sudo yum install -y "$KERNEL_PACKAGE"
+}
+
+install_cuda_from_runfile() {
+    # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#runfile
+    # Remove existing installation before using the runfile
+    remove_cuda_package
+    remove_driver_package
+    install_matching_kernel_devel
 
     # Workaround for nvidia_drm: Unknown symbol drm_client_setup (err -2)
     # Only try to load drm_client_lib if it is available in the kernel.
@@ -58,10 +69,10 @@ EOF
     fi
 
     # Installing latest version of NVIDIA CUDA and driver
-    local CUDA_VERSION=13.0.0
-    local CUDA_BUNDLED_DRIVER_VERSION=580.65.06
+    local CUDA_VERSION=13.0.3
+    local CUDA_BUNDLED_DRIVER_VERSION=580.126.20
     echo "Installing CUDA Toolkit $CUDA_VERSION from CUDA installer with bundled driver $CUDA_BUNDLED_DRIVER_VERSION"
-    curl -fSsl -O https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run
+    curl -fSsL -O https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run
     sudo sh cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run --silent
     verify_driver
 }
@@ -77,6 +88,7 @@ setup_repo() {
 
 install_cuda_from_package_manager() {
     setup_repo
+    install_matching_kernel_devel
     # Workaround for nvidia_drm: Unknown symbol drm_client_setup (err -2)
     # Only try to load drm_client_lib if it is available in the kernel.
     if [[ $ID == rocky && "$MAJOR_VERSION_ID" == 9 ]]; then
