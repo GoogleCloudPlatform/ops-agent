@@ -130,11 +130,37 @@ func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
 	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
 }
 
+const (
+	parserNestLuaFunction = `parser_nest`
+
+	// parserNestLuaScriptContents is an incomplete Lua function that is completed when populated
+	// with the parse_key (i.e. the key being parsed) as a Lua string literal, quotes included.
+	// ParserNestComponents is its only user.
+	parserNestLuaScriptContents = `
+function parser_nest(tag, timestamp, record)
+  local nestedRecord = {}
+  local parseKey = %s
+  for k, v in pairs(record) do
+      if k ~= parseKey then
+          nestedRecord[k] = v
+      end
+  end
+
+  local result = {}
+  result[parseKey] = record[parseKey]
+  result["logging.googleapis.com/__tmp"] = nestedRecord
+
+  return 2, timestamp, result
+end
+
+`
+)
+
 // ParserNestComponents returns the Lua filter that sets every field except parseKey aside
 // before a "parser" filter runs on parseKey. parseKey is the plain key name; it is
 // quoted here.
 func ParserNestComponents(tag, parseKey string) []fluentbit.Component {
-	return fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, filter.LuaQuote(parseKey)))
+	return fluentbit.LuaFilterComponents(tag, parserNestLuaFunction, fmt.Sprintf(parserNestLuaScriptContents, filter.LuaQuote(parseKey)))
 }
 
 // parserFilterComponents returns the components that apply the named parsers to field

@@ -15,29 +15,6 @@
 package fluentbit
 
 const (
-	ParserNestLuaFunction = `parser_nest`
-
-	// ParserNestLuaScriptContents is an incomplete Lua funtion that is completed when populated
-	// with the parse_key (i.e. the key being parsed) as a Lua string literal, quotes included.
-	// Use confgenerator.ParserNestComponents instead of formatting it directly.
-	ParserNestLuaScriptContents = `
-function parser_nest(tag, timestamp, record)
-  local nestedRecord = {}
-  local parseKey = %s
-  for k, v in pairs(record) do
-      if k ~= parseKey then
-          nestedRecord[k] = v
-      end
-  end
-
-  local result = {}
-  result[parseKey] = record[parseKey]
-  result["logging.googleapis.com/__tmp"] = nestedRecord
-
-  return 2, timestamp, result
-end
-
-`
 	ParserMergeLuaFunction       = `parser_merge_record`
 	ParserMergeLuaScriptContents = `
   function shallow_merge(record, parsedRecord)

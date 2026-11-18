@@ -189,7 +189,7 @@ func (p MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, t
 	// The parserFilterComponent is the actual filter component that configures and defines
 	// which parser to use. We need the component to determine which parser to use when
 	// re-parsing below. Each time a parser filter is used, there are 2 filter components right
-	// before it to account for the nest lua script (see confgenerator/fluentbit/parse_deduplication.go).
+	// before it to account for the nest lua script (see confgenerator.ParserNestComponents).
 	// Therefore, the parse filter component is actually the third component in the list.
 	parserFilterComponent := jpComponents[2]
 	c = append(c, jpComponents...)
