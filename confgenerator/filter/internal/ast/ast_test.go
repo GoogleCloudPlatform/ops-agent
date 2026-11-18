@@ -155,3 +155,32 @@ func TestInvalidFluentBitPath(t *testing.T) {
 		})
 	}
 }
+
+func TestLuaQuote(t *testing.T) {
+	for _, test := range []struct {
+		in, want string
+	}{
+		{``, `""`},
+		{`message`, `"message"`},
+		{`"my.field"`, `"\"my.field\""`},
+		{`back\slash`, `"back\\slash"`},
+		{"tab\there", `"tab\9here"`},
+		{"line\nbreak", `"line\10break"`},
+		{"caf\u00e9", `"caf\195\169"`},
+		// A decimal escape takes up to three digits, so one that is followed
+		// by a digit has to be padded or the digit would be read as part of it.
+		{"\t1", `"\0091"`},
+		{"\n0", `"\0100"`},
+		{"\x000", `"\0000"`},
+		{"\x7f1", `"\1271"`},
+		{"\u00e91", `"\195\1691"`},
+		{"\t\n1", `"\9\0101"`},
+	} {
+		test := test
+		t.Run(test.in, func(t *testing.T) {
+			if got := LuaQuote(test.in); got != test.want {
+				t.Errorf("LuaQuote(%q) = %s, want %s", test.in, got, test.want)
+			}
+		})
+	}
+}

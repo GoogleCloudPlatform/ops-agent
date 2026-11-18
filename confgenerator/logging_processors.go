@@ -130,6 +130,54 @@ func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
 	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
 }
 
+// ParserNestComponents returns the Lua filter that sets every field except parseKey aside
+// before a "parser" filter runs on parseKey. parseKey is the plain key name; it is
+// quoted here.
+func ParserNestComponents(tag, parseKey string) []fluentbit.Component {
+	return fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, filter.LuaQuote(parseKey)))
+}
+
+// parserFilterComponents returns the components that apply the named parsers to field
+// ("message" by default) with fluentbit's "parser" filter, while keeping the other fields
+// of the record intact.
+func parserFilterComponents(tag string, field string, parserNames []string, preserveKey bool) []fluentbit.Component {
+	parsers := [][2]string{}
+	for _, name := range parserNames {
+		parsers = append(parsers, [2]string{"Parser", name})
+	}
+
+	parseKey := "message"
+	if field != "" {
+		parseKey = field
+	}
+
+	nestFilters := ParserNestComponents(tag, parseKey)
+	parserFilter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Match":    tag,
+			"Name":     "parser",
+			"Key_Name": parseKey, // Required
+			// We need to preserve existing fields (like LogName) that are present
+			// before parsing.
+			"Reserve_Data": "True",
+		},
+		OrderedConfig: parsers,
+	}
+
+	if preserveKey {
+		parserFilter.Config["Preserve_Key"] = "True"
+	}
+
+	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	parseFilters := []fluentbit.Component{}
+	parseFilters = append(parseFilters, nestFilters...)
+	parseFilters = append(parseFilters, parserFilter)
+	parseFilters = append(parseFilters, mergeFilters...)
+
+	return parseFilters
+}
+
 func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 	if p.TimeKey == "" {
 		return nil, nil
@@ -240,7 +288,7 @@ func (p LoggingProcessorParseJson) Components(ctx context.Context, tag, uid stri
 	parser.Config["Format"] = "json"
 
 	parserFilters := []fluentbit.Component{}
-	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, false)...)
+	parserFilters = append(parserFilters, parserFilterComponents(tag, p.Field, []string{parserName}, false)...)
 	parserFilters = append(parserFilters, parser)
 	return parserFilters
 }
@@ -313,7 +361,7 @@ func (p LoggingProcessorParseRegex) Components(ctx context.Context, tag, uid str
 
 	parserFilters := []fluentbit.Component{}
 	parserFilters = append(parserFilters, parser)
-	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, p.PreserveKey)...)
+	parserFilters = append(parserFilters, parserFilterComponents(tag, p.Field, []string{parserName}, p.PreserveKey)...)
 	return parserFilters
 }
 
@@ -407,7 +455,7 @@ func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, 
 		parserNames = append(parserNames, parserName)
 	}
 
-	components = append(components, fluentbit.ParserFilterComponents(tag, p.Field, parserNames, false)...)
+	components = append(components, parserFilterComponents(tag, p.Field, parserNames, false)...)
 	return components
 }
 
@@ -614,7 +662,7 @@ func (p LoggingProcessorParseTimestamp) Components(ctx context.Context, tag, uid
 	components = append(components, parser)
 
 	components = append(components,
-		fluentbit.ParserFilterComponents(tag, p.TimeKey, []string{parserName}, false)...,
+		parserFilterComponents(tag, p.TimeKey, []string{parserName}, false)...,
 	)
 
 	return components

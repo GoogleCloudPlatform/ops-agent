@@ -217,7 +217,7 @@ func (p MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, t
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
 	// parser level
-	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, fluentbit.LuaQuote("message")))
+	nestFilters := confgenerator.ParserNestComponents(tag, "message")
 	parserFilter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -429,7 +429,7 @@ func (p MongodbProcessors) FluentBitRegexLogComponents(tag, uid string) []fluent
 	parser.Config["Regex"] = `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`
 	parser.Config["Key_Name"] = parseKey
 
-	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, fluentbit.LuaQuote(parseKey)))
+	nestFilters := confgenerator.ParserNestComponents(tag, parseKey)
 	parserFilter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{

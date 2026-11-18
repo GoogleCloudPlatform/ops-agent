@@ -839,4 +839,29 @@ func ParseTextOrString(a Attrib) (string, error) {
 	return str, nil
 }
 
-var LuaQuote = fluentbit.LuaQuote
+func LuaQuote(in string) string {
+	var b strings.Builder
+	b.Grow(len(in) + 2)
+	b.WriteString(`"`)
+	for i := 0; i < len(in); i++ {
+		// N.B. slicing a string gives bytes, not runes
+		c := in[i]
+		if c == 92 {
+			b.WriteString(`\\`)
+		} else if c == 34 {
+			b.WriteString(`\"`)
+		} else if c >= 32 && c < 127 {
+			// printable character
+			b.WriteByte(c)
+		} else if i+1 < len(in) && in[i+1] >= '0' && in[i+1] <= '9' {
+			// A decimal escape consumes up to three digits, so it has to be
+			// written with exactly three when the next byte is itself a digit.
+			fmt.Fprintf(&b, `\%03d`, c)
+		} else {
+			// N.B. Lua character escapes are always integers
+			fmt.Fprintf(&b, `\%d`, c)
+		}
+	}
+	b.WriteString(`"`)
+	return b.String()
+}

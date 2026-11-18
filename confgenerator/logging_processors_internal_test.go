@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fluentbit
+package confgenerator
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-func TestParserFilterComponentsLuaQuoting(t *testing.T) {
-	tests := []struct {
+func TestParserFilterComponentsQuotesParseKey(t *testing.T) {
+	for _, test := range []struct {
 		name     string
 		field    string
 		wantLine string
@@ -45,23 +47,25 @@ func TestParserFilterComponentsLuaQuoting(t *testing.T) {
 			field:    "\"foo\tbar\"",
 			wantLine: `local parseKey = "\"foo\9bar\""`,
 		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			components := ParserFilterComponents("test_tag", tc.field, []string{"test_parser"}, false)
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			components := parserFilterComponents("test_tag", test.field, []string{"test_parser"}, false)
+			files, err := fluentbit.ModularConfig{Components: components}.Generate()
+			if err != nil {
+				t.Fatal(err)
+			}
 			var luaSrc string
-			for _, c := range components {
-				if c.Kind == outputFileKind && strings.Contains(c.Config[outputFileContents], "function parser_nest") {
-					luaSrc = c.Config[outputFileContents]
-					break
+			for _, contents := range files {
+				if strings.Contains(contents, "function parser_nest") {
+					luaSrc = contents
 				}
 			}
 			if luaSrc == "" {
-				t.Fatalf("parser_nest Lua output component not found")
+				t.Fatalf("parser_nest Lua script not found in %d generated files", len(files))
 			}
-			if !strings.Contains(luaSrc, tc.wantLine) {
-				t.Errorf("generated Lua missing expected quoted parseKey.\ngot:\n%s\nwant substring:\n%s", luaSrc, tc.wantLine)
+			if !strings.Contains(luaSrc, test.wantLine) {
+				t.Errorf("generated Lua is missing the quoted parseKey.\ngot:\n%s\nwant line:\n%s", luaSrc, test.wantLine)
 			}
 		})
 	}

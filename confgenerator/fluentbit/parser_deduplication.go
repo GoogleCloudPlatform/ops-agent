@@ -18,7 +18,8 @@ const (
 	ParserNestLuaFunction = `parser_nest`
 
 	// ParserNestLuaScriptContents is an incomplete Lua funtion that is completed when populated
-	// with the parse_key (i.e. the key being parsed).
+	// with the parse_key (i.e. the key being parsed) as a Lua string literal, quotes included.
+	// Use confgenerator.ParserNestComponents instead of formatting it directly.
 	ParserNestLuaScriptContents = `
 function parser_nest(tag, timestamp, record)
   local nestedRecord = {}
