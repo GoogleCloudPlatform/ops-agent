@@ -62,6 +62,5 @@ TARGETARCH="$ARCH" \
 GO_BIN="${GO_BIN}" \
 COLLECTOR_LD_FLAGS="$LDFLAGS" \
 COLLECTOR_BUILDVCS="false" \
-COLLECTOR_BUILD_TAGS="gpu" \
     make build
 cp ./otelopscol "$DESTDIR/otelopscol"
