@@ -228,7 +228,7 @@ func (p MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, t
 			"Parser":       parserFilterComponent.OrderedConfig[0][1],
 		},
 	}
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	mergeFilters := confgenerator.ParserMergeComponents(tag)
 	c = append(c, nestFilters...)
 	c = append(c, parserFilter)
 	c = append(c, mergeFilters...)
@@ -440,7 +440,7 @@ func (p MongodbProcessors) FluentBitRegexLogComponents(tag, uid string) []fluent
 			"Key_Name":     parseKey,
 		},
 	}
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	mergeFilters := confgenerator.ParserMergeComponents(tag)
 
 	c = append(c, parser)
 	c = append(c, nestFilters...)

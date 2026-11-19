@@ -154,6 +154,62 @@ function parser_nest(tag, timestamp, record)
 end
 
 `
+
+	parserMergeLuaFunction = `parser_merge_record`
+
+	// parserMergeLuaScriptContents puts the fields that parser_nest set aside under
+	// "logging.googleapis.com/__tmp" back into the record. ParserMergeComponents is its
+	// only user.
+	parserMergeLuaScriptContents = `
+  function shallow_merge(record, parsedRecord)
+    -- If no exiting record exists
+    if (record == nil) then 
+        return parsedRecord
+    end
+    
+    for k, v in pairs(parsedRecord) do
+        record[k] = v
+    end
+
+    return record
+end
+
+function merge(record, parsedRecord)
+    -- If no exiting record exists
+    if record == nil then 
+        return parsedRecord
+    end
+    
+    -- Potentially overwrite or merge the original records.
+    for k, v in pairs(parsedRecord) do
+        -- If there is no conflict
+        if k == "logging.googleapis.com/logName" then 
+            -- Ignore the parsed payload since the logName is controlled
+            -- by the OpsAgent.
+        elseif k == "logging.googleapis.com/labels" then 
+            -- LogEntry.labels are basically a map[string]string and so only require a
+            -- shallow merge (one level deep merge).
+            record[k] = shallow_merge(record[k], v)
+        else
+            record[k] = v
+        end
+    end
+
+    return record
+end
+
+function parser_merge_record(tag, timestamp, record)
+    originalPayload = record["logging.googleapis.com/__tmp"]
+    if originalPayload == nil then
+        return 0, timestamp, record
+    end
+    
+    -- Remove original payload
+    record["logging.googleapis.com/__tmp"] = nil
+    record = merge(originalPayload, record)
+    return 2, timestamp, record
+end
+`
 )
 
 // ParserNestComponents returns the Lua filter that sets every field except parseKey aside
@@ -161,6 +217,12 @@ end
 // quoted here.
 func ParserNestComponents(tag, parseKey string) []fluentbit.Component {
 	return fluentbit.LuaFilterComponents(tag, parserNestLuaFunction, fmt.Sprintf(parserNestLuaScriptContents, filter.LuaQuote(parseKey)))
+}
+
+// ParserMergeComponents returns the Lua filter that puts the fields set aside by
+// ParserNestComponents back into the record after the "parser" filter has run.
+func ParserMergeComponents(tag string) []fluentbit.Component {
+	return fluentbit.LuaFilterComponents(tag, parserMergeLuaFunction, parserMergeLuaScriptContents)
 }
 
 // parserFilterComponents returns the components that apply the named parsers to field
@@ -195,7 +257,7 @@ func parserFilterComponents(tag string, field string, parserNames []string, pres
 		parserFilter.Config["Preserve_Key"] = "True"
 	}
 
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	mergeFilters := ParserMergeComponents(tag)
 	parseFilters := []fluentbit.Component{}
 	parseFilters = append(parseFilters, nestFilters...)
 	parseFilters = append(parseFilters, parserFilter)
