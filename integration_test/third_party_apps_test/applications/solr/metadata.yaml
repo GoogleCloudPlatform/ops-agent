@@ -230,3 +230,6 @@ configuration_options:
         - name: collection_interval
           default: 60s
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+platforms_to_skip:
+  - suse-cloud:sles-16-1-x86-64
+  - suse-cloud:sles-16-1-arm64

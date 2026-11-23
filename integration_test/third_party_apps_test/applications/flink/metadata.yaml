@@ -31,6 +31,8 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp
   - rocky-linux-cloud:rocky-linux-10-arm64
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
+  - suse-cloud:sles-16-1-x86-64 # Flink 1.14.4 is not compatible with Java 17+ on SLES 16
+  - suse-cloud:sles-16-1-arm64 # Flink 1.14.4 is not compatible with Java 17+ on SLES 16
 supported_app_version: ["1.12.5", "1.13.6", "1.14.4"]
 configure_integration: ""
 expected_metrics:

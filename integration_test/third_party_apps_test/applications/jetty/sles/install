@@ -9,7 +9,11 @@ if [[ "${ID}" == "sles" && "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 ));
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
-sudo zypper install -y wget java-11-openjdk
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo zypper install -y wget java-17-openjdk
+else
+  sudo zypper install -y wget java-11-openjdk
+fi
 if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK <= 5 )); then
   # This package is necessary on older service packs, but was
   # removed in SP6.

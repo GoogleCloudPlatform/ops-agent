@@ -62,6 +62,8 @@ platforms_to_skip:
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
+  - suse-cloud:sles-16-1-x86-64
+  - suse-cloud:sles-16-1-arm64
   - ubuntu-os-cloud:ubuntu-2604-lts-amd64 # TODO(b/512442712): Skipped on Ubuntu 26.04 due to systemd/AppArmor custom directory blockages
   - ubuntu-os-cloud:ubuntu-2604-lts-arm64 # TODO(b/512442712): Skipped on Ubuntu 26.04 due to systemd/AppArmor custom directory blockages 
   - ubuntu-os-cloud:ubuntu-2610-amd64 # Skipped on Ubuntu 26.10 due to systemd/AppArmor custom directory blockages

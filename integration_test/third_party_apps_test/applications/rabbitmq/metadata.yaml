@@ -42,6 +42,8 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp
   - rocky-linux-cloud:rocky-linux-10-arm64
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
+  - suse-cloud:sles-16-1-x86-64
+  - suse-cloud:sles-16-1-arm64
 supported_app_version: ["3.8", "3.9"]
 expected_metrics:
   - type: workload.googleapis.com/rabbitmq.consumer.count

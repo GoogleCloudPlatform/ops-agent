@@ -1,5 +1,8 @@
 set -e
 
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+
 # the vault package does not install correctly on sles12/15
 # install manually, create basic vault config
 # and create a systemd service file
@@ -10,8 +13,16 @@ else
 fi
 
 wget $vault_download_url
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo zypper install -y unzip
+fi
 unzip vault*.zip
-sudo mv vault /usr/bin
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo cp vault /usr/bin/vault
+  sudo chmod +x /usr/bin/vault
+else
+  sudo mv vault /usr/bin
+fi
 sudo mkdir -p /etc/vault.d
 sudo mkdir -p /opt/vault/data
 sudo touch /etc/vault.d/vault.env
@@ -38,6 +49,23 @@ telemetry {
 }
 EOF
 
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  VAULT_SECURITY_OPTS="ProtectSystem=no
+ProtectHome=no
+PrivateTmp=no
+PrivateDevices=no
+NoNewPrivileges=no"
+else
+  VAULT_SECURITY_OPTS="ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+SecureBits=keep-caps
+AmbientCapabilities=CAP_IPC_LOCK
+CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+NoNewPrivileges=yes"
+fi
+
 cat <<EOF | sudo tee /etc/systemd/system/vault.service
 [Unit]
 Description="HashiCorp Vault - A tool for managing secrets"
@@ -53,14 +81,7 @@ Type=notify
 EnvironmentFile=/etc/vault.d/vault.env
 User=root
 Group=root
-ProtectSystem=full
-ProtectHome=read-only
-PrivateTmp=yes
-PrivateDevices=yes
-SecureBits=keep-caps
-AmbientCapabilities=CAP_IPC_LOCK
-CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
-NoNewPrivileges=yes
+${VAULT_SECURITY_OPTS}
 ExecStart=/usr/bin/vault server -config=/etc/vault.d/vault.hcl
 ExecReload=/bin/kill --signal HUP $MAINPID
 KillMode=process
