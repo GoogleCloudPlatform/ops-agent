@@ -34,7 +34,7 @@ import (
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
-	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	_ "github.com/prometheus/prometheus/discovery/file" // Register file SD only; Ops Agent only supports static_configs.
 )
 
 const minScrapeInterval = model.Duration(10 * time.Second)

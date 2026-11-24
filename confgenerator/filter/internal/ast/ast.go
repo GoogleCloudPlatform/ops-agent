@@ -853,6 +853,10 @@ func LuaQuote(in string) string {
 		} else if c >= 32 && c < 127 {
 			// printable character
 			b.WriteByte(c)
+		} else if i+1 < len(in) && in[i+1] >= '0' && in[i+1] <= '9' {
+			// A decimal escape consumes up to three digits, so it has to be
+			// written with exactly three when the next byte is itself a digit.
+			fmt.Fprintf(&b, `\%03d`, c)
 		} else {
 			// N.B. Lua character escapes are always integers
 			fmt.Fprintf(&b, `\%d`, c)

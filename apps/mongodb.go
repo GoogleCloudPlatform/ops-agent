@@ -189,7 +189,7 @@ func (p MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, t
 	// The parserFilterComponent is the actual filter component that configures and defines
 	// which parser to use. We need the component to determine which parser to use when
 	// re-parsing below. Each time a parser filter is used, there are 2 filter components right
-	// before it to account for the nest lua script (see confgenerator/fluentbit/parse_deduplication.go).
+	// before it to account for the nest lua script (see confgenerator.ParserNestComponents).
 	// Therefore, the parse filter component is actually the third component in the list.
 	parserFilterComponent := jpComponents[2]
 	c = append(c, jpComponents...)
@@ -217,7 +217,7 @@ func (p MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, t
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
 	// parser level
-	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, "message"))
+	nestFilters := confgenerator.ParserNestComponents(tag, "message")
 	parserFilter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -228,7 +228,7 @@ func (p MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, t
 			"Parser":       parserFilterComponent.OrderedConfig[0][1],
 		},
 	}
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	mergeFilters := confgenerator.ParserMergeComponents(tag)
 	c = append(c, nestFilters...)
 	c = append(c, parserFilter)
 	c = append(c, mergeFilters...)
@@ -429,7 +429,7 @@ func (p MongodbProcessors) FluentBitRegexLogComponents(tag, uid string) []fluent
 	parser.Config["Regex"] = `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`
 	parser.Config["Key_Name"] = parseKey
 
-	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, parseKey))
+	nestFilters := confgenerator.ParserNestComponents(tag, parseKey)
 	parserFilter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -440,7 +440,7 @@ func (p MongodbProcessors) FluentBitRegexLogComponents(tag, uid string) []fluent
 			"Key_Name":     parseKey,
 		},
 	}
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	mergeFilters := confgenerator.ParserMergeComponents(tag)
 
 	c = append(c, parser)
 	c = append(c, nestFilters...)
