@@ -626,7 +626,7 @@ func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag stri
 		},
 	}
 
-	timestampParserFilters := fluentbit.ParserFilterComponents(tag, timeKey, []string{timestampParserName}, true)
+	timestampParserFilters := parserFilterComponents(tag, timeKey, []string{timestampParserName}, true)
 	input = append(input, timestampParser)
 	input = append(input, timestampParserFilters...)
 
