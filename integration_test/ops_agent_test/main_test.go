@@ -131,6 +131,16 @@ func metricsAgentProcessNamesForImage(imageSpec string) []string {
 	return []string{"otelopscol", "collectd"}
 }
 
+// loggingAgentProcessNamesForImage returns the process name serving default
+// logging pipelines (syslog / windows_event_log), which run in the OTel
+// Collector (named google-cloud-metrics-agent_windows_amd64 on Windows).
+func loggingAgentProcessNamesForImage(imageSpec string) []string {
+	if gce.IsWindows(imageSpec) {
+		return []string{"google-cloud-metrics-agent_windows_amd64"}
+	}
+	return []string{"otelopscol"}
+}
+
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
 	var createFolderCmd string
 	if gce.IsWindows(vm.ImageSpec) {
@@ -3530,8 +3540,8 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 	return nil
 }
 
-func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, config string, processNames []string, livenessChecker func(context.Context, *log.Logger, *gce.VM) error) {
-	if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, processNames []string, livenessChecker func(context.Context, *log.Logger, *gce.VM) error) {
+	if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3562,7 +3572,9 @@ func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *log.Logger
 		if strings.Contains(out, "\n") {
 			return fmt.Errorf("expected 1 running %q process after restart, got %q", processName, out)
 		}
-		if out == pidOutputBefore {
+		beforePID, _, beforeHasTS := strings.Cut(pidOutputBefore, ":")
+		afterPID, _, afterHasTS := strings.Cut(out, ":")
+		if out == pidOutputBefore || ((!beforeHasTS || !afterHasTS) && beforePID == afterPID) {
 			return fmt.Errorf("process %q has not restarted yet (%s)", processName, out)
 		}
 		pidOutputAfter = out
@@ -3597,7 +3609,7 @@ func TestMetricsAgentCrashRestart(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		testAgentCrashRestart(ctx, t, logger, vm, "", metricsAgentProcessNamesForImage(vm.ImageSpec), metricsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec), metricsLivenessChecker)
 	})
 }
 
@@ -3627,14 +3639,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		// Route default logging pipelines (syslog / windows_event_log) through
-		// Fluent Bit so loggingLivenessChecker verifies the restarted fluent-bit
-		// process rather than the untouched OTel Collector.
-		config := `logging:
-  service:
-    experimental_otel_logging: false
-`
-		testAgentCrashRestart(ctx, t, logger, vm, config, []string{"fluent-bit"}, loggingLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, loggingAgentProcessNamesForImage(vm.ImageSpec), loggingLivenessChecker)
 	})
 }
 
