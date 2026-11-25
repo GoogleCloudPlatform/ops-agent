@@ -15,14 +15,31 @@
 package confgenerator
 
 type Global struct {
-	DefaultSelfLogFileCollection *bool            `yaml:"default_self_log_file_collection,omitempty"`
-	DefaultLogFileRotation       *LogFileRotation `yaml:"default_self_log_file_rotation,omitempty"`
-	OtlpExporter                 *bool            `yaml:"otlp_exporter,omitempty"`
+	DefaultSelfLogFileCollection  *bool            `yaml:"default_self_log_file_collection,omitempty"`
+	DefaultLogFileRotation        *LogFileRotation `yaml:"default_self_log_file_rotation,omitempty"`
+	OtlpExporter                  *bool            `yaml:"otlp_exporter,omitempty"`
+	DisableRubyRegex              *bool            `yaml:"disable_ruby_regex,omitempty"`
+	EnableOpsAgentHealthExtension *bool            `yaml:"enable_ops_agent_health_extension,omitempty"`
 }
 
 func (g *Global) GetOtlpExporter() bool {
 	if g != nil && g.OtlpExporter != nil {
 		return *g.OtlpExporter
+	}
+	return false
+}
+
+
+func (g *Global) GetEnableOpsAgentHealthExtension() bool {
+	if g != nil && g.EnableOpsAgentHealthExtension != nil {
+		return *g.EnableOpsAgentHealthExtension
+	}
+	return false
+}
+
+func (g *Global) GetDisableRubyRegex() bool {
+	if g != nil && g.DisableRubyRegex != nil {
+		return *g.DisableRubyRegex
 	}
 	return false
 }
