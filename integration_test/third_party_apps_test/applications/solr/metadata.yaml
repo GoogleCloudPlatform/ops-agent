@@ -231,5 +231,5 @@ configuration_options:
           default: 60s
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
 platforms_to_skip:
-  - suse-cloud:sles-16-1-x86-64
-  - suse-cloud:sles-16-1-arm64
+  - suse-cloud:sles-16-1-x86-64 # SLES 16 removed java-11-openjdk, insserv-compat, and SysV init support that install_solr_service.sh relies on to register solr
+  - suse-cloud:sles-16-1-arm64 # SLES 16 removed java-11-openjdk, insserv-compat, and SysV init support that install_solr_service.sh relies on to register solr
