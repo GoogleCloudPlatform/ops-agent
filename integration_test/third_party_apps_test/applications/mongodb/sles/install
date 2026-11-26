@@ -11,8 +11,6 @@ case $SUSE_VERSION in
     sudo zypper --no-gpg-checks refresh opensuse-leap-oss || true
     sudo zypper --no-gpg-checks -n install libopenssl1_1 || true
     sudo zypper rr opensuse-leap-oss || true # Remove repo to avoid pollution
-
-    sudo zypper addrepo --gpgcheck "https://repo.mongodb.org/zypper/suse/15/mongodb-org/5.0/x86_64/" mongodb
     ;;
   15)
     sudo zypper addrepo --gpgcheck "https://repo.mongodb.org/zypper/suse/15/mongodb-org/5.0/x86_64/" mongodb
