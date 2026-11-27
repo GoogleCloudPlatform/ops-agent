@@ -55,6 +55,8 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp
   - rocky-linux-cloud:rocky-linux-10-arm64
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
+  - suse-cloud:sles-16-1-x86-64 # HBase 2.4.11 requires Java 11; SLES 16 ships Java 17+
+  - suse-cloud:sles-16-1-arm64 # HBase 2.4.11 requires Java 11; SLES 16 ships Java 17+
 supported_operating_systems: linux
 supported_app_version: ["1.7.x", "2.3.x", "2.4.x"]
 expected_metrics:

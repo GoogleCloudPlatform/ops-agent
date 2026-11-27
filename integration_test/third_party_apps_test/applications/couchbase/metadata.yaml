@@ -211,4 +211,6 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - debian-cloud:debian-12
+  - suse-cloud:sles-16-1-x86-64 # Couchbase Server officially supports SLES 15.x only, and the x86_64 install script requires the removed libncurses5
+  - suse-cloud:sles-16-1-arm64 # Couchbase Server officially supports SLES 15.x only
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/couchbase

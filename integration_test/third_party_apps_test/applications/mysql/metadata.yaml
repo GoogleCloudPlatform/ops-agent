@@ -43,6 +43,8 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   - suse-cloud:sles-12
   - suse-cloud:sles-15-arm64
+  - suse-cloud:sles-16-1-x86-64 # No upstream SLES 16 repo yet
+  - suse-cloud:sles-16-1-arm64 # No upstream SLES 16 repo yet
   - suse-sap-cloud:sles-12-sp5-sap
   - ubuntu-os-cloud:ubuntu-2604-lts-amd64 # MySQL is not available on Ubuntu 26.04 yet
   - ubuntu-os-cloud:ubuntu-2604-lts-arm64 # MySQL is not available on Ubuntu 26.04 yet
