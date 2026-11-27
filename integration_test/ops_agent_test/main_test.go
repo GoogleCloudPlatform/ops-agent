@@ -131,6 +131,16 @@ func metricsAgentProcessNamesForImage(imageSpec string) []string {
 	return []string{"otelopscol", "collectd"}
 }
 
+// loggingAgentProcessNamesForImage returns the process name serving default
+// logging pipelines (syslog / windows_event_log), which run in the OTel
+// Collector (named google-cloud-metrics-agent_windows_amd64 on Windows).
+func loggingAgentProcessNamesForImage(imageSpec string) []string {
+	if gce.IsWindows(imageSpec) {
+		return []string{"google-cloud-metrics-agent_windows_amd64"}
+	}
+	return []string{"otelopscol"}
+}
+
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
 	var createFolderCmd string
 	if gce.IsWindows(vm.ImageSpec) {
@@ -1772,31 +1782,83 @@ func TestSystemdLog(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
-			t.Fatalf("Error writing dummy Systemd log line: %v", err)
+		// Capture the VM's UTC clock and emit all 3 systemd-cat entries in one SSH call
+		// to minimize SSH handshake exposure and bound the Cloud Logging query to entries
+		// written during this test (avoiding ~1,500+ boot entries from start_at: beginning).
+		out, err := gce.RunRemotely(ctx, logger, vm,
+			"date -u +%Y-%m-%dT%H:%M:%SZ"+
+				" && echo 'my_systemd_info_log_message' | systemd-cat --priority=info"+
+				" && echo 'my_systemd_error_log_message' | systemd-cat --priority=err"+
+				" && echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice",
+		)
+		if err != nil {
+			t.Fatalf("Error writing dummy Systemd log lines: %v", err)
+		}
+		vmStart, err := time.Parse(time.RFC3339, strings.TrimSpace(out.Stdout))
+		if err != nil {
+			t.Fatalf("Error parsing VM timestamp %q: %v", out.Stdout, err)
 		}
 
-		querySystemdInfoLog := `severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
-			t.Error(err)
+		// Query Cloud Logging using only primary-indexed envelope fields (severity + timestamp)
+		// to avoid secondary jsonPayload.* index lag (b/586936452), and verify MESSAGE/PRIORITY
+		// in Go memory (matching #2427, #2440, #2450, #2499).
+		// Parenthesize the OR clause because findMatchingLogs appends "AND <query>" without parens.
+		query := fmt.Sprintf(
+			`(severity="INFO" OR severity="ERROR" OR severity="NOTICE") AND timestamp >= %q`,
+			vmStart.Add(-15*time.Second).Format(time.RFC3339),
+		)
+
+		expected := []struct {
+			severity cloudlogging.Severity
+			message  string
+			priority string
+		}{
+			{severity: cloudlogging.Info, message: "my_systemd_info_log_message", priority: "6"},
+			{severity: cloudlogging.Error, message: "my_systemd_error_log_message", priority: "3"},
+			{severity: cloudlogging.Notice, message: "my_systemd_notice_log_message", priority: "5"},
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
-			t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		}
-
-		querySystemdErrorLog := `severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
-			t.Error(err)
-		}
-
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
-			t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		}
-
-		querySystemdNoticeLog := `severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
-			t.Error(err)
+		retryPolicy := backoff.WithContext(
+			backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 15),
+			ctx,
+		)
+		err = backoff.Retry(func() error {
+			// Cap each poll attempt at 60s so a stalled ListLogEntries RPC or runaway gax retry
+			// cannot hang for the full 2h test context deadline.
+			attemptCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+			entries, err := gce.QueryAllLogs(attemptCtx, logger, vm, "systemd_logs", time.Hour, query, 1)
+			cancel()
+			if err != nil {
+				return err
+			}
+			found := make([]bool, len(expected))
+			for _, entry := range entries {
+				payload, err := unmarshalEntryPayload(entry)
+				if err != nil {
+					continue
+				}
+				msg, _ := payload["MESSAGE"].(string)
+				prio, _ := payload["PRIORITY"].(string)
+				for i, exp := range expected {
+					if !found[i] && entry.Severity == exp.severity && msg == exp.message && prio == exp.priority {
+						found[i] = true
+						break
+					}
+				}
+			}
+			var missing []string
+			for i, exp := range expected {
+				if !found[i] {
+					missing = append(missing, fmt.Sprintf("%s/%s/%s", exp.severity, exp.message, exp.priority))
+				}
+			}
+			if len(missing) > 0 {
+				return fmt.Errorf("missing expected systemd logs %v (scanned %d entries)", missing, len(entries))
+			}
+			return nil
+		}, retryPolicy)
+		if err != nil {
+			t.Errorf("failed waiting for systemd logs: %v", err)
 		}
 	})
 }
@@ -3478,11 +3540,17 @@ traces:
 	})
 }
 
-// fetchPID returns the process ID of the process with the given name on the given VM.
+// fetchPID returns a process identity string for the process with the given name on the given VM.
+// On Windows, this includes creation time ("<pid>:<filetime_utc>") so PID reuse after a rapid
+// crash-restart is not mistaken for the original process.
 func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName string) (string, error) {
 	var cmd string
 	if gce.IsWindows(vm.ImageSpec) {
-		cmd = fmt.Sprintf("Get-Process -Name '%s' | Select-Object -Property Id | Format-Wide", processName)
+		imageName := processName
+		if !strings.HasSuffix(strings.ToLower(imageName), ".exe") {
+			imageName += ".exe"
+		}
+		cmd = fmt.Sprintf(`$ErrorActionPreference = 'Stop'; Get-CimInstance -ClassName Win32_Process -Filter "Name = '%s'" | ForEach-Object { if ($null -ne $_.CreationDate) { "$($_.ProcessId):$($_.CreationDate.ToFileTimeUtc())" } else { "$($_.ProcessId)" } }`, imageName)
 	} else {
 		// pgrep has a limit of 15 characters to lookup processes
 		// using -f uses the full command line for lookup
@@ -3498,7 +3566,11 @@ func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName s
 	if err != nil {
 		return "", fmt.Errorf("fetchPID(%q) failed: %v", processName, err)
 	}
-	return strings.TrimSpace(output.Stdout), nil
+	out := strings.TrimSpace(output.Stdout)
+	if out == "" {
+		return "", fmt.Errorf("fetchPID(%q): no running process found", processName)
+	}
+	return out, nil
 }
 
 // fetchPIDAndProcessName returns the process ID and name of the first matching process from a given list of names on the given VM.
@@ -3515,6 +3587,8 @@ func fetchPIDAndProcessName(ctx context.Context, logger *log.Logger, vm *gce.VM,
 			out, err := fetchPID(ctx, logger, vm, pn)
 			if err != nil {
 				errors = multierr.Append(errors, err)
+			} else if strings.Contains(out, "\n") {
+				errors = multierr.Append(errors, fmt.Errorf("expected 1 running %q process, got %q", pn, out))
 			} else if out != "" {
 				output = out
 				matchedName = pn
@@ -3561,26 +3635,43 @@ func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *log.Logger
 		t.Fatal(err)
 	}
 
-	logger.Printf("testAgentCrashRestart: Found %s", processName)
+	logger.Printf("testAgentCrashRestart: Found %s (%s)", processName, pidOutputBefore)
 
 	// Simulate a crash.
 	if err := terminateProcess(ctx, logger, vm, processName); err != nil {
 		t.Fatal(err)
 	}
 
+	// Consistency check: wait until the agent is replaced by a single new process
+	// instance before running livenessChecker so we exercise the restarted process.
+	var pidOutputAfter string
+	b := backoff.WithContext(
+		backoff.WithMaxRetries(backoff.NewConstantBackOff(2*time.Second), 15),
+		ctx,
+	)
+	err = backoff.Retry(func() error {
+		out, err := fetchPID(ctx, logger, vm, processName)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(out, "\n") {
+			return fmt.Errorf("expected 1 running %q process after restart, got %q", processName, out)
+		}
+		beforePID, _, beforeHasTS := strings.Cut(pidOutputBefore, ":")
+		afterPID, _, afterHasTS := strings.Cut(out, ":")
+		if out == pidOutputBefore || ((!beforeHasTS || !afterHasTS) && beforePID == afterPID) {
+			return fmt.Errorf("process %q has not restarted yet (%s)", processName, out)
+		}
+		pidOutputAfter = out
+		return nil
+	}, b)
+	if err != nil {
+		t.Fatalf("Process %q did not restart after crash (before: %s): %v", processName, pidOutputBefore, err)
+	}
+	logger.Printf("testAgentCrashRestart: Confirmed %s restarted (%s -> %s)", processName, pidOutputBefore, pidOutputAfter)
+
 	if err := livenessChecker(ctx, logger, vm); err != nil {
 		t.Fatalf("Liveness checker reported error: %v", err)
-	}
-
-	// Consistency check: make sure that the agent's PID actually changed so that
-	// we know we crashed it successfully.
-	pidOutputAfter, err := fetchPID(ctx, logger, vm, processName)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if pidOutputBefore == pidOutputAfter {
-		t.Errorf("PID did not change; we failed to crash %v.", processName)
 	}
 }
 
@@ -3613,7 +3704,14 @@ func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 		return err
 	}
 	tag := systemLogTagForImage(vm.ImageSpec)
-	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForImage(vm.ImageSpec, msg))
+	// Use substring matching (":") rather than exact equality ("=") on Linux too:
+	// writeToSystemLog appends via tee -a, which can race with rsyslog writes and
+	// interleave the UUID into an existing line.
+	query := fmt.Sprintf("jsonPayload.message:%q", msg)
+	if gce.IsWindows(vm.ImageSpec) {
+		query = fmt.Sprintf("jsonPayload.Message:%q", msg)
+	}
+	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, query)
 }
 
 func TestLoggingAgentCrashRestart(t *testing.T) {
@@ -3626,7 +3724,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, loggingAgentProcessNamesForImage(vm.ImageSpec), loggingLivenessChecker)
 	})
 }
 
