@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 // ReadUnifiedConfigFromFile reads the user config file and returns a UnifiedConfig.
@@ -72,13 +73,25 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 	return nil
 }
 
+// WriteConfigFile writes content, followed by a newline, to the file at path,
+// creating any missing parent directories. Generated config files are only
+// meant to be read by the agent itself, so access to them is limited to the
+// current user.
 func WriteConfigFile(content []byte, path string) error {
 	// Make sure the directory exists before writing the file.
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return fmt.Errorf("failed to create directory for %q: %w", path, err)
 	}
+	// Recreate a file that already exists instead of overwriting it in place,
+	// so that the permissions below always apply to it. Permission bits are not
+	// supported on Windows, so there the file is simply overwritten.
+	if runtime.GOOS != "windows" {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove existing file %q: %w", path, err)
+		}
+	}
 	content = append(content, []byte("\n")...)
-	if err := os.WriteFile(path, content, 0644); err != nil {
+	if err := os.WriteFile(path, content, 0600); err != nil {
 		return fmt.Errorf("failed to write file to %q: %w", path, err)
 	}
 	return nil

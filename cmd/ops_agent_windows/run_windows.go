@@ -158,6 +158,10 @@ func (srv *service) runHealthChecks() {
 }
 
 func (s *service) generateConfigs(ctx context.Context) error {
+	// Generated config files are only meant to be read by the agent itself.
+	if err := confgenerator.RestrictOutputDirAccess(s.outDirectory); err != nil {
+		return err
+	}
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf)
 	if err != nil {

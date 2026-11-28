@@ -207,6 +207,10 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 }
 
 func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string) (*confgenerator.UnifiedConfig, error) {
+	// Generated config files are only meant to be read by the agent itself.
+	if err := confgenerator.RestrictOutputDirAccess(filepath.Join(pluginStateDir, GeneratedConfigsOutDir)); err != nil {
+		return nil, err
+	}
 	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath)
 	if err != nil {
 		return nil, err
